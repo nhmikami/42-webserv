@@ -1,8 +1,6 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include "Client.hpp"
-#include "Config.hpp"
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
@@ -11,46 +9,17 @@
 
 class Server {
 	private:
-	int socket_fd;
-	std::vector<Client> clients;
-	Config config;
+		std::string _file_path;
+		std::string root;
+
 
 	public:
-		Server(Config const &conf) : config(conf) {}
+		Server(void);
+		Server(const Server &other);
+		Server(std::string file_path);
+		~Server(void);
 
-		void run() {
-			createListeningSocket(config.port);
-
-			while (true) {
-				// Esperar eventos de leitura/escrita (poll)
-				poll_fds = buildPollSet(socket_fd, clients);
-				poll(poll_fds);
-
-				// Se chegou nova conexão → aceitar
-				if (pollEventOn(socket_fd))
-					acceptNewClient();
-
-				// Se um cliente enviou dados → ler requisição
-				for (client in clients) {
-					if (pollEventOn(client.fd)) {
-						std::string raw_request = client.read();
-						if (!raw_request.empty())
-							handleRequest(client, raw_request);
-					}
-				}
-			}
-		}
-
-		void handleRequest(Client &client, std::string const &raw_request) {
-			// Interpretar requisição HTTP
-			HTTPRequest req = HTTPParser::parse(raw_request);
-
-			// Gerar resposta
-			HTTPResponse res = Router::handle(req, config);
-
-			// Enviar resposta ao cliente
-			client.send(res.toString());
-		}
+		Server &operator=(const Server &other);
 };
 
 #endif
