@@ -6,7 +6,7 @@
 /*   By: cabo-ram <cabo-ram@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/06 15:02:25 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/11/10 15:38:23 by cabo-ram         ###   ########.fr       */
+/*   Updated: 2025/11/11 16:42:45 by cabo-ram         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -84,6 +84,7 @@ const std::string& ParseHttp::getUri() const {
 	return request_uri;
 }
 
+// faz o split da request line
 bool	ParseHttp::parse_request_line(const std::string &line,
 						std::string &out_method,
 						std::string &out_path,
@@ -91,13 +92,13 @@ bool	ParseHttp::parse_request_line(const std::string &line,
 	size_t method_end = line.find(" ");
 	if (method_end == std::string::npos)
 		return false;
-	
+	// valida o método
 	std::string method = line.substr(0, method_end);
 	if (method == "GET" || method == "POST" || method == "DELETE")
 		out_method = method;
 	else
 		return false;
-	
+	// extrai o path
 	size_t path_start = method_end + 1;
 	size_t path_end = line.find(" ", path_start);
 	if (path_end == std::string::npos)
@@ -106,7 +107,7 @@ bool	ParseHttp::parse_request_line(const std::string &line,
 	out_path = line.substr(path_start, path_end - path_start);
 	if (out_path.empty())
 		return false;
-	
+	// verifica versão
 	size_t version_start = path_end + 1;
 	out_version = line.substr(version_start);
 	
@@ -118,6 +119,7 @@ bool	ParseHttp::parse_request_line(const std::string &line,
 	return true;
 }
 
+// valida regras básicas do URI
 bool ParseHttp::validate_uri(const std::string &uri, std::string &path, std::string &query) {
 	static const size_t MAX_URI_LEN = 16 * 1024;
 
@@ -126,22 +128,19 @@ bool ParseHttp::validate_uri(const std::string &uri, std::string &path, std::str
 	if (uri.size() > MAX_URI_LEN)
 		return false;
 	
-	if (uri.find('\r') != std::string::npos || uri.find('\n') != std::string::npos)
-		return false;
-	if (uri.find('\0') != std::string::npos)
-		return false;
-	if (uri.find('\t') != std::string::npos)
-		return false;
-	
-	if (uri.find('#') != std::string::npos)
+	if (uri.find('\r') != std::string::npos
+		|| uri.find('\n') != std::string::npos
+		|| uri.find('\0') != std::string::npos
+		|| uri.find('\t') != std::string::npos
+		|| uri.find('#') != std::string::npos)
 		return false;
 	
 	for (size_t i = 0; i < uri.size(); ++i) {
 		unsigned char c = static_cast<unsigned char>(uri[i]);
-		if (c < 0x20 && c != '\t')
+		if (c < ' ' && c != '\t')
 			return false;
 	}
-	
+	// separa query após '?'
 	size_t pos = uri.find('?');
 	if (pos == std::string::npos) {
 		path = uri;
@@ -164,13 +163,14 @@ bool ParseHttp::validate_uri(const std::string &uri, std::string &path, std::str
 	return true;
 }
 
+// verifica e normaliza os paths 
 bool ParseHttp::normalize_path(const std::string &raw_path, std::string &normalized_path) {
 	if (raw_path.empty() || raw_path[0] != '/')
 		return false;
 	
 	for (size_t i = 0; i < raw_path.size(); ++i) {
 		unsigned char c = static_cast<unsigned char>(raw_path[i]);
-		if (c < 0x20 && c != '\t')
+		if (c < ' ' && c != '\t')
 			return false;
 		if (c == '<' || c == '>' || c == '|' || c == '"' || c == '\\' || c == '\t')
 			return false;
@@ -187,9 +187,9 @@ bool ParseHttp::normalize_path(const std::string &raw_path, std::string &normali
 			segment = s.substr(i);
 		else
 			segment = s.substr(i, j - i);
-		if (segment.find('\r') != std::string::npos || segment.find('\n') != std::string::npos)
-			return false;
-		if (segment.find(' ') != std::string::npos)
+		if (segment.find('\r') != std::string::npos
+			|| segment.find('\n') != std::string::npos
+			|| segment.find(' ') != std::string::npos)
 			return false;
 		
 		if (segment.empty() || segment == ".") {
@@ -221,6 +221,7 @@ bool ParseHttp::normalize_path(const std::string &raw_path, std::string &normali
 	return true;
 }
 
+// valida o header host
 bool ParseHttp::validate_host_header(const std::string &host) {
 	if (host.empty())
 		return false;
@@ -246,21 +247,24 @@ bool ParseHttp::validate_host_header(const std::string &host) {
 		if (port_num < 1 || port_num > 65535)
 			return false;
 	}
-	else
+	else {
 		hostname = host;
+		port = "80";
+	}
 	
 	if (hostname.empty())
 		return false;
 	
 	for (size_t i = 0; i < hostname.size(); ++i) {
 		unsigned char c = static_cast<unsigned char>(hostname[i]);
-		if (!std::isalnum(c) && c != '-' && c != '.' && c != '_')
+		if (!std::isalnum(c) && c != '-' && c != '.')
 			return false;
 	}
 	
 	return true;
 }
 
+// valida o content_length e se é numérico
 bool ParseHttp::validate_content_length(const std::string &content_length_str, size_t &out_length) {
 	if (content_length_str.empty())
 		return false;
@@ -284,6 +288,7 @@ bool ParseHttp::validate_content_length(const std::string &content_length_str, s
 	return true;
 }
 
+// normaliza o transfer encoding e transforma em minúscula pq é case-insensitive segundo a RFC
 bool ParseHttp::validate_transfer_encoding(const std::string &transfer_encoding) {
 	if (transfer_encoding.empty())
 		return false;
@@ -341,12 +346,13 @@ bool ParseHttp::validate_connection(const std::string &connection) {
 	
 	conn_lower = trim(conn_lower);
 	
-	if (conn_lower == "keep-alive" || conn_lower == "close" || conn_lower == "upgrade")
+	if (conn_lower == "keep-alive" || conn_lower == "close")
 		return true;
 	
 	return false;
 }
 
+// Valida regras HTTP mínimas e coerência entre headers antes de aceitar/processar o corpo ou rotear a requisição
 HttpStatus ParseHttp::validate_headers(const std::map<std::string, std::string> &headers) {
 	if (headers.find("host") == headers.end())
 		return BAD_REQUEST;
@@ -384,6 +390,7 @@ HttpStatus ParseHttp::validate_headers(const std::map<std::string, std::string> 
 	return OK;
 }
 
+// função auxiliar que remove espaços/tabs da string
 std::string trim(const std::string &s) {
 	size_t start = s.find_first_not_of(" \t");
 	size_t end = s.find_last_not_of(" \t");
@@ -420,6 +427,7 @@ std::ostream& operator<<(std::ostream& os, RequestMethod method) {
 	return os;
 }
 
+// lê os headers e separa em chave e valor
 std::map<std::string,std::string> ParseHttp::parse_headers(const std::string &headers_block) {
 	std::map<std::string,std::string> headers;
 	std::istringstream stream(headers_block);
@@ -450,6 +458,7 @@ std::map<std::string,std::string> ParseHttp::parse_headers(const std::string &he
 	return headers;
 }
 
+// lê os dados do socket até encontrar "\r\n"
 bool ParseHttp::read_until_crlf(int client_fd, std::string &buffer, std::string &out_line) {
 	static const size_t MAX_LINE = 16 * 1024;
 	
@@ -479,6 +488,7 @@ bool ParseHttp::read_until_crlf(int client_fd, std::string &buffer, std::string 
 	}
 }
 
+// converte hexadecimal para inteiro (tamanho do chunk)
 bool ParseHttp::hex_to_int(const std::string &hex_line, size_t &out_size) {
 	std::string hex_str = hex_line;
 	
