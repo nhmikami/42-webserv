@@ -1,25 +1,54 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include <cstdlib>
-#include <iomanip>
+#include <Client.hpp>
+
+#include <string>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <cstring>
+#include <stdio.h>
 #include <iostream>
-#include <stdexcept>
-#include <vector>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 class Server {
 	private:
-		std::string _file_path;
-		std::string root;
+		int					_server_fd;
+		struct sockaddr_in	_address;
+		socklen_t			_addlen;
+		std::string			_host;
+		int					_port;
 
 
+		bool	startServer();
+		bool	bindServer();
+		bool	startListen();
 	public:
-		Server(void);
-		Server(const Server &other);
-		Server(std::string file_path);
+		Server(void); //private
+		Server(const Server &other); //private
+		Server(std::string host, int port);
 		~Server(void);
 
 		Server &operator=(const Server &other);
+
+		// bool	acceptClient(int &client_fd);
+		// void	handleClient(int client_fd);
+		// void	closeServer();
+		void run();
 };
 
 #endif
+
+/*
+struct Server {
+std::string host;
+    int port;
+    std::vector<std::string> server_names;
+    std::string root;
+    std::vector<std::string> index;
+    std::map<int,std::string> error_pages;
+    std::vector<Location> locations;
+    bool is_default = false;
+};
+*/
