@@ -41,8 +41,18 @@ std::string Client::receive()
 };
 
 
-void		Client::sendResponse(const std::string &response)
+bool		Client::sendResponse(const std::string &response)
 {
-	send(_client_fd, response.c_str(), response.size(), 0);
+	ssize_t sent = send(_client_fd, response.c_str(), response.size(), 0);
+	if (sent < 0) {
+		perror("send failed");
+		return false;
+	}
+	std::cout << "SENT!" << std::endl;
+	return true;
 };
+
+int			Client::getFd(){
+	return _client_fd;
+}
 

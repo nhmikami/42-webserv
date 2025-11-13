@@ -26,7 +26,8 @@ class Client {
 		// bool receiveResponse(std::string &response);
 		// void disconnect();
 		std::string	receive();
-		void				sendResponse(const std::string &response);
+		bool		sendResponse(const std::string &response);
+		int			getFd();
 };
 
 #endif
