@@ -11,7 +11,7 @@ INC_DIR		=	inc/
 OBJ_DIR		=	obj/
 
 # source files
-SRC			=	$(addprefix $(SRC_DIR), main.cpp)
+SRC			=	$(addprefix $(SRC_DIR), main.cpp Server.cpp Client.cpp)
 OBJ			=	$(SRC:$(SRC_DIR)%.cpp=$(OBJ_DIR)%.o)
 INC			=	-I $(INC_DIR)
 
