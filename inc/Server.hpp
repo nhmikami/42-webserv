@@ -31,14 +31,11 @@ class Server {
 		~Server(void);
 
 		Server &operator=(const Server &other);
-<<<<<<< HEAD
-=======
 
 		// bool	acceptClient(int &client_fd);
 		// void	handleClient(int client_fd);
 		// void	closeServer();
 		void run();
->>>>>>> 3447155603e189226cb7605a539b7c10e869cb27
 };
 
 #endif
