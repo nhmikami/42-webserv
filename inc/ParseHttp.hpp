@@ -6,7 +6,7 @@
 /*   By: cabo-ram <cabo-ram@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 14:44:10 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/11/10 15:03:08 by cabo-ram         ###   ########.fr       */
+/*   Updated: 2025/11/13 17:08:35 by cabo-ram         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,6 +54,11 @@ class ParseHttp {
 		bool validate_transfer_encoding(const std::string &transfer_encoding);
 		bool validate_content_type(const std::string &content_type);
 		bool validate_connection(const std::string &connection);
+		bool validate_quality_value(const std::string &s);
+		double q_to_double(const std::string &s);
+		bool validate_type_token(const std::string &t, bool is_type);
+		bool check_params_q(const std::string &params_str, double &out_q, bool &has_q);
+		bool validate_accept(const std::string &accept);
 		HttpStatus validate_headers(const std::map<std::string, std::string> &headers);
 		std::map<std::string,std::string> parse_headers(const std::string &headers_block);
 		HttpStatus	read_body(int client_fd, size_t content_length);
