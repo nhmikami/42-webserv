@@ -1,14 +1,4 @@
 #include "Server.hpp"
-#include <csignal>
-
-// Variável global para controlar o shutdown (necessário para signal handler em C++98)
-static bool g_running = true;
-
-// Signal handler
-void signalHandler(int signum) {
-    (void)signum;
-    g_running = false;
-}
 
 Server::Server(void) : _server_fd(-1), _addlen(sizeof(_address)), _host("127.0.0.1"), _port(8000)
 {
@@ -16,8 +6,7 @@ Server::Server(void) : _server_fd(-1), _addlen(sizeof(_address)), _host("127.0.0
 	if (!startServer())
 		perror("Failed to start server.");
 
-	signal(SIGINT, signalHandler);
-    signal(SIGTERM, signalHandler);
+	
 };
 
 Server::Server(const Server &other) : 
@@ -85,9 +74,6 @@ bool	Server::bindServer()
 };
 bool	Server::startListen() 
 {
-	// 128 é o tamanho máximo da fila de conexões pendentes (backlog) 
-	// que o sistema operacional pode armazenar enquanto aguarda 
-	// que o servidor aceite cada conexão.
 	if (listen(_server_fd, 128) < 0)
 		return false;  //perror("listen failed");
 	std::cout << "[SERVER] Listening on " << _host << ":" << _port << std::endl;
@@ -105,13 +91,11 @@ bool	Server::addToFDs(int fd)
 };
 
 void	Server::run() {
-	g_running = true;
 
 	while (true) {
 		int res = poll(_fds.data(), _fds.size(), -1);
 
 		if (res == -1) {
-			if (!g_running) break;
             perror("poll failed");
             continue;
         }
