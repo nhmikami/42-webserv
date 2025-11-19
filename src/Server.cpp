@@ -73,7 +73,10 @@ bool	Server::startServer()
 		return false;
 
 	int opt = 1;
-	setsockopt(_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+	if (setsockopt(_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+		_logger.log(Logger::ERROR, "Failed to set SO_REUSEADDR.");
+		return false;
+	}
 
 	_address.sin_family = AF_INET;
 	if (inet_pton(AF_INET, _host.c_str(), &_address.sin_addr) != 1) {
