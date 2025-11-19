@@ -2,7 +2,7 @@
 
 Client::Client(void) : _client_fd(-1) {};
 
-Client::Client(const Client &other) : _client_fd(other._client_fd) {};
+Client::Client(const Client &other) : _client_fd(-1) {};
 
 Client::Client(int client_fd) : _client_fd(client_fd) 
 {
@@ -22,7 +22,7 @@ Client &Client::operator=(const Client &other)
 {
 	if (this != &other)
 	{
-		_client_fd = other._client_fd;
+		_client_fd = -1;
 	}
 	return *this;
 };
@@ -33,6 +33,9 @@ std::string Client::receive()
 	int bytes = recv(_client_fd, buffer, sizeof(buffer) - 1, 0);
 	if (bytes > 0) {
 		return std::string(buffer, bytes);
+	}
+	if (bytes < 0) {
+		_logger.log(Logger::ERROR, "Failed to receive data.");
 	}
 	return "";
 };

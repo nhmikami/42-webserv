@@ -14,34 +14,18 @@ class Client {
 		int		_client_fd;
 		Logger	_logger;
 
-		bool connectToServer();
-
-	public:
 		Client(void);
 		Client(const Client &other);
-		Client(int client_fd);
-		// Client(std::string host, int port);
-		~Client(void);
 
 		Client &operator=(const Client &other);
+		
+	public:
+		Client(int client_fd);
+		~Client(void);
 
-		// bool sendRequest(const std::string &request);
-		// bool receiveResponse(std::string &response);
-		// void disconnect();
 		std::string	receive();
 		bool		sendResponse(const std::string &response);
 		int			getFd();
 };
 
 #endif
-
-/*
-struct ConnectionMeta {
-	int client_fd;
-	std::string client_ip;
-	uint16_t client_port;
-	std::string listening_ip;
-	uint16_t listening_port;
-	std::vector<Server*> candidates; // servers associados a este socket
-};
-*/

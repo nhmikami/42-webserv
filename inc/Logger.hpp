@@ -4,23 +4,26 @@
 #include <iostream>
 
 class Logger {
+
+	private:
+		Logger(const Logger &other);
+
+		Logger &operator=(const Logger &other);
+
 	public:
 		enum LogLevel {
 			INFO,
 			WARNING,
 			ERROR,
 			SERVER,
+			MAX_LEVEL
 		};
 
 		Logger(void);
-		Logger(const Logger &other);
 		~Logger(void);
 
-		Logger &operator=(const Logger &other);
-
-		void log(LogLevel level, const std::string &msg);
-		std::string getLevel(LogLevel level);
-
+		void 		log(LogLevel level, const std::string &msg);
+		std::string	getLevel(LogLevel level);
 };
 
 #endif 

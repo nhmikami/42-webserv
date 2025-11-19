@@ -28,6 +28,10 @@ class Server {
 		Logger						_logger;
 		ParseUtils					_utils;
 
+		Server(const Server &other);
+		
+		Server &operator=(const Server &other);
+
 		bool	startServer();
 		bool	bindServer();
 		bool	startListen();
@@ -38,26 +42,10 @@ class Server {
 
 	public:
 		Server(void); //private
-		Server(const Server &other); //private
 		Server(std::string host, int port);
 		~Server(void);
-
-		Server &operator=(const Server &other);
 
 		void run();
 };
 
 #endif
-
-/*
-struct Server {
-std::string host;
-    int port;
-    std::vector<std::string> server_names;
-    std::string root;
-    std::vector<std::string> index;
-    std::map<int,std::string> error_pages;
-    std::vector<Location> locations;
-    bool is_default = false;
-};
-*/

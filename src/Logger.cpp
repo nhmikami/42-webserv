@@ -25,7 +25,7 @@ std::string Logger::getLevel(LogLevel level){
         "\033[1;34m[SERVER]\033[0m "
 	};
 
-	if (level >= 0 && level < 4)
+	if (level < MAX_LEVEL)
 		return levels[level];
 	return "[DEFAULT]";
 }
