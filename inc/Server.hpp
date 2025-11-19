@@ -2,6 +2,8 @@
 #define SERVER_HPP
 
 #include <Client.hpp>
+#include <Logger.hpp>
+#include <ParseUtils.hpp>
 
 #include <poll.h>
 #include <string>
@@ -23,6 +25,8 @@ class Server {
 		int							_port;
 		std::vector<struct pollfd>	_fds;
 		std::vector<Client*>		_clients;
+		Logger						_logger;
+		ParseUtils					_utils;
 
 		bool	startServer();
 		bool	bindServer();

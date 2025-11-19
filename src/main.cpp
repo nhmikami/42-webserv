@@ -1,33 +1,38 @@
-#include "Server.hpp"
+#include <csignal>
 #include <iostream>
 #include <string>
-
-#include <iostream>
 #include <cstring>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <stdio.h>
-#include <csignal>
 
+#include "Server.hpp"
+#include "Logger.hpp"
 
 void signalHandler(int signum) {
     (void)signum;
     throw std::runtime_error("Closing server!");
 }
 
-int main() {
+int main(int ac, char **av) {
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
 
+    Logger logger;
+    (void)av;
+
     try {
+        if (ac != 2) {
+            throw std::invalid_argument("Usage: ./webserv <config_file>");
+        }
         Server server;
         server.run();
     }
     catch (const std::runtime_error& e) {
-        std::cout << "\n[SERVER] " << e.what() << std::endl;
+        logger.log(Logger::INFO, e.what());
     }
     catch (const std::exception& e) {
-        std::cerr << "[ERROR] " << e.what() << std::endl;
+        logger.log(Logger::ERROR, e.what());
         return 1;
     }
 

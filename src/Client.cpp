@@ -1,15 +1,12 @@
 #include "Client.hpp"
 
-Client::Client(void) : _client_fd(-1)
-{
-	std::cout << "[SERVER] Client connected!" << std::endl;
-};
+Client::Client(void) : _client_fd(-1) {};
 
 Client::Client(const Client &other) : _client_fd(other._client_fd) {};
 
 Client::Client(int client_fd) : _client_fd(client_fd) 
 {
-	std::cout << "[SERVER] Client connected!" << std::endl;
+	_logger.log(Logger::SERVER, "Client connected!");
 }
 
 Client::~Client(void)
@@ -17,7 +14,7 @@ Client::~Client(void)
 	if (_client_fd >= 0)
 	{
 		close(_client_fd);
-		std::cout << "[SERVER] Connection closed." << std::endl;
+		_logger.log(Logger::SERVER, "Connection closed.");
 	}
 };
 
@@ -45,10 +42,10 @@ bool		Client::sendResponse(const std::string &response)
 {
 	ssize_t sent = send(_client_fd, response.c_str(), response.size(), 0);
 	if (sent < 0) {
-		perror("send failed");
+		_logger.log(Logger::ERROR, "Failed to send response.");
 		return false;
 	}
-	std::cout << "SENT!" << std::endl;
+	_logger.log(Logger::SERVER, "Response Sent!");
 	return true;
 };
 

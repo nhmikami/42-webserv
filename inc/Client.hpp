@@ -7,9 +7,12 @@
 #include <iostream>
 #include <sys/socket.h>
 
+#include "Logger.hpp"
+
 class Client {
 	private:
-		int	_client_fd;
+		int		_client_fd;
+		Logger	_logger;
 
 		bool connectToServer();
 
