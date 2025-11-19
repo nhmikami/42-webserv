@@ -40,10 +40,20 @@ std::string Client::receive()
 
 bool		Client::sendResponse(const std::string &response)
 {
-	ssize_t sent = send(_client_fd, response.c_str(), response.size(), 0);
-	if (sent < 0) {
-		_logger.log(Logger::ERROR, "Failed to send response.");
-		return false;
+	size_t total_sent = 0;
+	size_t to_send = response.size();
+	const char* data = response.c_str();
+	while (total_sent < to_send) {
+		ssize_t sent = send(_client_fd, data + total_sent, to_send - total_sent, 0);
+		if (sent < 0) {
+			_logger.log(Logger::ERROR, "Failed to send response.");
+			return false;
+		}
+		if (sent == 0) {
+			_logger.log(Logger::ERROR, "Socket closed before response was fully sent.");
+			return false;
+		}
+		total_sent += static_cast<size_t>(sent);
 	}
 	_logger.log(Logger::SERVER, "Response Sent!");
 	return true;
