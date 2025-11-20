@@ -37,7 +37,9 @@ class Server {
 		bool	startListen();
 		bool	addToFDs(int fd);
 		void	acceptClient();
+		Client	*findClient(int i);
 		bool	handleClient(int i);
+		void	unhandleClient(int i);
 		void	closeClient(int i, int j, Client *client);
 
 	public:

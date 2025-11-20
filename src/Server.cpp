@@ -69,8 +69,10 @@ Server &Server::operator=(const Server &other)
 bool	Server::startServer() 
 {
 	_server_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if (_server_fd < 0) //perror("socket failed");
+	if (_server_fd < 0){
+		_logger.log(Logger::ERROR, "Socket failed.");
 		return false;
+	}
 
 	int opt = 1;
 	if (setsockopt(_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
@@ -135,7 +137,9 @@ void	Server::run() {
 
 		size_t i = 1;
 		while (i < _fds.size()) {
-			if (_fds[i].revents & POLLIN) {
+			if (_fds[i].revents & (POLLERR | POLLHUP | POLLNVAL)) {
+				unhandleClient(i);
+			} else if (_fds[i].revents & POLLIN) {
 				if (handleClient(i)) i++;
 			} else
 				i++;
@@ -160,7 +164,8 @@ void	Server::acceptClient()
 	_logger.log(Logger::SERVER, "New client accepted (fd=" + _utils.itoa(client_fd) + ")");
 	
 };
-bool	Server::handleClient(int i) 
+
+Client	*Server::findClient(int i)
 {
 	size_t	j = 0;
 	int		fd = _fds[i].fd;
@@ -173,6 +178,13 @@ bool	Server::handleClient(int i)
 		}
 		j++;
 	}
+
+	return client;
+}
+
+bool	Server::handleClient(int i) 
+{
+	Client *client = findClient(i);
 
 	if (!client) return true;
 
@@ -197,6 +209,16 @@ bool	Server::handleClient(int i)
 
 	return true;
 };
+
+void Server::unhandleClient(int i){
+	Client *client = findClient(i);
+
+	if (client) {
+		_logger.log(Logger::SERVER, "Connection error or hangup (fd=" + _utils.itoa(fd) + ")");
+		closeClient(i, j, client);
+	} else
+		_fds.erase(_fds.begin() + i);
+}
 
 void	Server::closeClient(int i, int j, Client *client) {
 	_fds.erase(_fds.begin() + i);
