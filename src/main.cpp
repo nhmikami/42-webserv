@@ -8,6 +8,7 @@
 
 #include "Server.hpp"
 #include "Logger.hpp"
+#include "ParseConfig.hpp"
 
 void signalHandler(int signum) {
     (void)signum;
@@ -25,6 +26,17 @@ int main(int ac, char **av) {
         if (ac != 2) {
             throw std::invalid_argument("Usage: ./webserv <config_file>");
         }
+
+        ParseConfig parser(av[1]);
+
+        Config config = parser.parse();
+
+        // 4. Mostrar o que foi lido
+        std::cout << "=== Configuração Carregada ===" << std::endl;
+        std::cout << "Host: " << config.host << std::endl;
+        std::cout << "Port: " << config.port << std::endl;
+        std::cout << "Root: " << config.root << std::endl;
+
         Server server;
         server.run();
     }
