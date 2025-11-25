@@ -4,15 +4,15 @@
 #include <string>
 
 struct Config {
-    std::string host;
-    int port;
-    std::string root;
+	std::string	host;
+	int			port;
+	std::string	root;
 
-    Config() {
-        host = "127.0.0.1";
-        port = 8080;
-        root = "/data/www/";
-    }
+	Config() {
+		host = "127.0.0.1";
+		port = 8080;
+		root = "/data/www/";
+	}
 };
 
 #endif

@@ -9,24 +9,34 @@
 #include "Config.hpp"
 #include "Logger.hpp"
 #include "ParseUtils.hpp"
+#include "ServerConfig.hpp"
 
 class ParseConfig {
 	private:
-		std::string	_filename;
-		Config		_config;
-		Logger		_logger;
+		enum Context {
+			GLOBAL,
+			SERVER,
+			LOCATION
+		};
 
+		std::string	_filename;
+		Context		_context;
+		int			_open_brackets;
+		std::vector<ServerConfig> _servers;
 
 		ParseConfig(void);
 		ParseConfig(const ParseConfig &other);
 		
 		ParseConfig &operator=(const ParseConfig &other);
 
+		bool changeContext(std::string line);
+		void parseLine(std::string line);
+
 	public:
 		ParseConfig(const std::string &filename);
 		~ParseConfig(void);
 
-		Config parse();
+		std::vector<ServerConfig> parse();
 };
 
 #endif

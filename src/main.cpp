@@ -29,16 +29,21 @@ int main(int ac, char **av) {
 
         ParseConfig parser(av[1]);
 
-        Config config = parser.parse();
-
-        // 4. Mostrar o que foi lido
-        std::cout << "=== Configuração Carregada ===" << std::endl;
-        std::cout << "Host: " << config.host << std::endl;
-        std::cout << "Port: " << config.port << std::endl;
-        std::cout << "Root: " << config.root << std::endl;
-
-        Server server;
-        server.run();
+        std::vector<ServerConfig> servers_config = parser.parse();
+        for (size_t i = 0; i < servers_config.size(); i++)
+        {
+            std::cout << "Server " << i << ":" << std::endl;
+            std::cout << "host: " << servers_config[i].getHost() << std::endl;
+            std::cout << "port: " << servers_config[i].getPort() << std::endl;
+            std::cout << "root: " << servers_config[i].getRoot() << std::endl;
+            std::cout << "server name: " << servers_config[i].getServerName() << std::endl;
+            std::cout << "index files: " << servers_config[i].getIndexFiles() << std::endl;
+            std::cout << "error pages: " << servers_config[i].getErrorPages() << std::endl;
+            std::cout << "client max body size: " << servers_config[i].getClientaMaxBodySize() << std::endl;
+            std::cout << std::endl;
+        }
+        // Server server;
+        // server.run();
     }
     catch (const std::runtime_error& e) {
         logger.log(Logger::INFO, e.what());
