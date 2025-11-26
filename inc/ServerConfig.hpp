@@ -12,44 +12,30 @@
 
 class ServerConfig {
 	private:
-		bool		_autoindex;
-		std::string	_root;
-		std::map<std::string, std::string> _index_list;
+		std::string							_root;
+		std::vector<std::string>			_index_files;
+		std::map<std::string, std::string>	_error_pages;
+		bool								_autoindex;
 
 	public:
 		ServerConfig(void) : _autoindex(true) {}
 		~ServerConfig(void) {}
 
-		bool getAutoindex() const {
-			return _autoindex;
-		}
-
 		std::string getRoot() const {
 			return _root;
 		}
 
-		// void run() {
-		// 	createListeningSocket(config.port);
+		std::vector<std::string> getIndexFiles() const {
+			return _index_files;
+		}
 
-		// 	while (true) {
-		// 		// Esperar eventos de leitura/escrita (poll)
-		// 		poll_fds = buildPollSet(socket_fd, clients);
-		// 		poll(poll_fds);
+		std::map<std::string, std::string> getErrorPages() const {
+			return _error_pages;
+		}
 
-		// 		// Se chegou nova conexão → aceitar
-		// 		if (pollEventOn(socket_fd))
-		// 			acceptNewClient();
-
-		// 		// Se um cliente enviou dados → ler requisição
-		// 		for (client in clients) {
-		// 			if (pollEventOn(client.fd)) {
-		// 				std::string raw_request = client.read();
-		// 				if (!raw_request.empty())
-		// 					handleRequest(client, raw_request);
-		// 			}
-		// 		}
-		// 	}
-		// }
+		bool getAutoindex() const {
+			return _autoindex;
+		}
 
 		void handleRequest() {
 			// parse request
