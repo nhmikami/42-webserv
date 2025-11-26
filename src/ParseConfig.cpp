@@ -1,10 +1,10 @@
 #include "ParseConfig.hpp"
 
-ParseConfig::ParseConfig(void) : _filename(""), _context(GLOBAL), _open_brackets(false) {};
+ParseConfig::ParseConfig(void) : _filename(""), _context(GLOBAL), _open_brackets(false), _count_line(0) {};
 
-ParseConfig::ParseConfig(const ParseConfig &other) : _filename(other._filename), _context(GLOBAL), _open_brackets(false) {};
+ParseConfig::ParseConfig(const ParseConfig &other) : _filename(other._filename), _context(GLOBAL), _open_brackets(false), _count_line(0) {};
 
-ParseConfig::ParseConfig(const std::string &filename) : _filename(filename), _context(GLOBAL), _open_brackets(false) {};
+ParseConfig::ParseConfig(const std::string &filename) : _filename(filename), _context(GLOBAL), _open_brackets(false), _count_line(0) {};
 
 ParseConfig::~ParseConfig(void) {};
 
@@ -21,43 +21,80 @@ std::vector<ServerConfig> ParseConfig::parse() {
 		throw std::invalid_argument("Unable to open file: " + _filename);;
 
 	std::string line;
-
+	
 	while(std::getline(file, line)) {
+		std::string key;
+		std::vector<std::string> values;
 		size_t pos = line.find('#');
+		_count_line++;
+
 		if (pos != std::string::npos) {
 			line = line.substr(0, pos);
 		}
 		line = ParseUtils::trim(line);
+
+		if (!getKeyValues(line, &key, &values))
+			continue;
+
 		if (line.length() > 0 && !line.empty()) {
-			if (changeContext(line))
+			if (changeContext(key, values))
 				continue;
-			parseLine(line);
+			parseLine(key, values);
 		}
 	}
 
 	file.close();
+
 	if (_open_brackets != 0) {
-		throw std::invalid_argument("Sintax error in file " + _filename + ": Open brackets.");
+		throw std::invalid_argument("Sintax error in file " + _filename + " line " + ParseUtils::itoa(_count_line) + ": Open brackets.");
 	}
+
 	return _servers;
 }
 
-bool ParseConfig::changeContext(std::string line) {
+bool ParseConfig::getKeyValues(std::string line, std::string *key, std::vector<std::string> *values)
+{
 	std::istringstream iss(line);
-	std::string key;
+	std::string token;
+
+	if (line.empty())
+		return false;
+
+	iss >> *key;
+
+	if (*key != "server" && *key != "location" && *key != "}" && line[line.length() - 1] != ';') {
+		throw std::invalid_argument("Syntax error in file " + _filename + " line " + ParseUtils::itoa(_count_line) + ": Missing semicolon.");
+	}
+
+	while (iss >> token)
+	{
+		if (!token.empty() && token[token.length() - 1] == ';')
+			token = token.substr(0, token.length() - 1);
+		if (!token.empty())
+			values->push_back(token);
+	}
+
+	return true;
+}
+
+bool ParseConfig::changeContext(std::string key, std::vector<std::string> values) {
 	std::string error_message;
 
-	iss >> key;
-	error_message = "Sintax error in file " + _filename + "near " + key;
+	error_message = "Sintax error in file " + _filename + " line " + ParseUtils::itoa(_count_line) + "near " + key;
 
-	if (line.find("{") != std::string::npos && line.find('}') == std::string::npos){
+	std::string open_bracket = "{";
+	std::string close_bracket = "}";
+	std::vector<std::string>::iterator it_open_brackets = std::find(values.begin(), values.end(), open_bracket);
+	std::vector<std::string>::iterator it_close_brackets = std::find(values.begin(), values.end(), close_bracket);
+
+	if (it_open_brackets != values.end() && it_close_brackets == values.end()){
 		_open_brackets++;
 		if (key == "server" || key == "location") {
 			_context = static_cast<Context>(_context + 1);
 			if (key == "server")
-                _servers.push_back(ServerConfig());
-            else if (key == "location")
-				_servers.back().addLocation();
+				_servers.push_back(ServerConfig());
+			else if (key == "location")
+				_servers.back().addLocation(values);
 			return true;
 		} else
 			throw std::invalid_argument(error_message);
@@ -75,29 +112,10 @@ bool ParseConfig::changeContext(std::string line) {
 	return false;
 }
 
-void ParseConfig::parseLine(std::string line){
-	std::istringstream iss(line);
-	std::string key;
-	std::vector<std::string> values;
-	std::string token;
-
-	if (line.empty() || line[line.length() - 1] != ';') {
-        throw std::invalid_argument("Syntax error in file " + _filename + ": Missing semicolon.");
-    }
-
-	iss >> key;
-
-	while (iss >> token)
-	{
-		if (!token.empty() && token[token.length() - 1] == ';')
-			token = token.substr(0, token.length() - 1);
-		if (!token.empty())
-			values.push_back(token);
-	}
-
+void ParseConfig::parseLine(std::string key, std::vector<std::string> values){
 	if (_context == SERVER) {
 		_servers.back().parseServer(key, values);
 	} else if (_context == LOCATION) {
-		_servers.back().parseLocation(key, values);
+		_servers.back().getCurrentLocation().parseLocation(key, values);
 	}
 }

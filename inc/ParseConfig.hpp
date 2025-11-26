@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
+#include <algorithm>
 
 #include "Config.hpp"
 #include "Logger.hpp"
@@ -22,6 +23,7 @@ class ParseConfig {
 		std::string	_filename;
 		Context		_context;
 		int			_open_brackets;
+		int			_count_line;
 		std::vector<ServerConfig> _servers;
 
 		ParseConfig(void);
@@ -29,8 +31,9 @@ class ParseConfig {
 		
 		ParseConfig &operator=(const ParseConfig &other);
 
-		bool changeContext(std::string line);
-		void parseLine(std::string line);
+		bool getKeyValues(std::string line, std::string *key, std::vector<std::string> *values);
+		bool changeContext(std::string key, std::vector<std::string> values);
+		void parseLine(std::string key, std::vector<std::string> values);
 
 	public:
 		ParseConfig(const std::string &filename);
