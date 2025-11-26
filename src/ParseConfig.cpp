@@ -94,7 +94,7 @@ bool ParseConfig::changeContext(std::string key, std::vector<std::string> values
 			if (key == "server")
 				_servers.push_back(ServerConfig());
 			else if (key == "location")
-				_servers.back().addLocation(values);
+				_servers.back().addLocation(values, &_location_path);
 			return true;
 		} else
 			throw std::invalid_argument(error_message);
@@ -116,6 +116,6 @@ void ParseConfig::parseLine(std::string key, std::vector<std::string> values){
 	if (_context == SERVER) {
 		_servers.back().parseServer(key, values);
 	} else if (_context == LOCATION) {
-		_servers.back().getCurrentLocation().parseLocation(key, values);
+		_servers.back().getLocation(_location_path)->parseLocation(key, values);
 	}
 }

@@ -1,5 +1,10 @@
 #include "LocationConfig.hpp"
 
+LocationConfig::LocationConfig() : _path(""), _is_cgi(false)
+{
+    initDirectiveMap();
+}
+
 LocationConfig::LocationConfig(std::string path) : _path(path), _is_cgi(false) 
 {
 	initDirectiveMap();
@@ -16,9 +21,6 @@ LocationConfig::LocationConfig(const LocationConfig& other) :
 	_is_cgi(other._is_cgi),
 	_cgi(other._cgi)
 {
-	std::cout << "DEBUG: LocationConfig copy - path: " << _path 
-				<< ", error_pages.size: " << _error_pages.size() 
-				<< ", cgi.size: " << _cgi.size() << std::endl;
 	initDirectiveMap();
 }
 
@@ -91,39 +93,35 @@ void LocationConfig::setErrorPages(const std::vector<std::string>& values)
 		throw std::invalid_argument("error_page must have at least one value.");
 
 	std::string path = values[values.size() - 1];
-	for (size_t i = 0; i < values.size() - 1; i++)
+	for (size_t i = 0; i < values.size() - 1; i++){
 		_error_pages[std::atoi(values[i].c_str())] = path;
+		std::cout << values[i] << " : " << _error_pages[std::atoi(values[i].c_str())] << std::endl;
+	}
 };
 
 void LocationConfig::setCgi(const std::vector<std::string>& values)
 {
-	std::cout << "CGI : " << values[0] << " : " << values[1] << std::endl;
 	if (values.size() != 2)
 		throw std::invalid_argument("cgi must have two values: extension and root.");
 	_is_cgi = true;
 	_cgi[values[0]] = values[1];
+	std::cout << "CGI : " << values[0] << " : " << _cgi[values[0]] << std::endl;
 };
 
 
 
-std::string 				LocationConfig::getPath(void) { return _path; };
+std::string 				LocationConfig::getPath(void) const { return _path; };
 
-std::string 				LocationConfig::getRoot(void) { return _root; };
+std::string 				LocationConfig::getRoot(void) const { return _root; };
 
-std::set<std::string>		LocationConfig::getMethods(void) { return _methods; };
+std::set<std::string>		LocationConfig::getMethods(void) const { return _methods; };
 
-std::vector<std::string>	LocationConfig::getIndexFiles(void) { return _index_files; };
+std::vector<std::string>	LocationConfig::getIndexFiles(void) const { return _index_files; };
 
-bool						LocationConfig::getAutoIndex(void) { return _autoindex; };
+bool						LocationConfig::getAutoIndex(void) const { return _autoindex; };
 
-size_t						LocationConfig::getClientaMaxBodySize(void) { return _client_max_body_size; };
+size_t						LocationConfig::getClientaMaxBodySize(void) const { return _client_max_body_size; };
 
-std::map<int, std::string>	LocationConfig::getErrorPages(void) { return _error_pages; };
+std::map<int, std::string>	LocationConfig::getErrorPages(void) const { return _error_pages; };
 
-std::map<std::string, std::string>	LocationConfig::getCgi(void) { 
-	std::cout << "DEBUG getCgi: _cgi.size() = " << _cgi.size() << std::endl;
-    for (std::map<std::string, std::string>::const_iterator it = _cgi.begin(); it != _cgi.end(); ++it) {
-        std::cout << "  " << it->first << " -> " << it->second << std::endl;
-    }
-	return _cgi; 
-};
+std::map<std::string, std::string>	LocationConfig::getCgi(void) const { return _cgi; };

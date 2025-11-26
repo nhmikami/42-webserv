@@ -2,6 +2,7 @@
 #define SERVERCONFIG_HPP
 
 #include <map>
+#include <utility>
 #include <vector>
 #include <ostream>
 #include <iostream>
@@ -19,10 +20,10 @@ class ServerConfig {
 		size_t									_client_max_body_size;
 		std::vector<std::string>				_index_files;
 		std::map<int, std::string>				_error_pages;
-		std::vector<LocationConfig>				_locations;
+		std::map<std::string, LocationConfig>	_locations;
 
 		typedef void(ServerConfig::*Setter)(const std::vector<std::string>&);
-		std::map<std::string, Setter>		_directiveSetters;
+		std::map<std::string, Setter>			_directiveSetters;
 
 		void initDirectiveMap();
 
@@ -41,18 +42,18 @@ class ServerConfig {
 		~ServerConfig();
 
 		void	parseServer(const std::string key, const std::vector<std::string> values);
-		void	addLocation(const std::vector<std::string>&values);
+		void	addLocation(const std::vector<std::string>&values, std::string *location_path);
 
-		std::string	getHost(void);
-		int			getPort(void);
-		std::string	getRoot(void);
-		std::string getServerName(void);
-		bool		getAutoIndex(void);
-		size_t		getClientaMaxBodySize(void);
-		std::vector<std::string> getIndexFiles(void);
-		std::map<int, std::string> getErrorPages(void);
-		std::vector<LocationConfig> &getLocations(void);
-		LocationConfig getCurrentLocation(void);
+		std::string								getHost(void);
+		int										getPort(void);
+		std::string								getRoot(void);
+		std::string 							getServerName(void);
+		bool									getAutoIndex(void);
+		size_t									getClientaMaxBodySize(void);
+		std::vector<std::string>				getIndexFiles(void);
+		std::map<int, std::string>				getErrorPages(void);
+		std::map<std::string, LocationConfig>	getLocations(void);
+		LocationConfig*							getLocation(const std::string path);
 };
 
 #endif

@@ -24,6 +24,7 @@ class ParseConfig {
 		Context		_context;
 		int			_open_brackets;
 		int			_count_line;
+		std::string	_location_path;
 		std::vector<ServerConfig> _servers;
 
 		ParseConfig(void);

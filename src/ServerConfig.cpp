@@ -9,11 +9,12 @@ ServerConfig::ServerConfig() :
 
 ServerConfig::~ServerConfig() {};
 
-void	ServerConfig::addLocation(const std::vector<std::string>&values)
+void	ServerConfig::addLocation(const std::vector<std::string>&values, std::string *location_path)
 {
 	if (values.size() != 2 || (values[0][0] != '/' || values[1] != "{"))
 		throw std::invalid_argument("location must have a path and an open bracket at the same line.");
-	_locations.push_back(LocationConfig(values[0]));
+	_locations.insert(std::pair<std::string, LocationConfig>(values[0], LocationConfig(values[0])));
+	*location_path = values[0];
 };
 
 void	ServerConfig::initDirectiveMap()
@@ -117,8 +118,8 @@ std::vector<std::string>	ServerConfig::getIndexFiles(void) { return _index_files
 
 std::map<int, std::string>	ServerConfig::getErrorPages(void) { return _error_pages; };
 
-std::vector<LocationConfig> &ServerConfig::getLocations(void) { return _locations; };
+std::map<std::string, LocationConfig> ServerConfig::getLocations(void) { return _locations; };
 
-LocationConfig				ServerConfig::getCurrentLocation(void) { return _locations.back(); };
+LocationConfig*				ServerConfig::getLocation(const std::string path) { return &_locations[path]; };
 
 
