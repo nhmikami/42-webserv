@@ -65,7 +65,7 @@ bool ParseConfig::getKeyValues(std::string line, std::string *key, std::vector<s
 	if (*key != "server" && *key != "location" && *key != "}" && line[line.length() - 1] != ';') {
 		throw std::invalid_argument("Syntax error in file " + _filename + " line " + ParseUtils::itoa(_count_line) + ": Missing semicolon.");
 	}
-
+	// std::cout << "LINE: " << line << std::endl;
 	while (iss >> token)
 	{
 		if (!token.empty() && token[token.length() - 1] == ';')
@@ -73,7 +73,7 @@ bool ParseConfig::getKeyValues(std::string line, std::string *key, std::vector<s
 		if (!token.empty())
 			values->push_back(token);
 	}
-
+	// std::cout << "KEY: " << *key << " | VALUE: " << (*values)[0] << std::endl;
 	return true;
 }
 

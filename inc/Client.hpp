@@ -12,7 +12,7 @@
 class Client {
 	private:
 		int		_client_fd;
-		Logger	_logger;
+		Logger	_logger; //remover
 
 		Client(void);
 		Client(const Client &other);

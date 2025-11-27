@@ -130,11 +130,11 @@ int main(int ac, char **av) {
 
 		ParseConfig parser(av[1]);
 
-		std::vector<ServerConfig> servers_config = parser.parse();
+		std::vector<ServerConfig> configs = parser.parse();
 
-		printConfig(servers_config);
+		printConfig(configs);
 	   
-		Server server;
+		Server server(configs);
 		server.run();
 	}
 	catch (const std::runtime_error& e) {

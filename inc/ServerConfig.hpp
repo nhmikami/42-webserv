@@ -9,6 +9,7 @@
 #include <stdlib.h>
 
 #include "LocationConfig.hpp"
+#include "ParseUtils.hpp"
 
 class ServerConfig {
 	private:

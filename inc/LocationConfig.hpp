@@ -34,7 +34,7 @@ class LocationConfig {
 		void setCgi(const std::vector<std::string>& values);
 
 	public:
-		LocationConfig();
+		LocationConfig(void);
 		LocationConfig(std::string path);
 		LocationConfig(const LocationConfig& other);
 		~LocationConfig(void);

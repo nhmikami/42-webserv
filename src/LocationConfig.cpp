@@ -1,11 +1,18 @@
 #include "LocationConfig.hpp"
 
-LocationConfig::LocationConfig() : _path(""), _is_cgi(false)
+LocationConfig::LocationConfig(void) : 
+	_autoindex(false),
+	_client_max_body_size(1000),
+	_is_cgi(false)
 {
     initDirectiveMap();
 }
 
-LocationConfig::LocationConfig(std::string path) : _path(path), _is_cgi(false) 
+LocationConfig::LocationConfig(std::string path) : 
+	_path(path),
+	_autoindex(false),
+	_client_max_body_size(1000),
+	_is_cgi(false) 
 {
 	initDirectiveMap();
 };
@@ -95,7 +102,6 @@ void LocationConfig::setErrorPages(const std::vector<std::string>& values)
 	std::string path = values[values.size() - 1];
 	for (size_t i = 0; i < values.size() - 1; i++){
 		_error_pages[std::atoi(values[i].c_str())] = path;
-		std::cout << values[i] << " : " << _error_pages[std::atoi(values[i].c_str())] << std::endl;
 	}
 };
 
@@ -105,7 +111,6 @@ void LocationConfig::setCgi(const std::vector<std::string>& values)
 		throw std::invalid_argument("cgi must have two values: extension and root.");
 	_is_cgi = true;
 	_cgi[values[0]] = values[1];
-	std::cout << "CGI : " << values[0] << " : " << _cgi[values[0]] << std::endl;
 };
 
 

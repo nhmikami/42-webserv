@@ -2,7 +2,9 @@
 
 ServerConfig::ServerConfig() :
 	_host("127.0.0.1"),
-	_port(80)
+	_port(80),
+	_autoindex(false),
+	_client_max_body_size(1000)
 {
 	initDirectiveMap();
 };
