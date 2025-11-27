@@ -6,7 +6,7 @@ MethodPOST::MethodPOST(const Request &req, const ServerConfig &config)
 MethodPOST::~MethodPOST(void) {}
 
 HttpStatus MethodPOST::handleMethod(void) {
-	std::string full_path = _resolvePath(_config.getRoot(), _req.getPath()); // tratar múltiplos '/' e '..'
+	std::string full_path = _resolvePath(_config.getRoot(), _req.getPath());
 
 	if (_isCGI(full_path))
 		return _runCGI(full_path);
@@ -30,11 +30,9 @@ HttpStatus MethodPOST::handleMethod(void) {
 			if (filename.empty())
 				return BAD_REQUEST;
 
-			if (full_path[full_path.size() - 1] != '/') 
-				full_path += "/";
-			std::string full = full_path + filename;
-			if (_writeToFile(full, _req.getBody())) {
-				_res.addHeader("Location", _req.getPath() + "/" + filename);
+			std::string file_path = _resolvePath(full_path, filename);
+			if (_writeToFile(file_path, _req.getBody())) {
+				_res.addHeader("Location", _resolvePath(_req.getPath(), filename));
 				_res.setBody("File created successfully");
 				return CREATED;
 			}

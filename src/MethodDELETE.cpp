@@ -1,4 +1,4 @@
-#include "MetohdDELETE.hpp"
+#include "MethodDELETE.hpp"
 
 MethodDELETE::MethodDELETE(const Request &req, const ServerConfig &config)
 	: AMethod(req, config) {}
@@ -37,10 +37,13 @@ HttpStatus MethodDELETE::handleMethod(void) {
 bool MethodDELETE::_canDelete(const std::string &path) {
 	size_t pos = path.find_last_of('/');
 	std::string parentDir;
-	if (pos == 0)
+	if (pos == std::string::npos)
+		parentDir = ".";
+	else if (pos == 0)
 		parentDir = "/";
 	else
 		parentDir = path.substr(0, pos);
+
 	if (access(parentDir.c_str(), W_OK | X_OK) != 0)
 		return false;
 
@@ -55,6 +58,7 @@ bool MethodDELETE::_isEmptyDirectory(const std::string &path) {
 	DIR *dir = opendir(path.c_str());
 	if (!dir)
 		return false;
+		
 	struct dirent *entry;
 	while ((entry = readdir(dir)) != NULL) {
 		if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {

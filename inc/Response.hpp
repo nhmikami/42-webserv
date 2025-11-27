@@ -36,8 +36,6 @@ class Response {
 		std::string	_body;
 		std::map<std::string, std::string>	_headers;
 
-		const std::string	_guessMimeType(const std::string &path) ;
-
 	public:
 		Response(void);
 		~Response(void);

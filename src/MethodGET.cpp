@@ -33,29 +33,30 @@ HttpStatus MethodGET::_serveFile(const std::string& path) {
 	std::stringstream buffer;
 	buffer << file.rdbuf();
 	_res.setBody(buffer.str());
-	_res.addHeader("Content-Type", "text/html");
+	_res.addHeader("Content-Type", _guessMimeType(path));
 	return OK;
 }
 
-HttpStatus MethodGET::_serveDirectory(const std::string& fullpath) {
+HttpStatus MethodGET::_serveDirectory(const std::string& path) {
 	std::vector<std::string> index_files = _config.getIndexFiles();
 	if (index_files.empty()) 
-        index_files.push_back("index.html");
+		index_files.push_back("index.html");
 
-    for (size_t i = 0; i < index_files.size(); i++) {
-        std::string indexPath = fullpath;
-        if (indexPath[indexPath.size() - 1] != '/')
-            indexPath += "/";
-        indexPath += index_files[i];
+	for (size_t i = 0; i < index_files.size(); i++) {
+		std::string index_path;
+		index_path = _resolvePath(path, index_files[i]);
 
-		if (_exists(indexPath) && _isFile(indexPath))
-			return _serveFile(indexPath);
+		if (_exists(index_path) && _isFile(index_path)) {
+			if (_isCGI(index_path))
+				return _runCGI(index_path);
+			return _serveFile(index_path);
+		}
 	}
 
-	if (!_config.getAutoindex())
-		return FORBIDDEN;
-
-	return _generateAutoindex(fullpath);
+	if (_config.getAutoindex())
+		return _generateAutoindex(path);
+		
+	return FORBIDDEN;
 }
 
 HttpStatus MethodGET::_generateAutoindex(const std::string &path) {
@@ -85,12 +86,15 @@ HttpStatus MethodGET::_generateAutoindex(const std::string &path) {
 		std::string entry = entries[i];
 		std::string full_path = _resolvePath(path, entry);
 
-		struct stat st;
-		if (stat(full_path.c_str(), &st) == 0) {
-			if (S_ISDIR(st.st_mode))
+		if (_exists(full_path)) {
+			if (_isDirectory(full_path))
 				entry += "/";
-
-			html << "<li><a href=\"" << _req.getPath() << entry << "\">" << entry << "</a></li>\n";
+			
+			std::string href = _req.getPath();
+			if (!href.empty() && href[href.size() - 1] != '/')
+				href += "/";
+			href += entry;
+			html << "<li><a href=\"" << href << "\">" << entry << "</a></li>\n";
 		}
 	}
 	html << "</ul>\n</body>\n</html>\n";

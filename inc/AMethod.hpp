@@ -1,6 +1,7 @@
 #ifndef AMETHOD_HPP
 #define AMETHOD_HPP
 
+#include "Response.hpp"
 #include "Request.hpp"
 #include "ServerConfig.hpp"
 #include <sstream>
@@ -22,14 +23,15 @@ class AMethod {
 		Response	getResponse(void) const;
 
 	protected:
-		bool	_exists(const std::string& path);
-		bool	_isCGI(const std::string& path);
-		bool	_isFile(const std::string& path);
-		bool	_isDirectory(const std::string& path);
-		bool	_isReadable(const std::string& path);
-		bool	_isWritable(const std::string& path);
-		bool	_isExecutable(const std::string& path);
-		std::string	_resolvePath(const std::string &root, const std::string &reqPath);
+		bool	_exists(const std::string& path) const;
+		bool	_isCGI(const std::string& path) const;
+		bool	_isFile(const std::string& path) const;
+		bool	_isDirectory(const std::string& path) const;
+		bool	_isReadable(const std::string& path) const;
+		bool	_isWritable(const std::string& path) const;
+		bool	_isExecutable(const std::string& path) const;
+		const std::string	_guessMimeType(const std::string &path) const;
+		std::string			_resolvePath(const std::string &root, const std::string &reqPath);
 };
 
 #endif
