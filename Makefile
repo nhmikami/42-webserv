@@ -11,7 +11,7 @@ INC_DIR		=	inc/
 OBJ_DIR		=	obj/
 
 # source files
-SRC			=	$(addprefix $(SRC_DIR), main.cpp)
+SRC			=	$(addprefix $(SRC_DIR), main.cpp Server.cpp Client.cpp Logger.cpp ParseUtils.cpp)
 OBJ			=	$(SRC:$(SRC_DIR)%.cpp=$(OBJ_DIR)%.o)
 INC			=	-I $(INC_DIR)
 
@@ -32,6 +32,15 @@ $(OBJ_DIR)%.o: $(SRC_DIR)%.cpp
 	@mkdir -p $(OBJ_DIR)
 	@$(CC) $(CFLAGS) $(INC) -c $< -o $@
 	@echo "$(YELLOW)[compiling]$(RESET) $@"
+
+val: re
+	@valgrind -q --leak-check=full \
+				--show-leak-kinds=all \
+				--track-origins=yes \
+				--track-fds=yes \
+				--trace-children=yes \
+				--trace-children-skip='*/bin/*,*/sbin/*,/usr/bin/*' \
+				./${NAME} config
 						
 clean:
 				@rm -rf $(OBJ_DIR)

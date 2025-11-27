@@ -2,55 +2,52 @@
 #define SERVER_HPP
 
 #include "Client.hpp"
-#include "Config.hpp"
-#include <cstdlib>
-#include <iomanip>
-#include <iostream>
-#include <stdexcept>
+#include "Logger.hpp"
+#include "ParseUtils.hpp"
+
+#include <poll.h>
+#include <string>
 #include <vector>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <cstring>
+#include <stdio.h>
+#include <iostream>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 class Server {
 	private:
-	int socket_fd;
-	std::vector<Client> clients;
-	Config config;
+		int							_server_fd;
+		struct sockaddr_in			_address;
+		socklen_t					_addlen;
+		std::string					_host;
+		int							_port;
+		std::vector<struct pollfd>	_fds;
+		std::vector<Client*>		_clients;
+		Logger						_logger;
+		ParseUtils					_utils;
+
+		Server(const Server &other);
+		
+		Server &operator=(const Server &other);
+
+		bool	startServer();
+		bool	bindServer();
+		bool	startListen();
+		bool	addToFDs(int fd);
+		void	acceptClient();
+		Client	*findClient(int i);
+		bool	handleClient(int i);
+		void	unhandleClient(int i);
+		void	closeClient(int i, int j, Client *client);
 
 	public:
-		Server(Config const &conf) : config(conf) {}
+		Server(void); //private
+		Server(std::string host, int port);
+		~Server(void);
 
-		void run() {
-			createListeningSocket(config.port);
-
-			while (true) {
-				// Esperar eventos de leitura/escrita (poll)
-				poll_fds = buildPollSet(socket_fd, clients);
-				poll(poll_fds);
-
-				// Se chegou nova conexão → aceitar
-				if (pollEventOn(socket_fd))
-					acceptNewClient();
-
-				// Se um cliente enviou dados → ler requisição
-				for (client in clients) {
-					if (pollEventOn(client.fd)) {
-						std::string raw_request = client.read();
-						if (!raw_request.empty())
-							handleRequest(client, raw_request);
-					}
-				}
-			}
-		}
-
-		void handleRequest(Client &client, std::string const &raw_request) {
-			// Interpretar requisição HTTP
-			HTTPRequest req = HTTPParser::parse(raw_request);
-
-			// Gerar resposta
-			HTTPResponse res = Router::handle(req, config);
-
-			// Enviar resposta ao cliente
-			client.send(res.toString());
-		}
+		void run();
 };
 
 #endif
