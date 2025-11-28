@@ -19,11 +19,11 @@
 
 class Server {
 	private:
-		std::vector<ServerConfig>	_configs;
-		std::map<int, ServerConfig*> _fd_to_config;
+		std::vector<ServerConfig>		_configs;
+		std::map<int, ServerConfig*>	_fd_to_config;
 		std::map<int, ServerConfig*>	_client_to_config;
-		std::vector<struct pollfd>	_fds;
-		std::vector<Client*>		_clients;
+		std::vector<struct pollfd>		_fds;
+		std::vector<Client*>			_clients;
 
 		Server(const Server &other); //del?
 		

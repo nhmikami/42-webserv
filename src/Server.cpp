@@ -224,6 +224,10 @@ bool	Server::handleClient(int i)
 
 	Logger::log(Logger::SERVER, "Received from fd=" + ParseUtils::itoa(client_fd) + ":\n" + request);
 
+	//envia request para parsing
+	//enviar parse e serverconfig para execução
+	ServerConfig *config = _client_to_config[client_fd];
+	
 	std::string response =
 		"HTTP/1.1 200 OK\r\n"
 		"Content-Type: text/plain\r\n"
