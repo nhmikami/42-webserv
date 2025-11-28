@@ -9,9 +9,9 @@ ServerConfig::ServerConfig() :
 	initDirectiveMap();
 };
 
-ServerConfig::~ServerConfig() {};
+// ServerConfig::~ServerConfig() {};
 
-void	ServerConfig::addLocation(const std::vector<std::string>&values, std::string *location_path)
+void ServerConfig::addLocation(const std::vector<std::string>&values, std::string *location_path)
 {
 	if (values.size() != 2 || (values[0][0] != '/' || values[1] != "{"))
 		throw std::invalid_argument("location must have a path and an open bracket at the same line.");
@@ -19,7 +19,7 @@ void	ServerConfig::addLocation(const std::vector<std::string>&values, std::strin
 	*location_path = values[0];
 };
 
-void	ServerConfig::initDirectiveMap()
+void ServerConfig::initDirectiveMap()
 {
     _directiveSetters["listen"] = &ServerConfig::setListen;
     _directiveSetters["host"] = &ServerConfig::setHost;
@@ -31,7 +31,7 @@ void	ServerConfig::initDirectiveMap()
     _directiveSetters["error_page"] = &ServerConfig::setErrorPages;
 }
 
-void	ServerConfig::parseServer(const std::string key, const std::vector<std::string> values)
+void ServerConfig::parseServer(const std::string key, const std::vector<std::string> values)
 {
 	std::map<std::string, Setter>::iterator it = _directiveSetters.find(key);
 
@@ -104,24 +104,24 @@ void ServerConfig::setErrorPages(const std::vector<std::string>& values)
 		_error_pages[std::atoi(values[i].c_str())] = path;
 }
 
-std::string	ServerConfig::getHost(void) { return _host; };
+std::string								ServerConfig::getHost(void) { return _host; };
 
-int			ServerConfig::getPort(void) { return _port; };
+int										ServerConfig::getPort(void) { return _port; };
 
-std::string	ServerConfig::getRoot(void) { return _root; };
+std::string								ServerConfig::getRoot(void) { return _root; };
 
-std::string ServerConfig::getServerName(void) { return _server_name; };
+std::string								ServerConfig::getServerName(void) { return _server_name; };
 
-bool		ServerConfig::getAutoIndex(void) { return _autoindex; };
+bool									ServerConfig::getAutoIndex(void) { return _autoindex; };
 
-size_t		ServerConfig::getClientaMaxBodySize(void) { return _client_max_body_size; };
+size_t									ServerConfig::getClientaMaxBodySize(void) { return _client_max_body_size; };
 
-std::vector<std::string>	ServerConfig::getIndexFiles(void) { return _index_files; };
+std::vector<std::string>				ServerConfig::getIndexFiles(void) { return _index_files; };
 
-std::map<int, std::string>	ServerConfig::getErrorPages(void) { return _error_pages; };
+std::map<int, std::string>				ServerConfig::getErrorPages(void) { return _error_pages; };
 
-std::map<std::string, LocationConfig> ServerConfig::getLocations(void) { return _locations; };
+std::map<std::string, LocationConfig>	ServerConfig::getLocations(void) { return _locations; };
 
-LocationConfig*				ServerConfig::getLocation(const std::string path) { return &_locations[path]; };
+LocationConfig*							ServerConfig::getLocation(const std::string path) { return &_locations[path]; };
 
 

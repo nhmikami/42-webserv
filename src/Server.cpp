@@ -1,36 +1,36 @@
 #include "Server.hpp"
 
-Server::Server(void) : _server_fd(-1), _addlen(sizeof(_address)), _host("127.0.0.1"), _port(8000)
-{
-	memset(&_address, 0, sizeof(_address));
-	if (!startServer())
-		_logger.log(Logger::ERROR, "Failed to start server.");
-};
+// Server::Server(void) : _server_fd(-1), _addlen(sizeof(_address)), _host("127.0.0.1"), _port(8000)
+// {
+// 	memset(&_address, 0, sizeof(_address));
+// 	if (!startServer())
+// 		Logger::log(Logger::ERROR, "Failed to start server.");
+// };
 
-Server::Server(const Server &other) : _server_fd(-1), _addlen(sizeof(_address)), _host(other._host), _port(other._port)
-{
-	memset(&_address, 0, sizeof(_address));
-	if (!startServer())
-		_logger.log(Logger::ERROR, "Failed to start server.");
-};
+// Server::Server(const Server &other) : _server_fd(-1), _addlen(sizeof(_address)), _host(other._host), _port(other._port)
+// {
+// 	memset(&_address, 0, sizeof(_address));
+// 	if (!startServer())
+// 		Logger::log(Logger::ERROR, "Failed to start server.");
+// };
 
-Server::Server(std::string host, int port): 
-	_server_fd(-1), 
-	_addlen(sizeof(_address)), 
-	_host(host), 
-	_port(port)
-{
-	memset(&_address, 0, sizeof(_address));
-	if (!startServer())
-		_logger.log(Logger::ERROR, "Failed to start server.");
-};
+// Server::Server(std::string host, int port): 
+// 	_server_fd(-1), 
+// 	_addlen(sizeof(_address)), 
+// 	_host(host), 
+// 	_port(port)
+// {
+// 	memset(&_address, 0, sizeof(_address));
+// 	if (!startServer())
+// 		Logger::log(Logger::ERROR, "Failed to start server.");
+// };
 
 // deletar construtores acima //
 
 Server::Server(std::vector<ServerConfig> configs) : _configs(configs)
 {
 	if (!startServer())
-		_logger.log(Logger::ERROR, "Failed to start server.");
+		Logger::log(Logger::ERROR, "Failed to start server.");
 }
 
 Server::~Server(void)
@@ -49,30 +49,30 @@ Server::~Server(void)
 	_client_to_config.clear();
 };
 
-Server &Server::operator=(const Server &other)
-{
-	if (this != &other)
-	{
-		for (size_t i = 0; i < _clients.size(); i++)
-            delete _clients[i];
+// Server &Server::operator=(const Server &other)
+// {
+// 	if (this != &other)
+// 	{
+// 		for (size_t i = 0; i < _clients.size(); i++)
+//             delete _clients[i];
 
-        _clients.clear();
-        _fds.clear();
+//         _clients.clear();
+//         _fds.clear();
 
-        if (_server_fd >= 0)
-            close(_server_fd);
+//         if (_server_fd >= 0)
+//             close(_server_fd);
 
-		_server_fd = -1;
-		_addlen = sizeof(_address);
-		_host = other._host;
-		_port = other._port;
+// 		_server_fd = -1;
+// 		_addlen = sizeof(_address);
+// 		_host = other._host;
+// 		_port = other._port;
 
-		memset(&_address, 0, sizeof(_address));
-		if (!startServer())
-			_logger.log(Logger::ERROR, "Failed to start server.");
-	}
-	return *this;
-};
+// 		memset(&_address, 0, sizeof(_address));
+// 		if (!startServer())
+// 			Logger::log(Logger::ERROR, "Failed to start server.");
+// 	}
+// 	return *this;
+// };
 
 bool	Server::startServer() 
 {
@@ -83,13 +83,13 @@ bool	Server::startServer()
 		struct sockaddr_in address;
 
 		if (server_fd < 0){
-			_logger.log(Logger::ERROR, "Socket failed.");
+			Logger::log(Logger::ERROR, "Socket failed.");
 			return false;
 		}
 	
 		int opt = 1;
 		if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-			_logger.log(Logger::ERROR, "Failed to set SO_REUSEADDR.");
+			Logger::log(Logger::ERROR, "Failed to set SO_REUSEADDR.");
 			return false;
 		}
 	
@@ -111,7 +111,7 @@ bool	Server::bindServer(int server_fd, struct sockaddr_in address, int port)
 {
 	socklen_t addrlen = sizeof(address);
 	if (bind(server_fd, (struct sockaddr*)&address, addrlen) < 0) {
-		_logger.log(Logger::ERROR, "Failed to bind server port: " + ParseUtils::itoa(port));
+		Logger::log(Logger::ERROR, "Failed to bind server port: " + ParseUtils::itoa(port));
 		return false;
 	}
 	return true;
@@ -120,11 +120,11 @@ bool	Server::bindServer(int server_fd, struct sockaddr_in address, int port)
 bool	Server::startListen(int server_fd, std::string host, int port) 
 {
 	if (listen(server_fd, 128) < 0) {
-		_logger.log(Logger::ERROR, "Failed to listen.");
+		Logger::log(Logger::ERROR, "Failed to listen.");
 		return false;
 	}
 
-	_logger.log(Logger::SERVER, "Listening on " + host + ":" + ParseUtils::itoa(port));
+	Logger::log(Logger::SERVER, "Listening on " + host + ":" + ParseUtils::itoa(port));
 
 	return true;
 };
@@ -146,7 +146,7 @@ void	Server::run() {
 		int res = poll(_fds.data(), _fds.size(), -1);
 
 		if (res == -1) {
-            _logger.log(Logger::ERROR, "Failed to poll.");
+            Logger::log(Logger::ERROR, "Failed to poll.");
             continue;
         }
 
@@ -180,7 +180,7 @@ void	Server::acceptClient(int server_fd, ServerConfig *config)
 	int client_fd = accept(server_fd, (struct sockaddr*)&address, &addrlen);
 
 	if (client_fd < 0) {
-        _logger.log(Logger::ERROR, "Failed to accept client.");
+        Logger::log(Logger::ERROR, "Failed to accept client.");
         return;
     }
 
@@ -190,52 +190,39 @@ void	Server::acceptClient(int server_fd, ServerConfig *config)
 	_clients.push_back(client);
 	_client_to_config[client_fd] = config;
 
-	_logger.log(Logger::SERVER, "New client accepted (fd=" + ParseUtils::itoa(client_fd) + ")");
-	
+	Logger::log(Logger::SERVER, "New client accepted (fd=" + ParseUtils::itoa(client_fd) + ")");
 };
 
-Client	*Server::findClient(int i)
+Client	*Server::findClient(size_t *j, int client_fd)
 {
-	size_t	j = 0;
-	int		fd = _fds[i].fd;
-	Client	*client = NULL;
-
-	while (j < _clients.size()){
-		if (_clients[j]->getFd() == fd) {
-			client = _clients[j];
-			break;
+	while (*j < _clients.size()){
+		if (_clients[*j]->getFd() == client_fd) {
+			return _clients[*j];
 		}
-		j++;
+		(*j)++;
 	}
-
-	return client;
+	return NULL;
 }
 
 bool	Server::handleClient(int i) 
 {
 	size_t	j = 0;
-	int		fd = _fds[i].fd;
+	int		client_fd = _fds[i].fd;
 	Client	*client = NULL;
 
-	while (j < _clients.size()){
-		if (_clients[j]->getFd() == fd) {
-			client = _clients[j];
-			break;
-		}
-		j++;
-	}
+	client = findClient(&j, client_fd);
 
 	if (!client) return true;
 
 	std::string request = client->receive();
 	
 	if (request.empty()){
-		_logger.log(Logger::SERVER, "Client disconnected (fd=" + ParseUtils::itoa(fd) + ")");
+		Logger::log(Logger::SERVER, "Client disconnected (fd=" + ParseUtils::itoa(client_fd) + ")");
 		closeClient(i, j, client);
 		return false;
 	}
 
-	_logger.log(Logger::SERVER, "Received from fd=" + ParseUtils::itoa(fd) + ":\n" + request);
+	Logger::log(Logger::SERVER, "Received from fd=" + ParseUtils::itoa(client_fd) + ":\n" + request);
 
 	std::string response =
 		"HTTP/1.1 200 OK\r\n"
@@ -251,19 +238,13 @@ bool	Server::handleClient(int i)
 
 void Server::unhandleClient(int i) {
 	size_t	j = 0;
-	int		fd = _fds[i].fd;
+	int		client_fd = _fds[i].fd;
 	Client	*client = NULL;
 
-	while (j < _clients.size()){
-		if (_clients[j]->getFd() == fd) {
-			client = _clients[j];
-			break;
-		}
-		j++;
-	}
+	client = findClient(&j, client_fd);
 
 	if (client) {
-		_logger.log(Logger::SERVER, "Connection error or hangup (fd=" + ParseUtils::itoa(fd) + ")");
+		Logger::log(Logger::SERVER, "Connection error or hangup (fd=" + ParseUtils::itoa(client_fd) + ")");
 		closeClient(i, j, client);
 		return ;
 	}

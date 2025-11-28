@@ -7,7 +7,6 @@
 #include <cstdlib>
 #include <algorithm>
 
-#include "Logger.hpp"
 #include "ParseUtils.hpp"
 #include "ServerConfig.hpp"
 

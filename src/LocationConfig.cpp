@@ -1,12 +1,12 @@
 #include "LocationConfig.hpp"
 
-LocationConfig::LocationConfig(void) : 
-	_autoindex(false),
-	_client_max_body_size(1000),
-	_is_cgi(false)
-{
-    initDirectiveMap();
-}
+// LocationConfig::LocationConfig(void) : 
+// 	_autoindex(false),
+// 	_client_max_body_size(1000),
+// 	_is_cgi(false)
+// {
+//     initDirectiveMap();
+// }
 
 LocationConfig::LocationConfig(std::string path) : 
 	_path(path),
@@ -17,21 +17,21 @@ LocationConfig::LocationConfig(std::string path) :
 	initDirectiveMap();
 };
 
-LocationConfig::LocationConfig(const LocationConfig& other) : 
-	_path(other._path),
-	_root(other._root),
-	_autoindex(other._autoindex),
-	_client_max_body_size(other._client_max_body_size),
-	_methods(other._methods),
-	_index_files(other._index_files),
-	_error_pages(other._error_pages),
-	_is_cgi(other._is_cgi),
-	_cgi(other._cgi)
-{
-	initDirectiveMap();
-}
+// LocationConfig::LocationConfig(const LocationConfig& other) : 
+// 	_path(other._path),
+// 	_root(other._root),
+// 	_autoindex(other._autoindex),
+// 	_client_max_body_size(other._client_max_body_size),
+// 	_methods(other._methods),
+// 	_index_files(other._index_files),
+// 	_error_pages(other._error_pages),
+// 	_is_cgi(other._is_cgi),
+// 	_cgi(other._cgi)
+// {
+// 	initDirectiveMap();
+// }
 
-LocationConfig::~LocationConfig() {};
+// LocationConfig::~LocationConfig() {};
 
 void	LocationConfig::initDirectiveMap()
 {

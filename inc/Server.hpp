@@ -19,17 +19,11 @@
 
 class Server {
 	private:
-		int							_server_fd; //del
-		struct sockaddr_in			_address; //del
-		socklen_t					_addlen; //del
-		std::string					_host; //del
-		int							_port; //del
 		std::vector<ServerConfig>	_configs;
 		std::map<int, ServerConfig*> _fd_to_config;
 		std::map<int, ServerConfig*>	_client_to_config;
 		std::vector<struct pollfd>	_fds;
 		std::vector<Client*>		_clients;
-		Logger						_logger; //del (acessar log sem inserir na classe - depois)
 
 		Server(const Server &other); //del?
 		
@@ -40,7 +34,7 @@ class Server {
 		bool	startListen(int server_fd, std::string host, int port);
 		bool	addToFDs(int server_fd);
 		void	acceptClient(int server_fd, ServerConfig *config);
-		Client	*findClient(int i);
+		Client	*findClient(size_t *j, int client_fd);
 		bool	handleClient(int i);
 		void	unhandleClient(int i);
 		void	closeClient(int i, int j, Client *client);

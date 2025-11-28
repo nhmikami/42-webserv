@@ -26,16 +26,16 @@ class ServerConfig {
 		typedef void(ServerConfig::*Setter)(const std::vector<std::string>&);
 		std::map<std::string, Setter>			_directiveSetters;
 
-		void initDirectiveMap();
+		void	initDirectiveMap();
 
-		void setListen(const std::vector<std::string>& values);
-		void setHost(const std::vector<std::string>& values);
-		void setRoot(const std::vector<std::string>& values);
-		void setServerName(const std::vector<std::string>& values);
-		void setAutoIndex(const std::vector<std::string>& values);
-		void setClientMaxBodySize(const std::vector<std::string>& values);
-		void setIndexFiles(const std::vector<std::string>& values);
-		void setErrorPages(const std::vector<std::string>& values);
+		void	setListen(const std::vector<std::string>& values);
+		void	setHost(const std::vector<std::string>& values);
+		void	setRoot(const std::vector<std::string>& values);
+		void	setServerName(const std::vector<std::string>& values);
+		void	setAutoIndex(const std::vector<std::string>& values);
+		void	setClientMaxBodySize(const std::vector<std::string>& values);
+		void	setIndexFiles(const std::vector<std::string>& values);
+		void	setErrorPages(const std::vector<std::string>& values);
 
 
 	public:

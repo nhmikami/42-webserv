@@ -24,14 +24,14 @@ class LocationConfig {
 		typedef void(LocationConfig::*Setter)(const std::vector<std::string>&);
 		std::map<std::string, Setter>		_directiveSetters;
 
-		void setPath(const std::vector<std::string>& values);
-		void setRoot(const std::vector<std::string>& values);
-		void setMethods(const std::vector<std::string>& values);
-		void setIndexFiles(const std::vector<std::string>& values);
-		void setAutoIndex(const std::vector<std::string>& values);
-		void setClientMaxBodySize(const std::vector<std::string>& values);
-		void setErrorPages(const std::vector<std::string>& values);
-		void setCgi(const std::vector<std::string>& values);
+		void	setPath(const std::vector<std::string>& values);
+		void	setRoot(const std::vector<std::string>& values);
+		void	setMethods(const std::vector<std::string>& values);
+		void	setIndexFiles(const std::vector<std::string>& values);
+		void	setAutoIndex(const std::vector<std::string>& values);
+		void	setClientMaxBodySize(const std::vector<std::string>& values);
+		void	setErrorPages(const std::vector<std::string>& values);
+		void	setCgi(const std::vector<std::string>& values);
 
 	public:
 		LocationConfig(void);

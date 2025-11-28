@@ -1,38 +1,18 @@
 #include "ParseUtils.hpp"
 
-ParseUtils::ParseUtils(void) {};
+// ParseUtils::ParseUtils(void) {};
 
-ParseUtils::ParseUtils(const ParseUtils &other) 
-{
-    (void)other;
-};
-
-ParseUtils::~ParseUtils(void) {};
-
-ParseUtils& ParseUtils::operator=(const ParseUtils &other)
-{
-    (void)other;
-    return *this;
-};
-
-// void ParseUtils::eraseLine(std::string &buffer, const std::string &text, size_t pos)
+// ParseUtils::ParseUtils(const ParseUtils &other) 
 // {
-//     size_t  end = size(buffer);
-
-//     end = buffer.find("\n", end);
-//     buffer.erase(pos, end - pos);
-
+//     (void)other;
 // };
 
-// void ParseUtils::eraseAll(std::string &buffer, const std::string &text)
-// {
-//     size_t  pos = 0;
+// ParseUtils::~ParseUtils(void) {};
 
-//     while (pos != std::string::npos)
-//     {
-//         pos = buffer.find(text);
-//         eraseLine(buffer, text, pos);
-//     }
+// ParseUtils& ParseUtils::operator=(const ParseUtils &other)
+// {
+//     (void)other;
+//     return *this;
 // };
 
 std::string ParseUtils::itoa(int n)
