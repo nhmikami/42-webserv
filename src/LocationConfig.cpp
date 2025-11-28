@@ -115,18 +115,18 @@ void LocationConfig::setCgi(const std::vector<std::string>& values)
 
 
 
-std::string 				LocationConfig::getPath(void) const { return _path; };
+const std::string 							LocationConfig::getPath(void) const { return _path; };
 
-std::string 				LocationConfig::getRoot(void) const { return _root; };
+const std::string 							LocationConfig::getRoot(void) const { return _root; };
 
-std::set<std::string>		LocationConfig::getMethods(void) const { return _methods; };
+const std::set<std::string>					LocationConfig::getMethods(void) const { return _methods; };
 
-std::vector<std::string>	LocationConfig::getIndexFiles(void) const { return _index_files; };
+const std::vector<std::string>				LocationConfig::getIndexFiles(void) const { return _index_files; };
 
-bool						LocationConfig::getAutoIndex(void) const { return _autoindex; };
+bool										LocationConfig::getAutoIndex(void) const { return _autoindex; };
 
-size_t						LocationConfig::getClientaMaxBodySize(void) const { return _client_max_body_size; };
+size_t										LocationConfig::getClientaMaxBodySize(void) const { return _client_max_body_size; };
 
-std::map<int, std::string>	LocationConfig::getErrorPages(void) const { return _error_pages; };
+const std::map<int, std::string>			LocationConfig::getErrorPages(void) const { return _error_pages; };
 
-std::map<std::string, std::string>	LocationConfig::getCgi(void) const { return _cgi; };
+const std::map<std::string, std::string>	LocationConfig::getCgi(void) const { return _cgi; };
