@@ -1,8 +1,6 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
-#include "Request.hpp"
-#include "ServerConfig.hpp"
 #include <algorithm>
 #include <iostream>
 #include <sstream>

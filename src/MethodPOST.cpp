@@ -37,7 +37,6 @@ HttpStatus MethodPOST::handleMethod(void) {
 				return CREATED;
 			}
 		}
-		return SERVER_ERR;
 	}
 	else {
 		std::string parent = full_path.substr(0, full_path.find_last_of('/'));
@@ -52,9 +51,8 @@ HttpStatus MethodPOST::handleMethod(void) {
 			 _res.setBody("File created successfully");
 			return CREATED;
 		}
-		return SERVER_ERR;
 	}
-	return NOT_FOUND;
+	return SERVER_ERR;
 }
 
 bool MethodPOST::_writeToFile(const std::string &path, const std::string &body) {

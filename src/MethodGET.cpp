@@ -28,7 +28,7 @@ HttpStatus MethodGET::_serveFile(const std::string& path) {
 
 	std::ifstream file(path.c_str(), std::ios::binary);
 	if (!file)
-		return FORBIDDEN;
+		return SERVER_ERR;
 
 	std::stringstream buffer;
 	buffer << file.rdbuf();

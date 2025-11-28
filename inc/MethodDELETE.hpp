@@ -8,11 +8,11 @@
 
 class MethodDELETE : public AMethod {
 	private:
-	bool	_canDelete(const std::string &path);
-	bool	_isEmptyDirectory(const std::string &path);
-	bool	_deleteFile(const std::string &path);
-	bool	_deleteDirectory(const std::string &path);
-	HttpStatus	_runCGI(const std::string &path);
+		bool	_canDelete(const std::string &path);
+		bool	_isEmptyDirectory(const std::string &path);
+		bool	_deleteFile(const std::string &path);
+		bool	_deleteDirectory(const std::string &path);
+		HttpStatus	_runCGI(const std::string &path);
 
 	public:
 		MethodDELETE(const Request &req, const ServerConfig &config);
