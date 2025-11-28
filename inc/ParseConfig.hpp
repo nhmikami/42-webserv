@@ -30,9 +30,9 @@ class ParseConfig {
 		
 		ParseConfig &operator=(const ParseConfig &other);
 
-		bool getKeyValues(std::string line, std::string *key, std::vector<std::string> *values);
-		bool changeContext(std::string key, std::vector<std::string> values);
-		void parseLine(std::string key, std::vector<std::string> values);
+		bool getKeyValues(const std::string line, std::string *key, std::vector<std::string> *values);
+		bool changeContext(const std::string key, std::vector<std::string> values);
+		void parseLine(const std::string key, std::vector<std::string> values);
 
 	public:
 		ParseConfig(const std::string &filename);

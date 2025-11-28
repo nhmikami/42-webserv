@@ -82,8 +82,8 @@ void LocationConfig::setClientMaxBodySize(const std::vector<std::string>& values
 void LocationConfig::setMethods(const std::vector<std::string>& values)
 {
 	if (values.empty())
-		throw std::invalid_argument("methos must have at least one value.");
-	for (size_t i = 0; i < values.size() - 1; i++)
+		throw std::invalid_argument("methods must have at least one value.");
+	for (size_t i = 0; i < values.size(); i++)
 		_methods.insert(values[i]);
 };
 
