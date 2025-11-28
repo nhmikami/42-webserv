@@ -7,11 +7,7 @@ Server::Server(void) : _server_fd(-1), _addlen(sizeof(_address)), _host("127.0.0
 		_logger.log(Logger::ERROR, "Failed to start server.");
 };
 
-Server::Server(const Server &other) : 
-	_server_fd(-1),
-	_addlen(sizeof(_address)),
-	_host(other._host), 
-	_port(other._port)
+Server::Server(const Server &other) : _server_fd(-1), _addlen(sizeof(_address)), _host(other._host), _port(other._port)
 {
 	memset(&_address, 0, sizeof(_address));
 	if (!startServer())
@@ -105,7 +101,7 @@ bool	Server::startListen()
 		return false;
 	}
 
-	_logger.log(Logger::SERVER, "Listening on " + _host + ":" + _utils.itoa(_port));
+	_logger.log(Logger::SERVER, "Listening on " + _host + ":" + ParseUtils::itoa(_port));
 
 	return true;
 };
@@ -161,7 +157,7 @@ void	Server::acceptClient()
 	Client *client = new Client(client_fd);
 	_clients.push_back(client);
 
-	_logger.log(Logger::SERVER, "New client accepted (fd=" + _utils.itoa(client_fd) + ")");
+	_logger.log(Logger::SERVER, "New client accepted (fd=" + ParseUtils::itoa(client_fd) + ")");
 	
 };
 
@@ -184,19 +180,29 @@ Client	*Server::findClient(int i)
 
 bool	Server::handleClient(int i) 
 {
-	Client *client = findClient(i);
+	size_t	j = 0;
+	int		fd = _fds[i].fd;
+	Client	*client = NULL;
+
+	while (j < _clients.size()){
+		if (_clients[j]->getFd() == fd) {
+			client = _clients[j];
+			break;
+		}
+		j++;
+	}
 
 	if (!client) return true;
 
 	std::string request = client->receive();
 	
 	if (request.empty()){
-		_logger.log(Logger::SERVER, "Client disconnected (fd=" + _utils.itoa(fd) + ")");
+		_logger.log(Logger::SERVER, "Client disconnected (fd=" + ParseUtils::itoa(fd) + ")");
 		closeClient(i, j, client);
 		return false;
 	}
 
-	_logger.log(Logger::SERVER, "Received from fd=" + _utils.itoa(fd) + ":\n" + request);
+	_logger.log(Logger::SERVER, "Received from fd=" + ParseUtils::itoa(fd) + ":\n" + request);
 
 	std::string response =
 		"HTTP/1.1 200 OK\r\n"
@@ -211,10 +217,20 @@ bool	Server::handleClient(int i)
 };
 
 void Server::unhandleClient(int i){
-	Client *client = findClient(i);
+	size_t	j = 0;
+	int		fd = _fds[i].fd;
+	Client	*client = NULL;
+
+	while (j < _clients.size()){
+		if (_clients[j]->getFd() == fd) {
+			client = _clients[j];
+			break;
+		}
+		j++;
+	}
 
 	if (client) {
-		_logger.log(Logger::SERVER, "Connection error or hangup (fd=" + _utils.itoa(fd) + ")");
+		_logger.log(Logger::SERVER, "Connection error or hangup (fd=" + ParseUtils::itoa(fd) + ")");
 		closeClient(i, j, client);
 	} else
 		_fds.erase(_fds.begin() + i);
