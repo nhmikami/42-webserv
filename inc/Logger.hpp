@@ -10,8 +10,6 @@ class Logger {
 
 		Logger &operator=(const Logger &other);
 
-		std::string	getLevel(LogLevel level);
-
 	public:
 		enum LogLevel {
 			INFO,
@@ -25,6 +23,7 @@ class Logger {
 		~Logger(void);
 
 		static void log(LogLevel level, const std::string &msg);
+		static std::string	getLevel(LogLevel level);
 };
 
 #endif 

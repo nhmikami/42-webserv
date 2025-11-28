@@ -1,12 +1,12 @@
 #include "Logger.hpp"
 
-// Logger::Logger(void){};
+Logger::Logger(void){};
 
 // Logger::Logger(const Logger &other){
 // 	(void)other;
 // };
 
-// Logger::~Logger(void){};
+Logger::~Logger(void){};
 
 // Logger &Logger::operator=(const Logger &other){
 // 	(void)other;

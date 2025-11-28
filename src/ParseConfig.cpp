@@ -6,7 +6,7 @@
 
 ParseConfig::ParseConfig(const std::string &filename) : _filename(filename), _context(GLOBAL), _open_brackets(false), _count_line(0) {};
 
-// ParseConfig::~ParseConfig(void) {};
+ParseConfig::~ParseConfig(void) {};
 
 // ParseConfig &ParseConfig::operator=(const ParseConfig &other) {
 // 	(void)other;

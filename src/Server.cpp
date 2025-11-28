@@ -226,7 +226,7 @@ bool	Server::handleClient(int i)
 
 	//envia request para parsing
 	//enviar parse e serverconfig para execução
-	ServerConfig *config = _client_to_config[client_fd];
+	// ServerConfig *config = _client_to_config[client_fd];
 	
 	std::string response =
 		"HTTP/1.1 200 OK\r\n"
