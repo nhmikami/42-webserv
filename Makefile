@@ -11,7 +11,7 @@ INC_DIR		=	inc/
 OBJ_DIR		=	obj/
 
 # source files
-SRC			=	$(addprefix $(SRC_DIR), main.cpp Server.cpp Client.cpp Logger.cpp ParseUtils.cpp)
+SRC			=	$(addprefix $(SRC_DIR), main.cpp Server.cpp Client.cpp Logger.cpp ParseUtils.cpp ParseConfig.cpp ServerConfig.cpp LocationConfig.cpp)
 OBJ			=	$(SRC:$(SRC_DIR)%.cpp=$(OBJ_DIR)%.o)
 INC			=	-I $(INC_DIR)
 

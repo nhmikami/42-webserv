@@ -41,3 +41,11 @@ std::string ParseUtils::itoa(int n)
     ss << n;
     return ss.str();
 };
+
+std::string ParseUtils::trim(const std::string &s) {
+	size_t start = s.find_first_not_of(" \t");
+	size_t end = s.find_last_not_of(" \t");
+	if (start == std::string::npos || end == std::string::npos)
+		return "";
+	return s.substr(start, end - start + 1);
+}
