@@ -12,8 +12,8 @@
 
 #include "../inc/Request.hpp"
 
-Request::Request() : method(UNKNOWN), uri(""), path(""),
-					 query(""), http_version(""), body("") { }
+Request::Request() : _method(UNKNOWN), _uri(""), _path(""),
+					 _query(""), _http_version(""), _body("") { }
 
 Request::Request(const Request &other) {
 	*this = other;
@@ -21,13 +21,13 @@ Request::Request(const Request &other) {
 
 Request &Request::operator=(const Request &other) {
 	if (this != &other) {
-		this->method = other.method;
-		this->uri = other.uri;
-		this->path = other.path;
-		this->query = other.query;
-		this->http_version = other.http_version;
-		this->headers = other.headers;
-		this->body = other.body;
+		this->_method = other._method;
+		this->_uri = other._uri;
+		this->_path = other._path;
+		this->_query = other._query;
+		this->_http_version = other._http_version;
+		this->_headers = other._headers;
+		this->_body = other._body;
 	}
 	return *this;
 }
@@ -35,81 +35,93 @@ Request &Request::operator=(const Request &other) {
 Request::~Request() { }
 
 void Request::setMethod(RequestMethod m) {
-	method = m;
+	_method = m;
 }
 
 void Request::setUri(const std::string &u) {
-	uri = u;
+	_uri = u;
 }
 
 void Request::setPath(const std::string &p) {
-	path = p;
+	_path = p;
 }
 
 void Request::setQuery(const std::string &q) {
-	query = q;
+	_query = q;
 }
 
 void Request::setHttpVersion(const std::string &v) {
-	http_version = v;
+	_http_version = v;
 }
 
 void Request::setHeaders(const std::map<std::string, std::string> &h) {
-	headers = h;
+	_headers = h;
 }
 
 void Request::setBody(const std::string &b) {
-	body = b;
+	_body = b;
 }
 
 void Request::addHeader(const std::string &key, const std::string &value) {
-	headers[key] = value;
+	if (key.empty() || value.empty())
+		return ;
+	for (size_t i = 0; i < key.size(); ++i) {
+		unsigned char c = key[i];
+		if (c < 32 || c == 127 || c == ' ' || c == ':' || c == '\r' || c == '\n')
+			return ;
+	}
+	for (size_t i = 0; i < value.size(); ++i) {
+		unsigned char c = value[i];
+		if (c == '\r' || c == '\n')
+			return ;
+	}
+	_headers[key] = value;
 }
 
 RequestMethod Request::getMethod() const {
-	return method;
+	return _method;
 }
 
 const std::string& Request::getUri() const {
-	return uri;
+	return _uri;
 }
 
 const std::string& Request::getPath() const {
-	return path;
+	return _path;
 }
 
 const std::string& Request::getQuery() const {
-	return query;
+	return _query;
 }
 
 const std::string& Request::getHttpVersion() const {
-	return http_version;
+	return _http_version;
 }
 
 const std::map<std::string, std::string>& Request::getHeaders() const {
-	return headers;
+	return _headers;
 }
 
 const std::string& Request::getBody() const {
-	return body;
+	return _body;
 }
 		
 std::string Request::getHeader(const std::string &key) const {
-	std::map<std::string, std::string>::const_iterator it = headers.find(key);
-	if (it != headers.end())
+	std::map<std::string, std::string>::const_iterator it = _headers.find(key);
+	if (it != _headers.end())
 		return it->second;
 	return "";
 }
 
 bool Request::hasHeader(const std::string &key) const {
-	return headers.find(key) != headers.end();
+	return _headers.find(key) != _headers.end();
 }
 
 size_t Request::getContentLength() const {
 	std::string content_length = getHeader("content-length");
 	if (content_length.empty())
 		return 0;
-	return static_cast<size_t>(std::atoi(content_length.c_str()));
+	return static_cast<size_t>(std::atol(content_length.c_str()));
 }
 
 bool Request::isChunked() const {
@@ -135,7 +147,7 @@ std::string Request::getHost() const {
 
 bool Request::isKeepAlive() const {
 	std::string connection = getConnection();
-	if (http_version == "HTTP/1.1")
+	if (_http_version == "HTTP/1.1")
 		return connection != "close";
 	else
 		return connection == "keep-alive";
@@ -146,27 +158,47 @@ std::string Request::getContentType() const {
 }
 
 std::string Request::getQueryParameter(const std::string &key) const {
-	std::map<std::string, std::string> params = getQueryParameters();
-	std::map<std::string, std::string>::const_iterator it = params.find(key);
-	if (it != params.end())
-		return it->second;
+	if (_query.empty() || key.empty())
+		return "";
+	
+	size_t start = 0;
+	size_t end = 0;
+	
+	while (start < _query.length()) {
+		end = _query.find('&', start);
+		if (end == std::string::npos)
+			end = _query.length();
+		
+		std::string param = _query.substr(start, end - start);
+		size_t equals = param.find('=');
+		
+		if (equals != std::string::npos) {
+			std::string param_key = param.substr(0, equals);
+			if (param_key == key)
+				return param.substr(equals + 1);
+		}
+		else if (param == key)
+			return "";
+		
+		start = end + 1;
+	}
 	return "";
 }
 
 std::map<std::string, std::string> Request::getQueryParameters() const {
 	std::map<std::string, std::string> params;
-	if (query.empty())
+	if (_query.empty())
 		return params;
 	
 	size_t start = 0;
 	size_t end = 0;
 	
-	while (start < query.length()) {
-		end = query.find('&', start);
+	while (start < _query.length()) {
+		end = _query.find('&', start);
 		if (end == std::string::npos)
-			end = query.length();
+			end = _query.length();
 		
-		std::string param = query.substr(start, end - start);
+		std::string param = _query.substr(start, end - start);
 		size_t equals = param.find('=');
 		
 		if (equals != std::string::npos) {
@@ -184,33 +216,23 @@ std::map<std::string, std::string> Request::getQueryParameters() const {
 }
 
 bool Request::hasQueryParameter(const std::string &key) const {
-	return !getQueryParameter(key).empty();
+	const std::map<std::string, std::string>& params = getQueryParameters();
+	return params.find(key) != params.end();
 }
 
 bool Request::isValidForFileOperation() const {
-	if (path.empty() || path[0] != '/')
+	if (_path.empty() || _path[0] != '/')
 		return false;
-	
-	if (path.find("..") != std::string::npos)
-		return false;
-	
-	for (size_t i = 0; i < path.length(); ++i) {
-		char c = path[i];
-		if (c < 32 || c == 127)
-			return false;
-		if (c == '<' || c == '>' || c == '|' || c == '"' || c == '\\')
-			return false;
-	}
 	
 	return true;
 }
 
 std::string Request::getRequestTarget() const {
-	if (query.empty())
-		return path;
-	return path + "?" + query;
+	if (_query.empty())
+		return _path;
+	return _path + "?" + _query;
 }
 
 bool Request::requiresBody() const {
-	return method == POST;
+	return _method == POST;
 }

@@ -6,7 +6,7 @@
 /*   By: cabo-ram <cabo-ram@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/06 15:02:39 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/11/10 15:22:53 by cabo-ram         ###   ########.fr       */
+/*   Updated: 2025/11/18 15:16:42 by cabo-ram         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,13 +26,13 @@ enum RequestMethod {
 
 class Request {
 	private:
-		RequestMethod method;
-		std::string uri;
-		std::string path;
-		std::string query;
-		std::string http_version;
-		std::map<std::string, std::string> headers;
-		std::string body;
+		RequestMethod _method;
+		std::string _uri;
+		std::string _path;
+		std::string _query;
+		std::string _http_version;
+		std::map<std::string, std::string> _headers;
+		std::string _body;
 		
 	public:
 		Request();
