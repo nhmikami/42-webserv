@@ -26,7 +26,6 @@ class Server {
 		std::vector<struct pollfd>	_fds;
 		std::vector<Client*>		_clients;
 		Logger						_logger;
-		ParseUtils					_utils;
 
 		Server(const Server &other);
 		
