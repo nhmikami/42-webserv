@@ -45,7 +45,7 @@ class LocationConfig {
 		std::string 						getPath(void) const;
 		std::string 						getRoot(void) const;
 		bool								getAutoIndex(void) const;
-		size_t								getClientaMaxBodySize(void) const;
+		size_t								getClientMaxBodySize(void) const;
 		std::set<std::string>				getMethods(void) const;
 		std::vector<std::string>			getIndexFiles(void) const;
 		std::map<int, std::string>			getErrorPages(void) const;

@@ -66,7 +66,8 @@ std::string Response::buildResponse(void) const {
 	if (_headers.find("Date") == _headers.end()) {
 		char date[100];
 		time_t now = time(0);
-		struct tm tm = *gmtime(&now);
+		struct tm tm;
+		gmtime_r(&now, &tm);
 		strftime(date, sizeof(date), "%a, %d %b %Y %H:%M:%S GMT", &tm);
 		response << "Date: " << date << "\r\n";
 	}

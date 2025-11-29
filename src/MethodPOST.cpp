@@ -6,7 +6,14 @@ MethodPOST::MethodPOST(const Request &req, const ServerConfig &config)
 MethodPOST::~MethodPOST(void) {}
 
 HttpStatus MethodPOST::handleMethod(void) {
-	std::string full_path = _resolvePath(_config.getRoot(), _req.getPath());
+	if (_location) {
+		std::set<std::string> allowed = _location->getMethods();
+		if (!allowed.empty() && allowed.find("POST") == allowed.end()) {
+			return NOT_ALLOWED;
+		}
+	}
+
+	std::string full_path = _resolvePath(_getRootPath(), _req.getPath());
 
 	if (_isCGI(full_path))
 		return _runCGI(full_path);

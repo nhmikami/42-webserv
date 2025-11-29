@@ -11,9 +11,10 @@
 
 class AMethod {
 	protected:
-		Response			_res;
-		const Request&		_req;
-		const ServerConfig&	_config;
+		Response				_res;
+		const Request&			_req;
+		const ServerConfig&		_config;
+		const LocationConfig*	_location;
 
 	public:
 		AMethod(const Request &req, const ServerConfig &config);
@@ -32,6 +33,12 @@ class AMethod {
 		bool	_isExecutable(const std::string& path) const;
 		const std::string	_guessMimeType(const std::string &path) const;
 		std::string			_resolvePath(const std::string &root, const std::string &reqPath);
+		
+		const LocationConfig*	_findLocation(const std::string& path);
+		std::string				_getRootPath(void) const;
+		bool					_getAutoindex(void) const;
+		size_t					_getMaxBodySize(void) const;
+		std::vector<std::string>	_getIndexFiles(void) const;
 };
 
 #endif

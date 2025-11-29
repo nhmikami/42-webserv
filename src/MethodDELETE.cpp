@@ -6,7 +6,14 @@ MethodDELETE::MethodDELETE(const Request &req, const ServerConfig &config)
 MethodDELETE::~MethodDELETE(void) {}
 
 HttpStatus MethodDELETE::handleMethod(void) {
-	std::string full_path = _resolvePath(_config.getRoot(), _req.getPath());
+	if (_location) {
+		std::set<std::string> allowed = _location->getMethods();
+		if (!allowed.empty() && allowed.find("DELETE") == allowed.end()) {
+			return NOT_ALLOWED;
+		}
+	}
+
+	std::string full_path = _resolvePath(_getRootPath(), _req.getPath());
 
 	if (_isCGI(full_path))
 		return _runCGI(full_path);

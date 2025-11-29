@@ -1,7 +1,9 @@
 #include "AMethod.hpp"
 
 AMethod::AMethod(const Request &req, const ServerConfig &config)
-	: _req(req), _config(config) {}
+	: _req(req), _config(config), _location(NULL) {
+	_location = _findLocation(_req.getPath());
+}
 
 AMethod::~AMethod(void) {}
 
@@ -58,7 +60,7 @@ std::string AMethod::_resolvePath(const std::string &root, const std::string &re
 		
 		if (segment == "..") {
 			if (tokens.empty())
-				return cleanRoot;
+				continue ; // return cleanRoot;
 			tokens.pop_back();
 		} 
 		else
@@ -96,4 +98,57 @@ const std::string AMethod::_guessMimeType(const std::string &path) const {
 	if (ext == "ico") return "image/x-icon";
 
 	return "application/octet-stream";
+}
+
+const LocationConfig* AMethod::_findLocation(const std::string& path) {
+	const std::map<std::string, LocationConfig> &locations = _config.getLocations();
+	const LocationConfig* bestMatch = NULL;
+	std::string bestKey = "";
+
+	for (std::map<std::string, LocationConfig>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
+		const std::string &key = it->first;
+
+		if (key.size() > path.size())
+			continue;
+
+		if (path.compare(0, key.size(), key) == 0) {
+			if (key.size() == path.size() || path[key.size()] == '/' || key == "/") {
+				if (key.size() > bestKey.size()) {
+					bestMatch = &(it->second);
+					bestKey = key;
+				}
+			}
+		}
+	}
+	return bestMatch;
+}
+
+std::string AMethod::_getRootPath(void) const {
+	if (_location && !_location->getRoot().empty())
+		return _location->getRoot();
+	return _config.getRoot();
+}
+
+bool AMethod::_getAutoindex(void) const {
+	if (_location)
+		return _location->getAutoIndex();
+	return _config.getAutoIndex();
+}
+
+std::vector<std::string> AMethod::_getIndexFiles(void) const {
+	if (_location) {
+		std::vector<std::string> index_files = _location->getIndexFiles();
+		if (!index_files.empty())
+			return index_files;
+	}
+	return _config.getIndexFiles();
+}
+
+size_t AMethod::_getMaxBodySize(void) const {
+	if (_location) {
+		size_t loc_size = _location->getClientMaxBodySize();
+		if (loc_size > 0)
+			return loc_size;
+	}
+	return _config.getClientMaxBodySize();
 }

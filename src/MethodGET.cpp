@@ -6,7 +6,14 @@ MethodGET::MethodGET(const Request &req, const ServerConfig &config)
 MethodGET::~MethodGET(void) {}
 
 HttpStatus MethodGET::handleMethod(void) {
-	std::string full_path = _resolvePath(_config.getRoot(), _req.getPath());
+	if (_location) {
+		std::set<std::string> allowed = _location->getMethods();
+		if (!allowed.empty() && allowed.find("GET") == allowed.end()) {
+			return NOT_ALLOWED;
+		}
+	}
+
+	std::string full_path = _resolvePath(_getRootPath(), _req.getPath());
 
 	if (!_exists(full_path))
 		return NOT_FOUND;
@@ -38,7 +45,7 @@ HttpStatus MethodGET::_serveFile(const std::string& path) {
 }
 
 HttpStatus MethodGET::_serveDirectory(const std::string& path) {
-	std::vector<std::string> index_files = _config.getIndexFiles();
+	std::vector<std::string> index_files = _getIndexFiles();
 	if (index_files.empty()) 
 		index_files.push_back("index.html");
 
@@ -53,7 +60,7 @@ HttpStatus MethodGET::_serveDirectory(const std::string& path) {
 		}
 	}
 
-	if (_config.getAutoindex())
+	if (_getAutoindex())
 		return _generateAutoindex(path);
 		
 	return FORBIDDEN;
