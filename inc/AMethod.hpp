@@ -21,7 +21,7 @@ class AMethod {
 		virtual ~AMethod(void);
 		virtual HttpStatus	handleMethod(void) = 0;
 
-		Response	getResponse(void) const;
+		const Response&		getResponse(void) const;
 
 	protected:
 		bool	_exists(const std::string& path) const;

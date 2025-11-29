@@ -42,7 +42,7 @@ class Response {
 		void				setBody(const std::string &body);
 		void				addHeader(const std::string &key, const std::string &value);
 		
-		const HttpStatus	getStatus(void) const;
+		HttpStatus	getStatus(void) const;
 		const std::string	getStatusMessage(void) const;
 		const std::string&	getBody(void) const;
 		const std::string&	getHeader(const std::string &key) const;
