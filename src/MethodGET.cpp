@@ -111,5 +111,6 @@ HttpStatus MethodGET::_generateAutoindex(const std::string &path) {
 }
 
 HttpStatus MethodGET::_runCGI(const std::string &path) {
+	(void)path;
 	return NOT_IMPLEMENTED;
 }

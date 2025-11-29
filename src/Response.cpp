@@ -8,7 +8,7 @@ void Response::setStatus(HttpStatus status) {
 	_status = status;
 }
 
-const HttpStatus Response::getStatus(void) const {
+HttpStatus Response::getStatus(void) const {
 	return _status;
 }
 

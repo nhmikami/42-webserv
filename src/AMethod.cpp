@@ -7,7 +7,7 @@ AMethod::AMethod(const Request &req, const ServerConfig &config)
 
 AMethod::~AMethod(void) {}
 
-Response AMethod::getResponse(void) const {
+const Response& AMethod::getResponse(void) const {
 	return _res;
 }
 
@@ -75,6 +75,7 @@ std::string AMethod::_resolvePath(const std::string &root, const std::string &re
 }
 
 bool AMethod::_isCGI(const std::string& path) const {
+	(void)path;
 	return false;
 }
 

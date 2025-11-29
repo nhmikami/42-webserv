@@ -4,8 +4,6 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
-#include <sys/stat.h>
-#include <dirent.h>
 #include <map>
 
 enum HttpStatus {
@@ -42,7 +40,7 @@ class Response {
 		void				setBody(const std::string &body);
 		void				addHeader(const std::string &key, const std::string &value);
 		
-		const HttpStatus	getStatus(void) const;
+		HttpStatus	getStatus(void) const;
 		const std::string	getStatusMessage(void) const;
 		const std::string&	getBody(void) const;
 		const std::string&	getHeader(const std::string &key) const;

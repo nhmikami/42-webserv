@@ -86,5 +86,6 @@ bool MethodDELETE::_deleteDirectory(const std::string &path) {
 }
 
 HttpStatus MethodDELETE::_runCGI(const std::string &path) {
+	(void)path;
 	return NOT_IMPLEMENTED;
 }

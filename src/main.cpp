@@ -27,7 +27,7 @@ void printConfig(std::vector<ServerConfig> servers_config)
         std::cout << "root: " << servers_config[i].getRoot() << std::endl;
         std::cout << "server name: " << servers_config[i].getServerName() << std::endl;
         std::cout << "autoindex: " << (servers_config[i].getAutoIndex() ? "on" : "off") << std::endl;
-        std::cout << "client max body size: " << servers_config[i].getClientaMaxBodySize() << std::endl;
+        std::cout << "client max body size: " << servers_config[i].getClientMaxBodySize() << std::endl;
         
         std::cout << "index files: ";
         const std::vector<std::string>& indexFiles = servers_config[i].getIndexFiles();
@@ -61,7 +61,7 @@ void printConfig(std::vector<ServerConfig> servers_config)
             std::cout << "  path: " << it->second.getPath() << std::endl;
             std::cout << "  root: " << it->second.getRoot() << std::endl;
             std::cout << "  autoindex: " << (it->second.getAutoIndex() ? "on" : "off") << std::endl;
-            std::cout << "  client max body size: " << it->second.getClientaMaxBodySize() << std::endl;
+            std::cout << "  client max body size: " << it->second.getClientMaxBodySize() << std::endl;
             
             std::cout << "  methods: ";
             const std::set<std::string>& methods = it->second.getMethods();

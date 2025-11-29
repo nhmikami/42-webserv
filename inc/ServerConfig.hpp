@@ -44,15 +44,15 @@ class ServerConfig {
 		void	parseServer(const std::string key, const std::vector<std::string> values);
 		void	addLocation(const std::vector<std::string>&values, std::string *location_path);
 
-		std::string								getHost(void);
-		int										getPort(void);
-		std::string								getRoot(void);
-		std::string 							getServerName(void);
-		bool									getAutoIndex(void);
-		size_t									getClientMaxBodySize(void);
-		std::vector<std::string>				getIndexFiles(void);
-		std::map<int, std::string>				getErrorPages(void);
-		LocationConfig*							getLocation(const std::string path);
+		std::string								getHost(void) const;
+		int										getPort(void) const;
+		std::string								getRoot(void) const;
+		std::string 							getServerName(void) const;
+		bool									getAutoIndex(void) const;
+		size_t									getClientMaxBodySize(void) const;
+		std::vector<std::string>				getIndexFiles(void) const;
+		std::map<int, std::string>				getErrorPages(void) const;
+		LocationConfig*							getLocation(const std::string path) const;
 		const std::map<std::string, LocationConfig>& getLocations(void) const;
 };
 

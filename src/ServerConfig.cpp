@@ -102,24 +102,29 @@ void ServerConfig::setErrorPages(const std::vector<std::string>& values)
 		_error_pages[std::atoi(values[i].c_str())] = path;
 }
 
-std::string	ServerConfig::getHost(void) { return _host; };
+std::string	ServerConfig::getHost(void) const { return _host; };
 
-int			ServerConfig::getPort(void) { return _port; };
+int			ServerConfig::getPort(void) const { return _port; };
 
-std::string	ServerConfig::getRoot(void) { return _root; };
+std::string	ServerConfig::getRoot(void) const { return _root; };
 
-std::string ServerConfig::getServerName(void) { return _server_name; };
+std::string ServerConfig::getServerName(void) const { return _server_name; };
 
-bool		ServerConfig::getAutoIndex(void) { return _autoindex; };
+bool		ServerConfig::getAutoIndex(void) const { return _autoindex; };
 
-size_t		ServerConfig::getClientMaxBodySize(void) { return _client_max_body_size; };
+size_t		ServerConfig::getClientMaxBodySize(void) const { return _client_max_body_size; };
 
-std::vector<std::string>	ServerConfig::getIndexFiles(void) { return _index_files; };
+std::vector<std::string>	ServerConfig::getIndexFiles(void) const { return _index_files; };
 
-std::map<int, std::string>	ServerConfig::getErrorPages(void) { return _error_pages; };
+std::map<int, std::string>	ServerConfig::getErrorPages(void) const { return _error_pages; };
 
 const std::map<std::string, LocationConfig>& ServerConfig::getLocations(void) const { return _locations; };
 
-LocationConfig*				ServerConfig::getLocation(const std::string path) { return &_locations[path]; };
+LocationConfig*				ServerConfig::getLocation(const std::string path) const { 
+	std::map<std::string, LocationConfig>::const_iterator it = _locations.find(path);
+    if (it != _locations.end())
+        return const_cast<LocationConfig*>(&it->second);
+    return NULL;
+ };
 
 

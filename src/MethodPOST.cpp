@@ -86,5 +86,6 @@ bool MethodPOST::_writeToFile(const std::string &path, const std::string &body) 
 }
 
 HttpStatus MethodPOST::_runCGI(const std::string &path) {
+	(void)path;
 	return NOT_IMPLEMENTED;
 }
