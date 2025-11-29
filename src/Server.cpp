@@ -90,6 +90,7 @@ bool	Server::startServer()
 		int opt = 1;
 		if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
 			Logger::log(Logger::ERROR, "Failed to set SO_REUSEADDR.");
+			close(server_fd);
 			return false;
 		}
 	
@@ -99,8 +100,10 @@ bool	Server::startServer()
 		}
 		address.sin_port = htons(port);
 	
-		if (!(bindServer(server_fd, address, port) && startListen(server_fd, host, port) && addToFDs(server_fd)))
+		if (!(bindServer(server_fd, address, port) && startListen(server_fd, host, port) && addToFDs(server_fd))) {
+			close(server_fd);
 			return false;
+		}
 
 		_fd_to_config[server_fd] = &_configs[i];
 	}
