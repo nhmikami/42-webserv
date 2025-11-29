@@ -50,7 +50,7 @@ class ServerConfig {
 		const std::string							getRoot(void) const;
 		const std::string 							getServerName(void) const;
 		bool										getAutoIndex(void) const;
-		size_t										getClientaMaxBodySize(void) const;
+		size_t										getClientMaxBodySize(void) const;
 		const std::vector<std::string>				getIndexFiles(void) const;
 		const std::map<int, std::string>			getErrorPages(void) const;
 		const std::map<std::string, LocationConfig>	getLocations(void) const;
