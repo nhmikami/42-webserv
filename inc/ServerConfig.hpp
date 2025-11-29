@@ -49,11 +49,11 @@ class ServerConfig {
 		std::string								getRoot(void);
 		std::string 							getServerName(void);
 		bool									getAutoIndex(void);
-		size_t									getClientaMaxBodySize(void);
+		size_t									getClientMaxBodySize(void);
 		std::vector<std::string>				getIndexFiles(void);
 		std::map<int, std::string>				getErrorPages(void);
-		std::map<std::string, LocationConfig>	getLocations(void);
 		LocationConfig*							getLocation(const std::string path);
+		const std::map<std::string, LocationConfig>& getLocations(void) const;
 };
 
 #endif

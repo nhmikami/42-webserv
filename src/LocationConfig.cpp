@@ -120,7 +120,7 @@ std::vector<std::string>	LocationConfig::getIndexFiles(void) const { return _ind
 
 bool						LocationConfig::getAutoIndex(void) const { return _autoindex; };
 
-size_t						LocationConfig::getClientaMaxBodySize(void) const { return _client_max_body_size; };
+size_t						LocationConfig::getClientMaxBodySize(void) const { return _client_max_body_size; };
 
 std::map<int, std::string>	LocationConfig::getErrorPages(void) const { return _error_pages; };
 

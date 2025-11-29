@@ -112,13 +112,13 @@ std::string ServerConfig::getServerName(void) { return _server_name; };
 
 bool		ServerConfig::getAutoIndex(void) { return _autoindex; };
 
-size_t		ServerConfig::getClientaMaxBodySize(void) { return _client_max_body_size; };
+size_t		ServerConfig::getClientMaxBodySize(void) { return _client_max_body_size; };
 
 std::vector<std::string>	ServerConfig::getIndexFiles(void) { return _index_files; };
 
 std::map<int, std::string>	ServerConfig::getErrorPages(void) { return _error_pages; };
 
-std::map<std::string, LocationConfig> ServerConfig::getLocations(void) { return _locations; };
+const std::map<std::string, LocationConfig>& ServerConfig::getLocations(void) const { return _locations; };
 
 LocationConfig*				ServerConfig::getLocation(const std::string path) { return &_locations[path]; };
 
