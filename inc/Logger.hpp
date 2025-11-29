@@ -22,8 +22,8 @@ class Logger {
 		Logger(void);
 		~Logger(void);
 
-		void 		log(LogLevel level, const std::string &msg);
-		std::string	getLevel(LogLevel level);
+		static void log(LogLevel level, const std::string &msg);
+		static std::string	getLevel(LogLevel level);
 };
 
 #endif 

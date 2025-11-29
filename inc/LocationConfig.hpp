@@ -9,6 +9,8 @@
 #include <ostream>
 #include <stdlib.h>
 
+#include "ParseUtils.hpp"
+
 class LocationConfig {
 	private:
 		std::string							_path;
@@ -24,17 +26,17 @@ class LocationConfig {
 		typedef void(LocationConfig::*Setter)(const std::vector<std::string>&);
 		std::map<std::string, Setter>		_directiveSetters;
 
-		void setPath(const std::vector<std::string>& values);
-		void setRoot(const std::vector<std::string>& values);
-		void setMethods(const std::vector<std::string>& values);
-		void setIndexFiles(const std::vector<std::string>& values);
-		void setAutoIndex(const std::vector<std::string>& values);
-		void setClientMaxBodySize(const std::vector<std::string>& values);
-		void setErrorPages(const std::vector<std::string>& values);
-		void setCgi(const std::vector<std::string>& values);
+		void	setPath(const std::vector<std::string>& values);
+		void	setRoot(const std::vector<std::string>& values);
+		void	setMethods(const std::vector<std::string>& values);
+		void	setIndexFiles(const std::vector<std::string>& values);
+		void	setAutoIndex(const std::vector<std::string>& values);
+		void	setClientMaxBodySize(const std::vector<std::string>& values);
+		void	setErrorPages(const std::vector<std::string>& values);
+		void	setCgi(const std::vector<std::string>& values);
 
 	public:
-		LocationConfig();
+		LocationConfig(void);
 		LocationConfig(std::string path);
 		LocationConfig(const LocationConfig& other);
 		~LocationConfig(void);
@@ -42,14 +44,14 @@ class LocationConfig {
 		void	parseLocation(const std::string key, const std::vector<std::string> values);
 		void	initDirectiveMap();
 
-		std::string 						getPath(void) const;
-		std::string 						getRoot(void) const;
-		bool								getAutoIndex(void) const;
-		size_t								getClientMaxBodySize(void) const;
-		std::set<std::string>				getMethods(void) const;
-		std::vector<std::string>			getIndexFiles(void) const;
-		std::map<int, std::string>			getErrorPages(void) const;
-		std::map<std::string, std::string>	getCgi(void) const;
+		const std::string 							getPath(void) const;
+		const std::string 							getRoot(void) const;
+		bool										getAutoIndex(void) const;
+		size_t										getClientMaxBodySize(void) const;
+		const std::set<std::string>					getMethods(void) const;
+		const std::vector<std::string>				getIndexFiles(void) const;
+		const std::map<int, std::string>			getErrorPages(void) const;
+		const std::map<std::string, std::string>	getCgi(void) const;
 };
 
 #endif

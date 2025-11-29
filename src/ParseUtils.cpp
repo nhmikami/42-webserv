@@ -1,38 +1,18 @@
 #include "ParseUtils.hpp"
 
-ParseUtils::ParseUtils(void) {};
+// ParseUtils::ParseUtils(void) {};
 
-ParseUtils::ParseUtils(const ParseUtils &other) 
-{
-    (void)other;
-};
-
-ParseUtils::~ParseUtils(void) {};
-
-ParseUtils& ParseUtils::operator=(const ParseUtils &other)
-{
-    (void)other;
-    return *this;
-};
-
-// void ParseUtils::eraseLine(std::string &buffer, const std::string &text, size_t pos)
+// ParseUtils::ParseUtils(const ParseUtils &other) 
 // {
-//     size_t  end = size(buffer);
-
-//     end = buffer.find("\n", end);
-//     buffer.erase(pos, end - pos);
-
+//     (void)other;
 // };
 
-// void ParseUtils::eraseAll(std::string &buffer, const std::string &text)
-// {
-//     size_t  pos = 0;
+// ParseUtils::~ParseUtils(void) {};
 
-//     while (pos != std::string::npos)
-//     {
-//         pos = buffer.find(text);
-//         eraseLine(buffer, text, pos);
-//     }
+// ParseUtils& ParseUtils::operator=(const ParseUtils &other)
+// {
+//     (void)other;
+//     return *this;
 // };
 
 std::string ParseUtils::itoa(int n)
@@ -42,10 +22,24 @@ std::string ParseUtils::itoa(int n)
     return ss.str();
 };
 
-std::string ParseUtils::trim(const std::string &s) {
+std::string ParseUtils::trim(const std::string &s)
+{
 	size_t start = s.find_first_not_of(" \t");
 	size_t end = s.find_last_not_of(" \t");
 	if (start == std::string::npos || end == std::string::npos)
 		return "";
 	return s.substr(start, end - start + 1);
+};
+
+bool		ParseUtils::isnumber(const std::string &s)
+{
+	if (s.empty())
+    	return false;
+
+    for (size_t i = 0; i < s.size(); ++i)
+    {
+        if (!std::isdigit(s[i]))
+            return false;
+    }
+	return true;
 }

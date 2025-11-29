@@ -12,7 +12,6 @@
 class Client {
 	private:
 		int		_client_fd;
-		Logger	_logger;
 
 		Client(void);
 		Client(const Client &other);

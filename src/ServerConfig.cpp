@@ -2,14 +2,16 @@
 
 ServerConfig::ServerConfig() :
 	_host("127.0.0.1"),
-	_port(80)
+	_port(80),
+	_autoindex(false),
+	_client_max_body_size(1000)
 {
 	initDirectiveMap();
 };
 
 ServerConfig::~ServerConfig() {};
 
-void	ServerConfig::addLocation(const std::vector<std::string>&values, std::string *location_path)
+void ServerConfig::addLocation(const std::vector<std::string>&values, std::string *location_path)
 {
 	if (values.size() != 2 || (values[0][0] != '/' || values[1] != "{"))
 		throw std::invalid_argument("location must have a path and an open bracket at the same line.");
@@ -17,7 +19,7 @@ void	ServerConfig::addLocation(const std::vector<std::string>&values, std::strin
 	*location_path = values[0];
 };
 
-void	ServerConfig::initDirectiveMap()
+void ServerConfig::initDirectiveMap()
 {
     _directiveSetters["listen"] = &ServerConfig::setListen;
     _directiveSetters["host"] = &ServerConfig::setHost;
@@ -29,7 +31,7 @@ void	ServerConfig::initDirectiveMap()
     _directiveSetters["error_page"] = &ServerConfig::setErrorPages;
 }
 
-void	ServerConfig::parseServer(const std::string key, const std::vector<std::string> values)
+void ServerConfig::parseServer(const std::string key, const std::vector<std::string> values)
 {
 	std::map<std::string, Setter>::iterator it = _directiveSetters.find(key);
 
@@ -43,7 +45,12 @@ void ServerConfig::setListen(const std::vector<std::string>&values)
 {
 	if (values.size() != 1)
 		throw std::invalid_argument("listen must have exactly one value.");
-	_port = std::atoi(values[0].c_str());
+	if (!ParseUtils::isnumber(values[0]))
+		throw std::invalid_argument("listen must be a number.");
+	int port = std::atoi(values[0].c_str());
+	if (port < 1 || port > 65535)
+		throw std::invalid_argument("port number must be between 1 and 65535.");
+	_port = port;
 }
 
 void ServerConfig::setHost(const std::vector<std::string>&values)
@@ -82,7 +89,12 @@ void ServerConfig::setClientMaxBodySize(const std::vector<std::string>& values)
 {
 	if (values.size() != 1)
 		throw std::invalid_argument("client_max_body_size must have exactly one value.");
-	_client_max_body_size = std::atoi(values[0].c_str());
+	if (!ParseUtils::isnumber(values[0]))
+		throw std::invalid_argument("client_max_body_size must be a number.");
+	int client_max_body_size = std::atoi(values[0].c_str());
+	if (client_max_body_size < 1)
+		throw std::invalid_argument("client_max_body_size must be a positive number.");
+	_client_max_body_size = client_max_body_size;
 }
 
 void ServerConfig::setIndexFiles(const std::vector<std::string>&values)
@@ -94,32 +106,44 @@ void ServerConfig::setIndexFiles(const std::vector<std::string>&values)
 
 void ServerConfig::setErrorPages(const std::vector<std::string>& values)
 {
-	if (values.empty())
-		throw std::invalid_argument("error_page must have at least one value.");
+	if (values.empty() || values.size() < 2)
+		throw std::invalid_argument("error_page must have at least two values (error number and error file).");
 
 	std::string path = values[values.size() - 1];
-	for (size_t i = 0; i < values.size() - 1; i++)
-		_error_pages[std::atoi(values[i].c_str())] = path;
+	for (size_t i = 0; i < values.size() - 1; i++) {
+		if (!ParseUtils::isnumber(values[i]))
+			throw std::invalid_argument("error code " + values[i] + " is not a number.");
+		int error_code = std::atoi(values[i].c_str());
+		if (error_code < 100 || error_code > 599)
+			throw std::invalid_argument("invalid error code number (must be between 100 and 599).");
+		_error_pages[error_code] = path;
+	}
 }
 
-std::string	ServerConfig::getHost(void) { return _host; };
+const std::string							ServerConfig::getHost(void) const { return _host; };
 
-int			ServerConfig::getPort(void) { return _port; };
+int											ServerConfig::getPort(void) const { return _port; };
 
-std::string	ServerConfig::getRoot(void) { return _root; };
+const std::string							ServerConfig::getRoot(void) const { return _root; };
 
-std::string ServerConfig::getServerName(void) { return _server_name; };
+const std::string							ServerConfig::getServerName(void) const { return _server_name; };
 
-bool		ServerConfig::getAutoIndex(void) { return _autoindex; };
+bool										ServerConfig::getAutoIndex(void) const { return _autoindex; };
 
-size_t		ServerConfig::getClientMaxBodySize(void) { return _client_max_body_size; };
+size_t										ServerConfig::getClientMaxBodySize(void) const { return _client_max_body_size; };
 
-std::vector<std::string>	ServerConfig::getIndexFiles(void) { return _index_files; };
+const std::vector<std::string>				ServerConfig::getIndexFiles(void) const { return _index_files; };
 
-std::map<int, std::string>	ServerConfig::getErrorPages(void) { return _error_pages; };
+const std::map<int, std::string>			ServerConfig::getErrorPages(void) const { return _error_pages; };
 
-const std::map<std::string, LocationConfig>& ServerConfig::getLocations(void) const { return _locations; };
+const std::map<std::string, LocationConfig>	ServerConfig::getLocations(void) const { return _locations; };
 
-LocationConfig*				ServerConfig::getLocation(const std::string path) { return &_locations[path]; };
+LocationConfig*								ServerConfig::getLocation(const std::string path) 
+{
+	std::map<std::string, LocationConfig>::iterator it = _locations.find(path);
+    if (it != _locations.end())
+        return &it->second;
+    return NULL;
+};
 
 

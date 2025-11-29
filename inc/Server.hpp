@@ -4,6 +4,7 @@
 #include "Client.hpp"
 #include "Logger.hpp"
 #include "ParseUtils.hpp"
+#include "ServerConfig.hpp"
 
 #include <poll.h>
 #include <string>
@@ -18,32 +19,30 @@
 
 class Server {
 	private:
-		int							_server_fd;
-		struct sockaddr_in			_address;
-		socklen_t					_addlen;
-		std::string					_host;
-		int							_port;
-		std::vector<struct pollfd>	_fds;
-		std::vector<Client*>		_clients;
-		Logger						_logger;
+		std::vector<ServerConfig>		_configs;
+		std::map<int, ServerConfig*>	_fd_to_config;
+		std::map<int, ServerConfig*>	_client_to_config;
+		std::vector<struct pollfd>		_fds;
+		std::vector<Client*>			_clients;
 
-		Server(const Server &other);
+		Server(const Server &other); //del?
 		
 		Server &operator=(const Server &other);
 
 		bool	startServer();
-		bool	bindServer();
-		bool	startListen();
-		bool	addToFDs(int fd);
-		void	acceptClient();
-		Client	*findClient(int i);
+		bool	bindServer(int server_fd, struct sockaddr_in address, int port);
+		bool	startListen(int server_fd, std::string host, int port);
+		bool	addToFDs(int server_fd);
+		void	acceptClient(int server_fd, ServerConfig *config);
+		Client	*findClient(size_t *j, int client_fd);
 		bool	handleClient(int i);
 		void	unhandleClient(int i);
 		void	closeClient(int i, int j, Client *client);
 
 	public:
-		Server(void); //private
-		Server(std::string host, int port);
+		Server(void); //private del?
+		Server(std::string host, int port); //del
+		Server(std::vector<ServerConfig> configs);
 		~Server(void);
 
 		void run();

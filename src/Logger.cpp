@@ -2,16 +2,16 @@
 
 Logger::Logger(void){};
 
-Logger::Logger(const Logger &other){
-	(void)other;
-};
+// Logger::Logger(const Logger &other){
+// 	(void)other;
+// };
 
 Logger::~Logger(void){};
 
-Logger &Logger::operator=(const Logger &other){
-	(void)other;
-	return *this;
-};
+// Logger &Logger::operator=(const Logger &other){
+// 	(void)other;
+// 	return *this;
+// };
 
 void Logger::log(LogLevel level, const std::string &msg){
 	std::cout << getLevel(level) << msg << std::endl;

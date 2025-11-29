@@ -9,6 +9,7 @@
 #include <stdlib.h>
 
 #include "LocationConfig.hpp"
+#include "ParseUtils.hpp"
 
 class ServerConfig {
 	private:
@@ -25,16 +26,16 @@ class ServerConfig {
 		typedef void(ServerConfig::*Setter)(const std::vector<std::string>&);
 		std::map<std::string, Setter>			_directiveSetters;
 
-		void initDirectiveMap();
+		void	initDirectiveMap();
 
-		void setListen(const std::vector<std::string>& values);
-		void setHost(const std::vector<std::string>& values);
-		void setRoot(const std::vector<std::string>& values);
-		void setServerName(const std::vector<std::string>& values);
-		void setAutoIndex(const std::vector<std::string>& values);
-		void setClientMaxBodySize(const std::vector<std::string>& values);
-		void setIndexFiles(const std::vector<std::string>& values);
-		void setErrorPages(const std::vector<std::string>& values);
+		void	setListen(const std::vector<std::string>& values);
+		void	setHost(const std::vector<std::string>& values);
+		void	setRoot(const std::vector<std::string>& values);
+		void	setServerName(const std::vector<std::string>& values);
+		void	setAutoIndex(const std::vector<std::string>& values);
+		void	setClientMaxBodySize(const std::vector<std::string>& values);
+		void	setIndexFiles(const std::vector<std::string>& values);
+		void	setErrorPages(const std::vector<std::string>& values);
 
 
 	public:
@@ -44,16 +45,16 @@ class ServerConfig {
 		void	parseServer(const std::string key, const std::vector<std::string> values);
 		void	addLocation(const std::vector<std::string>&values, std::string *location_path);
 
-		std::string								getHost(void);
-		int										getPort(void);
-		std::string								getRoot(void);
-		std::string 							getServerName(void);
-		bool									getAutoIndex(void);
-		size_t									getClientMaxBodySize(void);
-		std::vector<std::string>				getIndexFiles(void);
-		std::map<int, std::string>				getErrorPages(void);
-		LocationConfig*							getLocation(const std::string path);
-		const std::map<std::string, LocationConfig>& getLocations(void) const;
+		const std::string							getHost(void) const;
+		int											getPort(void) const;
+		const std::string							getRoot(void) const;
+		const std::string 							getServerName(void) const;
+		bool										getAutoIndex(void) const;
+		size_t										getClientMaxBodySize(void) const;
+		const std::vector<std::string>				getIndexFiles(void) const;
+		const std::map<int, std::string>			getErrorPages(void) const;
+		const std::map<std::string, LocationConfig>	getLocations(void) const;
+		LocationConfig*								getLocation(const std::string path);
 };
 
 #endif

@@ -1,11 +1,18 @@
 #include "LocationConfig.hpp"
 
-LocationConfig::LocationConfig() : _path(""), _is_cgi(false)
-{
-    initDirectiveMap();
-}
+// LocationConfig::LocationConfig(void) : 
+// 	_autoindex(false),
+// 	_client_max_body_size(1000),
+// 	_is_cgi(false)
+// {
+//     initDirectiveMap();
+// }
 
-LocationConfig::LocationConfig(std::string path) : _path(path), _is_cgi(false) 
+LocationConfig::LocationConfig(std::string path) : 
+	_path(path),
+	_autoindex(false),
+	_client_max_body_size(1000),
+	_is_cgi(false) 
 {
 	initDirectiveMap();
 };
@@ -69,14 +76,19 @@ void LocationConfig::setClientMaxBodySize(const std::vector<std::string>& values
 {
 	if (values.size() != 1)
 		throw std::invalid_argument("client_max_body_size must have exactly one value.");
-	_client_max_body_size = std::atoi(values[0].c_str());
+	if (!ParseUtils::isnumber(values[0]))
+		throw std::invalid_argument("client_max_body_size must be a number.");
+	int client_max_body_size = std::atoi(values[0].c_str());
+	if (client_max_body_size < 1)
+		throw std::invalid_argument("client_max_body_size must be a positive number.");
+	_client_max_body_size = client_max_body_size;
 };
 
 void LocationConfig::setMethods(const std::vector<std::string>& values)
 {
 	if (values.empty())
-		throw std::invalid_argument("methos must have at least one value.");
-	for (size_t i = 0; i < values.size() - 1; i++)
+		throw std::invalid_argument("methods must have at least one value.");
+	for (size_t i = 0; i < values.size(); i++)
 		_methods.insert(values[i]);
 };
 
@@ -89,13 +101,17 @@ void LocationConfig::setIndexFiles(const std::vector<std::string>& values)
 
 void LocationConfig::setErrorPages(const std::vector<std::string>& values)
 {
-	if (values.empty())
-		throw std::invalid_argument("error_page must have at least one value.");
+	if (values.empty() || values.size() < 2)
+		throw std::invalid_argument("error_page must have at least two values (error number and error file).");
 
 	std::string path = values[values.size() - 1];
-	for (size_t i = 0; i < values.size() - 1; i++){
-		_error_pages[std::atoi(values[i].c_str())] = path;
-		std::cout << values[i] << " : " << _error_pages[std::atoi(values[i].c_str())] << std::endl;
+	for (size_t i = 0; i < values.size() - 1; i++) {
+		if (!ParseUtils::isnumber(values[i]))
+			throw std::invalid_argument("error code " + values[i] + " is not a number.");
+		int error_code = std::atoi(values[i].c_str());
+		if (error_code < 100 || error_code > 599)
+			throw std::invalid_argument("invalid error code number (must be between 100 and 599).");
+		_error_pages[error_code] = path;
 	}
 };
 
@@ -105,23 +121,22 @@ void LocationConfig::setCgi(const std::vector<std::string>& values)
 		throw std::invalid_argument("cgi must have two values: extension and root.");
 	_is_cgi = true;
 	_cgi[values[0]] = values[1];
-	std::cout << "CGI : " << values[0] << " : " << _cgi[values[0]] << std::endl;
 };
 
 
 
-std::string 				LocationConfig::getPath(void) const { return _path; };
+const std::string 							LocationConfig::getPath(void) const { return _path; };
 
-std::string 				LocationConfig::getRoot(void) const { return _root; };
+const std::string 							LocationConfig::getRoot(void) const { return _root; };
 
-std::set<std::string>		LocationConfig::getMethods(void) const { return _methods; };
+const std::set<std::string>					LocationConfig::getMethods(void) const { return _methods; };
 
-std::vector<std::string>	LocationConfig::getIndexFiles(void) const { return _index_files; };
+const std::vector<std::string>				LocationConfig::getIndexFiles(void) const { return _index_files; };
 
-bool						LocationConfig::getAutoIndex(void) const { return _autoindex; };
+bool										LocationConfig::getAutoIndex(void) const { return _autoindex; };
 
-size_t						LocationConfig::getClientMaxBodySize(void) const { return _client_max_body_size; };
+size_t										LocationConfig::getClientMaxBodySize(void) const { return _client_max_body_size; };
 
-std::map<int, std::string>	LocationConfig::getErrorPages(void) const { return _error_pages; };
+const std::map<int, std::string>			LocationConfig::getErrorPages(void) const { return _error_pages; };
 
-std::map<std::string, std::string>	LocationConfig::getCgi(void) const { return _cgi; };
+const std::map<std::string, std::string>	LocationConfig::getCgi(void) const { return _cgi; };
