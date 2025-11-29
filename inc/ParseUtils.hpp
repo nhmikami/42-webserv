@@ -5,17 +5,20 @@
 #include <sstream>
 #include <iostream>
 
+#include "Logger.hpp"
+
 class ParseUtils {
-    private:
-        ParseUtils(const ParseUtils &other);
-        ParseUtils& operator=(const ParseUtils &other);
+	private:
+		ParseUtils(const ParseUtils &other);
+		ParseUtils& operator=(const ParseUtils &other);
 
-    public:
-        ParseUtils(void);
-        ~ParseUtils(void);
+	public:
+		ParseUtils(void);
+		~ParseUtils(void);
 
-        static std::string itoa(int n);
-        static std::string trim(const std::string &s);
+		static std::string  itoa(int n);
+		static std::string  trim(const std::string &s);
+		static bool			isnumber(const std::string &s);
 };
 
 #endif

@@ -80,7 +80,7 @@ bool ParseConfig::getKeyValues(const std::string line, std::string *key, std::ve
 bool ParseConfig::changeContext(const std::string key, std::vector<std::string> values) {
 	std::string error_message;
 
-	error_message = "Syntax error in file " + _filename + " line " + ParseUtils::itoa(_count_line) + "near " + key;
+	error_message = "Syntax error in file " + _filename + " line " + ParseUtils::itoa(_count_line) + " near " + key;
 
 	std::string open_bracket = "{";
 	std::string close_bracket = "}";
@@ -116,6 +116,11 @@ void ParseConfig::parseLine(const std::string key, std::vector<std::string> valu
 	if (_context == SERVER) {
 		_servers.back().parseServer(key, values);
 	} else if (_context == LOCATION) {
-		_servers.back().getLocation(_location_path)->parseLocation(key, values);
+		LocationConfig* loc = _servers.back().getLocation(_location_path);
+		if (!loc) {
+			Logger::log(Logger::WARNING, "Failed to parse location: " + _location_path);
+			return ;
+		}
+		loc->parseLocation(key, values);
 	}
 }

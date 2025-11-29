@@ -15,7 +15,7 @@ void signalHandler(int signum) {
 	throw std::runtime_error("Closing server!");
 }
 
-void printConfig(const std::vector<ServerConfig> servers_config)
+void printConfig(const std::vector<ServerConfig> &servers_config)
 {
 	for (size_t i = 0; i < servers_config.size(); i++)
 	{
@@ -27,7 +27,7 @@ void printConfig(const std::vector<ServerConfig> servers_config)
 		std::cout << "root: " << servers_config[i].getRoot() << std::endl;
 		std::cout << "server name: " << servers_config[i].getServerName() << std::endl;
 		std::cout << "autoindex: " << (servers_config[i].getAutoIndex() ? "on" : "off") << std::endl;
-		std::cout << "client max body size: " << servers_config[i].getClientaMaxBodySize() << std::endl;
+		std::cout << "client max body size: " << servers_config[i].getClientMaxBodySize() << std::endl;
 		
 		std::cout << "index files: ";
 		const std::vector<std::string>& indexFiles = servers_config[i].getIndexFiles();
@@ -61,7 +61,7 @@ void printConfig(const std::vector<ServerConfig> servers_config)
 			std::cout << "  path: " << it->second.getPath() << std::endl;
 			std::cout << "  root: " << it->second.getRoot() << std::endl;
 			std::cout << "  autoindex: " << (it->second.getAutoIndex() ? "on" : "off") << std::endl;
-			std::cout << "  client max body size: " << it->second.getClientaMaxBodySize() << std::endl;
+			std::cout << "  client max body size: " << it->second.getClientMaxBodySize() << std::endl;
 			
 			std::cout << "  methods: ";
 			const std::set<std::string>& methods = it->second.getMethods();
@@ -120,9 +120,6 @@ int main(int ac, char **av) {
 	signal(SIGINT, signalHandler);
 	signal(SIGTERM, signalHandler);
 
-	Logger logger;
-	(void)av;
-
 	try {
 		if (ac != 2) {
 			throw std::invalid_argument("Usage: ./webserv <config_file>");
@@ -138,10 +135,10 @@ int main(int ac, char **av) {
 		server.run();
 	}
 	catch (const std::runtime_error& e) {
-		logger.log(Logger::INFO, e.what());
+		Logger::log(Logger::INFO, e.what());
 	}
 	catch (const std::exception& e) {
-		logger.log(Logger::ERROR, e.what());
+		Logger::log(Logger::ERROR, e.what());
 		return 1;
 	}
 
