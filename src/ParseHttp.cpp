@@ -13,7 +13,7 @@
 #include "../inc/ParseHttp.hpp"
 #include "../inc/Response.hpp"
 #include "../inc/Request.hpp"
-#include "../inc/ParseUtils.hpp"
+#include "utils/ParseUtils.hpp"
 #include "../inc/ParseUri.hpp"
 #include "../inc/ParseHttpValidator.hpp"
 #include "../inc/ParseHttpReader.hpp"

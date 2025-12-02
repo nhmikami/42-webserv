@@ -5,7 +5,7 @@
 #include <sstream>
 #include <iostream>
 
-#include "Logger.hpp"
+#include "utils/Logger.hpp"
 
 class ParseUtils {
 	private:

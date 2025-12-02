@@ -1,4 +1,4 @@
-#include "ParseConfig.hpp"
+#include "config/ParseConfig.hpp"
 
 // ParseConfig::ParseConfig(void) : _filename(""), _context(GLOBAL), _open_brackets(0), _count_line(0) {};
 
@@ -13,7 +13,7 @@ ParseConfig::~ParseConfig(void) {};
 // 	return *this;
 // };
 
-std::vector<ServerConfig> ParseConfig::parse() {
+std::vector<ServerConfig> ParseConfig::parse(void) {
 
 	std::ifstream file(_filename.c_str());
 
