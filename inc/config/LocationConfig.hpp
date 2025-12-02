@@ -19,7 +19,6 @@ class LocationConfig : public BaseConfig {
 		void	setMethods(const std::vector<std::string>& values);
 
 	public:
-		LocationConfig(void);
 		LocationConfig(std::string path);
 		LocationConfig(const LocationConfig& other);
 		~LocationConfig(void);

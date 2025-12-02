@@ -1,6 +1,7 @@
 #include "config/ServerConfig.hpp"
 
 ServerConfig::ServerConfig(void) :
+	BaseConfig(),
 	_host("127.0.0.1"),
 	_port(80)
 {

@@ -1,14 +1,7 @@
 #include "config/LocationConfig.hpp"
 
-// LocationConfig::LocationConfig(void) : 
-// 	_autoindex(false),
-// 	_client_max_body_size(1000),
-// 	_is_cgi(false)
-// {
-//     initDirectiveMap();
-// }
-
-LocationConfig::LocationConfig(std::string path) : 
+LocationConfig::LocationConfig(std::string path) :
+	BaseConfig(),
 	_path(path)
 {
 	initDirectiveMap();
