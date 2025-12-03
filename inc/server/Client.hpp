@@ -7,12 +7,11 @@
 #include <iostream>
 #include <sys/socket.h>
 
-#include "Logger.hpp"
+#include "utils/Logger.hpp"
 
 class Client {
 	private:
 		int		_client_fd;
-		Logger	_logger;
 
 		Client(void);
 		Client(const Client &other);

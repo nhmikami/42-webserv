@@ -5,6 +5,8 @@
 #include <sstream>
 #include <iostream>
 
+#include "utils/Logger.hpp"
+
 class ParseUtils {
 	private:
 		ParseUtils(const ParseUtils &other);
@@ -14,10 +16,9 @@ class ParseUtils {
 		ParseUtils(void);
 		~ParseUtils(void);
 
-		// void eraseLine(std::string &buffer, const std::string &text, size_t pos);
-		// void eraseAll(std::string &buffer, const std::string &text);
-		static std::string itoa(int n);
-		static std::string trim(const std::string &s);
+		static std::string  itoa(int n);
+		static std::string  trim(const std::string &s);
+		static bool			isnumber(const std::string &s);
 };
 
 #endif

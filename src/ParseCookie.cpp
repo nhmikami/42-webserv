@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 #include "../inc/ParseCookie.hpp"
-#include "../inc/ParseUtils.hpp"
+#include "utils/ParseUtils.hpp"
 
 ParseCookie::ParseCookie() { }
 

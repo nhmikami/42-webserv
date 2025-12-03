@@ -1,24 +1,24 @@
-#include "ParseConfig.hpp"
+#include "config/ParseConfig.hpp"
 
-ParseConfig::ParseConfig(void) : _filename(""), _context(GLOBAL), _open_brackets(false), _count_line(0) {};
+// ParseConfig::ParseConfig(void) : _filename(""), _context(GLOBAL), _open_brackets(0), _count_line(0) {};
 
-ParseConfig::ParseConfig(const ParseConfig &other) : _filename(other._filename), _context(GLOBAL), _open_brackets(false), _count_line(0) {};
+// ParseConfig::ParseConfig(const ParseConfig &other) : _filename(other._filename), _context(GLOBAL), _open_brackets(0), _count_line(0) {};
 
-ParseConfig::ParseConfig(const std::string &filename) : _filename(filename), _context(GLOBAL), _open_brackets(false), _count_line(0) {};
+ParseConfig::ParseConfig(const std::string &filename) : _filename(filename), _context(GLOBAL), _open_brackets(0), _count_line(0) {};
 
 ParseConfig::~ParseConfig(void) {};
 
-ParseConfig &ParseConfig::operator=(const ParseConfig &other) {
-	(void)other;
-	return *this;
-};
+// ParseConfig &ParseConfig::operator=(const ParseConfig &other) {
+// 	(void)other;
+// 	return *this;
+// };
 
-std::vector<ServerConfig> ParseConfig::parse() {
+std::vector<ServerConfig> ParseConfig::parse(void) {
 
 	std::ifstream file(_filename.c_str());
 
 	if (!file.is_open())
-		throw std::invalid_argument("Unable to open file: " + _filename);;
+		throw std::invalid_argument("Unable to open file: " + _filename);
 
 	std::string line;
 	
@@ -36,7 +36,7 @@ std::vector<ServerConfig> ParseConfig::parse() {
 		if (!getKeyValues(line, &key, &values))
 			continue;
 
-		if (line.length() > 0 && !line.empty()) {
+		if (!line.empty()) {
 			if (changeContext(key, values))
 				continue;
 			parseLine(key, values);
@@ -46,13 +46,13 @@ std::vector<ServerConfig> ParseConfig::parse() {
 	file.close();
 
 	if (_open_brackets != 0) {
-		throw std::invalid_argument("Sintax error in file " + _filename + " line " + ParseUtils::itoa(_count_line) + ": Open brackets.");
+		throw std::invalid_argument("Syntax error in file " + _filename + " line " + ParseUtils::itoa(_count_line) + ": Open brackets.");
 	}
 
 	return _servers;
 }
 
-bool ParseConfig::getKeyValues(std::string line, std::string *key, std::vector<std::string> *values)
+bool ParseConfig::getKeyValues(const std::string line, std::string *key, std::vector<std::string> *values)
 {
 	std::istringstream iss(line);
 	std::string token;
@@ -77,10 +77,10 @@ bool ParseConfig::getKeyValues(std::string line, std::string *key, std::vector<s
 	return true;
 }
 
-bool ParseConfig::changeContext(std::string key, std::vector<std::string> values) {
+bool ParseConfig::changeContext(const std::string key, std::vector<std::string> values) {
 	std::string error_message;
 
-	error_message = "Sintax error in file " + _filename + " line " + ParseUtils::itoa(_count_line) + "near " + key;
+	error_message = "Syntax error in file " + _filename + " line " + ParseUtils::itoa(_count_line) + " near " + key;
 
 	std::string open_bracket = "{";
 	std::string close_bracket = "}";
@@ -112,10 +112,15 @@ bool ParseConfig::changeContext(std::string key, std::vector<std::string> values
 	return false;
 }
 
-void ParseConfig::parseLine(std::string key, std::vector<std::string> values){
+void ParseConfig::parseLine(const std::string key, std::vector<std::string> values){
 	if (_context == SERVER) {
 		_servers.back().parseServer(key, values);
 	} else if (_context == LOCATION) {
-		_servers.back().getLocation(_location_path)->parseLocation(key, values);
+		LocationConfig* loc = _servers.back().getLocation(_location_path);
+		if (!loc) {
+			Logger::log(Logger::WARNING, "Failed to parse location: " + _location_path);
+			return ;
+		}
+		loc->parseLocation(key, values);
 	}
 }

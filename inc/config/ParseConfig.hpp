@@ -7,9 +7,8 @@
 #include <cstdlib>
 #include <algorithm>
 
-#include "Logger.hpp"
-#include "ParseUtils.hpp"
-#include "ServerConfig.hpp"
+#include "utils/ParseUtils.hpp"
+#include "config/ServerConfig.hpp"
 
 class ParseConfig {
 	private:
@@ -31,15 +30,15 @@ class ParseConfig {
 		
 		ParseConfig &operator=(const ParseConfig &other);
 
-		bool getKeyValues(std::string line, std::string *key, std::vector<std::string> *values);
-		bool changeContext(std::string key, std::vector<std::string> values);
-		void parseLine(std::string key, std::vector<std::string> values);
+		bool getKeyValues(const std::string line, std::string *key, std::vector<std::string> *values);
+		bool changeContext(const std::string key, std::vector<std::string> values);
+		void parseLine(const std::string key, std::vector<std::string> values);
 
 	public:
 		ParseConfig(const std::string &filename);
 		~ParseConfig(void);
 
-		std::vector<ServerConfig> parse();
+		std::vector<ServerConfig> parse(void);
 };
 
 #endif

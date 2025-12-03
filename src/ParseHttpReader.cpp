@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 #include "../inc/ParseHttpReader.hpp"
-#include "../inc/ParseUtils.hpp"
+#include "utils/ParseUtils.hpp"
 #include "../inc/ParseHttp.hpp"
 
 ParseHttpReader::ParseHttpReader(void) {}
