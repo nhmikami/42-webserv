@@ -29,6 +29,7 @@ void ServerConfig::initDirectiveMap()
     _directiveSetters["index"] = &ServerConfig::setIndexFiles;
     _directiveSetters["error_page"] = &ServerConfig::setErrorPages;
 	_directiveSetters["cgi"] = &ServerConfig::setCgi;
+	_directiveSetters["upload"] = &ServerConfig::setUpload;
 }
 
 void ServerConfig::parseServer(const std::string key, const std::vector<std::string> values)
