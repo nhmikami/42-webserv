@@ -20,6 +20,8 @@ class BaseConfig {
 		std::map<std::string, std::string>	_cgi;
 		std::string							_upload;
 
+		void	validateDirectoryPath(const std::string& path, const std::string& directive_name);
+
 		void	setRoot(const std::vector<std::string>& values);
 		void	setAutoIndex(const std::vector<std::string>& values);
 		void	setClientMaxBodySize(const std::vector<std::string>& values);

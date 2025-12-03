@@ -19,15 +19,18 @@ BaseConfig::BaseConfig(const BaseConfig &other) :
 
 BaseConfig::~BaseConfig(void) {};
 
+void BaseConfig::validateDirectoryPath(const std::string& path, const std::string& directive_name) {
+    struct stat st;
+    if (stat(path.c_str(), &st) != 0 || !S_ISDIR(st.st_mode))
+        throw std::invalid_argument(directive_name + " directory does not exist or is not a directory: " + path);
+}
+
 void BaseConfig::setRoot(const std::vector<std::string>& values)
 {
 	if (values.size() != 1)
 		throw std::invalid_argument("root must have exactly one value.");
-	const std::string &path = values[0];
-	struct stat st;
-    if (stat(path.c_str(), &st) != 0 || !S_ISDIR(st.st_mode))
-		throw std::invalid_argument("root directory does not exist or is not a directory: " + path);
-	_root = path;
+	validateDirectoryPath(values[0], "root");
+    _root = values[0];
 };
 
 void BaseConfig::setAutoIndex(const std::vector<std::string>& values)
@@ -88,11 +91,8 @@ void BaseConfig::setUpload(const std::vector<std::string>& values)
 {
 	if (values.size() != 1)
 		throw std::invalid_argument("upload must have exactly one value.");
-	const std::string &path = values[0];
-	struct stat st;
-    if (stat(path.c_str(), &st) != 0 || !S_ISDIR(st.st_mode))
-		throw std::invalid_argument("root directory does not exist or is not a directory: " + path);
-	_upload = path;
+	validateDirectoryPath(values[0], "upload");
+    _root = values[0];
 };
 
 
