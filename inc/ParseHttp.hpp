@@ -6,7 +6,7 @@
 /*   By: cabo-ram <cabo-ram@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 14:44:10 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/12/03 14:17:43 by cabo-ram         ###   ########.fr       */
+/*   Updated: 2025/12/03 16:29:59 by cabo-ram         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,7 @@
 
 #define RECV_BUFFER_SIZE 4096
 
-#define RECV_BUFFER_SIZE 4096
+#define MAX_HEADER_SIZE 8192
 
 class ParseHttp {
 	private:
@@ -52,11 +52,11 @@ class ParseHttp {
 		std::map<std::string, std::string> _cookies;
 		std::map<std::string, std::string> _all_headers;
 
-		bool parse_request_line(const std::string &line,
+		bool parseRequestLine(const std::string &line,
 			std::string &out_method,
 			std::string &out_path,
 			std::string &out_version);
-		std::map<std::string,std::string> parse_headers(const std::string &headers_block);
+		std::map<std::string,std::string> parseHeaders(const std::string &headers_block);
 
 	public:
 		ParseHttp();
@@ -64,7 +64,7 @@ class ParseHttp {
 		// ParseHttp &operator=(const ParseHttp &other);
 		~ParseHttp();
 
-		HttpStatus	initParse(int client_fd, std::string &remaining_buffer, int max_header_size);
+		HttpStatus	initParse(std::string &request);
 		Request		buildRequest() const;
 
 		RequestMethod getRequestMethod() const;

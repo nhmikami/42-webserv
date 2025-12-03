@@ -19,7 +19,7 @@ ParseHttpReader::ParseHttpReader(void) {}
 ParseHttpReader::~ParseHttpReader(void) {}
 
 // lê os dados do socket até encontrar "\r\n"
-bool ParseHttpReader::read_until_crlf(int client_fd, std::string &buffer, std::string &out_line) {
+bool ParseHttpReader::readUntilCrlf(int client_fd, std::string &buffer, std::string &out_line) {
 	static const size_t MAX_LINE = 16 * 1024;
 	static const int TIMEOUT_MS = 5000;
 	
@@ -34,45 +34,41 @@ bool ParseHttpReader::read_until_crlf(int client_fd, std::string &buffer, std::s
 		if (buffer.size() > MAX_LINE)
 			return false;
 		
-		struct pollfd pfd = {client_fd, POLLIN, 0};
+		// struct pollfd pfd = {client_fd, POLLIN, 0};
 
-		int poll_result = poll(&pfd, 1, TIMEOUT_MS);
+		// int poll_result = poll(&pfd, 1, TIMEOUT_MS);
 		
-		if (poll_result == 0)
-			return false;
-		if (poll_result < 0) {
-			if (errno == EINTR)
-				continue;
-			return false;
-		}
-		if (poll_result > 0) {
-			for (int i = 0; i < 2; ++i) {
-				if (pfd.revents & POLLERR || POLLHUP ||POLLNVAL)
-					return false;
-			}
-			if (!(pfd.revents & POLLIN))
-				continue;
-		}
+		// if (poll_result == 0)
+		// 	return false;
+		// if (poll_result < 0) {
+		// 	if (errno == EINTR)
+		// 		continue;
+		// 	return false;
+		// }
+		// if (poll_result > 0) {
+		// 	for (int i = 0; i < 2; ++i) {
+		// 		if (pfd.revents & POLLERR || POLLHUP ||POLLNVAL)
+		// 			return false;
+		// 	}
+		// 	if (!(pfd.revents & POLLIN))
+		// 		continue;
+		// }
 		
 		char temp[RECV_BUFFER_SIZE];
 		ssize_t bytes_received = recv(client_fd, temp, sizeof(temp), 0);
 		
-		if (bytes_received == 0)
-			return false;
-		if (bytes_received < 0) {
-			if (errno == EINTR || EAGAIN || EWOULDBLOCK)
-				continue;
-			return false;
-		}
-		if (buffer.size() >= MAX_LINE)
+		if (bytes_received <= 0)
 			return false;
 		
+		// Verifica tamanho antes de adicionar
+		if (buffer.size() + static_cast<size_t>(bytes_received) > MAX_LINE)
+			return false;
 		buffer.append(temp, static_cast<size_t>(bytes_received));
 	}
 }
 
 // converte hexadecimal para inteiro (tamanho do chunk)
-bool ParseHttpReader::hex_to_int(const std::string &hex_line, size_t &out_size) {
+bool ParseHttpReader::hexToInt(const std::string &hex_line, size_t &out_size) {
 	std::string hex_str = hex_line;
 	
 	size_t semicolon_pos = hex_str.find(";");
@@ -97,7 +93,7 @@ bool ParseHttpReader::hex_to_int(const std::string &hex_line, size_t &out_size) 
 	return true;
 }
 
-HttpStatus ParseHttpReader::read_body(int client_fd, size_t content_length, std::string &request_body) {
+HttpStatus ParseHttpReader::readBody(int client_fd, size_t content_length, std::string &request_body) {
 	static const size_t MAX_TOTAL = 10 * 1024 * 1024;
 	
 	if (content_length == 0)
@@ -118,15 +114,8 @@ HttpStatus ParseHttpReader::read_body(int client_fd, size_t content_length, std:
 		
 		bytes_read = recv(client_fd, buffer, bytes_to_read, 0);
 		
-		if (bytes_read == 0)
+		if (bytes_read <= 0)
 			return BAD_REQUEST;
-		if (bytes_read < 0) {
-			if (errno == EINTR)
-				continue;
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				return BAD_REQUEST;
-			return SERVER_ERR;
-		}
 		
 		if (static_cast<size_t>(bytes_read) > MAX_TOTAL - total_read)
 			return PAYLOAD_TOO_LARGE;
@@ -137,24 +126,24 @@ HttpStatus ParseHttpReader::read_body(int client_fd, size_t content_length, std:
 	return OK;
 }
 
-HttpStatus ParseHttpReader::read_chunked(int client_fd, std::string &buffer, std::string &request_body) {
+HttpStatus ParseHttpReader::readChunked(int client_fd, std::string &buffer, std::string &request_body) {
 	request_body.clear();
 	static const size_t MAX_TOTAL = 10 * 1024 * 1024;
 	size_t total_bytes_read = 0;
 	
 	while (true) {
 		std::string chunk_size_line;
-		if (!read_until_crlf(client_fd, buffer, chunk_size_line))
+		if (!readUntilCrlf(client_fd, buffer, chunk_size_line))
 			return BAD_REQUEST;
 		
 		size_t chunk_size;
-		if (!hex_to_int(chunk_size_line, chunk_size))
+		if (!hexToInt(chunk_size_line, chunk_size))
 			return BAD_REQUEST;
 		
 		if (chunk_size == 0) {
 			while (true) {
 				std::string trailer_line;
-				if (!read_until_crlf(client_fd, buffer, trailer_line))
+				if (!readUntilCrlf(client_fd, buffer, trailer_line))
 					return BAD_REQUEST;
 				if (trailer_line.empty())
 					return OK;
@@ -168,15 +157,9 @@ HttpStatus ParseHttpReader::read_chunked(int client_fd, std::string &buffer, std
 			char temp[RECV_BUFFER_SIZE];
 			ssize_t bytes_received = recv(client_fd, temp, sizeof(temp), 0);
 			
-			if (bytes_received == 0)
+			if (bytes_received <= 0)
 				return BAD_REQUEST;
-			if (bytes_received < 0) {
-				if (errno == EINTR)
-					continue;
-				if (errno == EAGAIN || errno == EWOULDBLOCK)
-					return SERVER_ERR;
-				return SERVER_ERR;
-			}
+			
 			buffer.append(temp, static_cast<size_t>(bytes_received));
 		}
 		
@@ -188,15 +171,9 @@ HttpStatus ParseHttpReader::read_chunked(int client_fd, std::string &buffer, std
 			char temp[RECV_BUFFER_SIZE];
 			ssize_t bytes_received = recv(client_fd, temp, sizeof(temp), 0);
 			
-			if (bytes_received == 0)
+			if (bytes_received <= 0)
 				return BAD_REQUEST;
-			if (bytes_received < 0) {
-				if (errno == EINTR)
-					continue;
-				if (errno == EAGAIN || errno == EWOULDBLOCK)
-					return SERVER_ERR;
-				return SERVER_ERR;
-			}
+			
 			buffer.append(temp, static_cast<size_t>(bytes_received));
 		}
 		

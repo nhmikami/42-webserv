@@ -18,7 +18,7 @@ ParseHttpValidator::ParseHttpValidator(void) {}
 ParseHttpValidator::~ParseHttpValidator(void) {}
 
 // valida o header host
-bool ParseHttpValidator::validate_host_header(const std::string &host) {
+bool ParseHttpValidator::validateHostHeader(const std::string &host) {
 	if (host.empty())
 		return false;
 	
@@ -59,7 +59,7 @@ bool ParseHttpValidator::validate_host_header(const std::string &host) {
 }
 
 // valida o content_length e se é numérico
-bool ParseHttpValidator::validate_content_length(const std::string &content_length_str, size_t &out_length) {
+bool ParseHttpValidator::validateContentLength(const std::string &content_length_str, size_t &out_length) {
 	if (content_length_str.empty())
 		return false;
 	
@@ -71,10 +71,10 @@ bool ParseHttpValidator::validate_content_length(const std::string &content_leng
 	char *end_ptr = NULL;
 	errno = 0;
 	unsigned long value = std::strtoul(content_length_str.c_str(), &end_ptr, 10);
-	
+
 	if (errno == ERANGE)
 		return false;
-	
+
 	if (end_ptr != content_length_str.c_str() + content_length_str.size())
 		return false;
 	
@@ -83,7 +83,7 @@ bool ParseHttpValidator::validate_content_length(const std::string &content_leng
 }
 
 // normaliza o transfer encoding
-bool ParseHttpValidator::validate_transfer_encoding(const std::string &transfer_encoding) {
+bool ParseHttpValidator::validateTransferEncoding(const std::string &transfer_encoding) {
 	if (transfer_encoding.empty())
 		return false;
 
@@ -95,7 +95,7 @@ bool ParseHttpValidator::validate_transfer_encoding(const std::string &transfer_
 	return false;
 }
 
-bool ParseHttpValidator::validate_content_type(const std::string &content_type) {
+bool ParseHttpValidator::validateContentType(const std::string &content_type) {
 	if (content_type.empty())
 		return false;
 	
@@ -126,7 +126,7 @@ bool ParseHttpValidator::validate_content_type(const std::string &content_type) 
 	return true;
 }
 
-bool ParseHttpValidator::validate_quality_value(const std::string &s) {
+bool ParseHttpValidator::validateQualityValue(const std::string &s) {
 	if (s.empty())
 		return false;
 	for (size_t i = 0; i < s.size(); ++i) {
@@ -166,11 +166,11 @@ bool ParseHttpValidator::validate_quality_value(const std::string &s) {
 	return false;
 }
 
-double ParseHttpValidator::q_to_double(const std::string &s) {
+double ParseHttpValidator::qToDouble(const std::string &s) {
 	return std::strtod(s.c_str(), NULL);
 }
 
-bool ParseHttpValidator::validate_type_token(const std::string &t, bool is_type) {
+bool ParseHttpValidator::validateTypeToken(const std::string &t, bool is_type) {
 	(void)is_type;
 	if (t.empty())
 		return false;
@@ -187,7 +187,7 @@ bool ParseHttpValidator::validate_type_token(const std::string &t, bool is_type)
 	return true;
 }
 
-bool ParseHttpValidator::check_params_q(const std::string &params_str, double &out_q, bool &has_q) {
+bool ParseHttpValidator::checkParamsQ(const std::string &params_str, double &out_q, bool &has_q) {
 	has_q = false;
 	out_q = 1.0;
 	if (params_str.empty())
@@ -221,9 +221,9 @@ bool ParseHttpValidator::check_params_q(const std::string &params_str, double &o
 		if (name == "q") {
 			if (has_q)
 				return false;
-			if (!validate_quality_value(value))
+			if (!validateQualityValue(value))
 				return false;
-			out_q = q_to_double(value);
+			out_q = qToDouble(value);
 			has_q = true;
 		}
 		if (next == std::string::npos)
@@ -233,7 +233,7 @@ bool ParseHttpValidator::check_params_q(const std::string &params_str, double &o
 	return true;
 }
 
-bool ParseHttpValidator::validate_accept(const std::string &accept) {
+bool ParseHttpValidator::validateAccept(const std::string &accept) {
 	if (accept.empty())
 		return false;
 	
@@ -280,14 +280,14 @@ bool ParseHttpValidator::validate_accept(const std::string &accept) {
 			return false;
 		if (type == "*" && subtype != "*")
 			return false;
-		if (!validate_type_token(type, true))
+		if (!validateTypeToken(type, true))
 			return false;
-		if (!validate_type_token(subtype, false))
+		if (!validateTypeToken(subtype, false))
 			return false;
 
 		double q_value = 1.0;
 		bool has_q = false;
-		if (!check_params_q(params_str, q_value, has_q))
+		if (!checkParamsQ(params_str, q_value, has_q))
 			return false;
 		
 		if (comma_pos == std::string::npos)
@@ -298,7 +298,7 @@ bool ParseHttpValidator::validate_accept(const std::string &accept) {
 	return true;
 }
 
-bool ParseHttpValidator::validate_connection(const std::string &connection) {
+bool ParseHttpValidator::validateConnection(const std::string &connection) {
 	if (connection.empty())
 		return false;
 	
@@ -311,12 +311,12 @@ bool ParseHttpValidator::validate_connection(const std::string &connection) {
 }
 
 // Valida regras HTTP mínimas e coerência entre headers antes de aceitar/processar o corpo ou rotear a requisição
-HttpStatus ParseHttpValidator::validate_headers(const std::map<std::string, std::string> &headers) {
+HttpStatus ParseHttpValidator::validateHeaders(const std::map<std::string, std::string> &headers) {
 	std::map<std::string, std::string>::const_iterator host_it = headers.find("host");
 	if (host_it == headers.end())
 		return BAD_REQUEST;
 	
-	if (!validate_host_header(host_it->second))
+	if (!validateHostHeader(host_it->second))
 		return BAD_REQUEST;
 	
 	std::map<std::string, std::string>::const_iterator content_length_it = headers.find("content-length");
@@ -329,30 +329,30 @@ HttpStatus ParseHttpValidator::validate_headers(const std::map<std::string, std:
 	
 	if (has_content_length) {
 		size_t content_length;
-		if (!validate_content_length(content_length_it->second, content_length))
+		if (!validateContentLength(content_length_it->second, content_length))
 			return BAD_REQUEST;
 	}
 	
 	if (has_transfer_encoding) {
-		if (!validate_transfer_encoding(transfer_encoding_it->second))
+		if (!validateTransferEncoding(transfer_encoding_it->second))
 			return BAD_REQUEST;
 	}
 	
 	std::map<std::string, std::string>::const_iterator content_type_it = headers.find("content-type");
 	if (content_type_it != headers.end()) {
-		if (!validate_content_type(content_type_it->second))
+		if (!validateContentType(content_type_it->second))
 			return BAD_REQUEST;
 	}
 	
 	std::map<std::string, std::string>::const_iterator connection_it = headers.find("connection");
 	if (connection_it != headers.end()) {
-		if (!validate_connection(connection_it->second))
+		if (!validateConnection(connection_it->second))
 			return BAD_REQUEST;
 	}
 	
 	std::map<std::string, std::string>::const_iterator accept_it = headers.find("accept");
 	if (accept_it != headers.end())
-		if (!validate_accept(accept_it->second))
+		if (!validateAccept(accept_it->second))
 			return BAD_REQUEST;
 	
 	return OK;

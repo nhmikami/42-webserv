@@ -6,20 +6,20 @@
 /*   By: cabo-ram <cabo-ram@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/06 15:02:25 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/12/03 14:17:35 by cabo-ram         ###   ########.fr       */
+/*   Updated: 2025/12/03 16:29:58 by cabo-ram         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../inc/ParseHttp.hpp"
 #include "../inc/Response.hpp"
 #include "../inc/Request.hpp"
-#include "utils/ParseUtils.hpp"
+#include "../inc/utils/ParseUtils.hpp"
 #include "../inc/ParseUri.hpp"
 #include "../inc/ParseHttpValidator.hpp"
 #include "../inc/ParseHttpReader.hpp"
 #include "../inc/ParseCookie.hpp"
 
-ParseHttp::ParseHttp() { }
+ParseHttp::ParseHttp() {};
 
 // ParseHttp::ParseHttp(const ParseHttp &other) {
 // 	*this = other;
@@ -94,7 +94,7 @@ const std::map<std::string, std::string>& ParseHttp::getCookies() const {
 }
 
 // faz o split da request line
-bool	ParseHttp::parse_request_line(const std::string &line,
+bool	ParseHttp::parseRequestLine(const std::string &line,
 						std::string &out_method,
 						std::string &out_path,
 						std::string &out_version) {
@@ -157,7 +157,7 @@ std::ostream& operator<<(std::ostream& os, RequestMethod method) {
 }
 
 // lê os headers e separa em chave e valor
-std::map<std::string,std::string> ParseHttp::parse_headers(const std::string &headers_block) {
+std::map<std::string,std::string> ParseHttp::parseHeaders(const std::string &headers_block) {
 	std::map<std::string,std::string> headers;
 	std::istringstream stream(headers_block);
 	std::string line;
@@ -193,37 +193,38 @@ std::map<std::string,std::string> ParseHttp::parse_headers(const std::string &he
 	return headers;
 }
 
-HttpStatus	ParseHttp::initParse(int client_fd, std::string &remaining_buffer, int max_header_size) {
-	char	recv_buffer[RECV_BUFFER_SIZE];
-	ssize_t	bytes_received;
+HttpStatus	ParseHttp::initParse(std::string &request) {
+	// std::string remaining_buffer;
+	// char	recv_buffer[RECV_BUFFER_SIZE];
+	// ssize_t	bytes_received;
 	size_t	total_header_size = 0;
 	size_t	headers_end_pos = 0;
 
-	remaining_buffer.clear();
+	// remaining_buffer.clear();
 
-	while (true) {
-		bytes_received = recv(client_fd, recv_buffer, sizeof(recv_buffer), 0);
+	// while (true) {
+	// 	bytes_received = recv(client_fd, recv_buffer, sizeof(recv_buffer), 0);
 		
-		if (bytes_received == 0)
-			return BAD_REQUEST;
-		if (bytes_received < 0)
-			return BAD_REQUEST;
+	// 	if (bytes_received == 0)
+	// 		return BAD_REQUEST;
+	// 	if (bytes_received < 0)
+	// 		return BAD_REQUEST;
 		
-		remaining_buffer.append(recv_buffer, bytes_received);
-		total_header_size += bytes_received;
+	// 	remaining_buffer.append(recv_buffer, bytes_received);
+	// 	total_header_size += bytes_received;
 		
-		if (total_header_size > (size_t)max_header_size)
+		if (total_header_size > MAX_HEADER_SIZE)
 			return PAYLOAD_TOO_LARGE;
 		
-		headers_end_pos = remaining_buffer.find("\r\n\r\n");
+		headers_end_pos = request.find("\r\n\r\n");
 		if (headers_end_pos != std::string::npos)
-			break;
-	}
+			return BAD_REQUEST;
+	// }	
 	
 	size_t body_start_pos = headers_end_pos + 4;
-	std::string headers_block = remaining_buffer.substr(0, headers_end_pos);
-	std::string body_buffer = remaining_buffer.substr(body_start_pos);
-	remaining_buffer = body_buffer;
+	std::string headers_block = request.substr(0, headers_end_pos);
+	std::string body_buffer = request.substr(body_start_pos);
+	request = body_buffer;
 
 	size_t request_line_end = headers_block.find("\r\n");
 	if (request_line_end == std::string::npos)
@@ -232,7 +233,7 @@ HttpStatus	ParseHttp::initParse(int client_fd, std::string &remaining_buffer, in
 	std::string request_line = headers_block.substr(0, request_line_end);
 	std::string method_str, uri_str, version_str;
 	
-	if (!parse_request_line(request_line, method_str, uri_str, version_str))
+	if (!parseRequestLine(request_line, method_str, uri_str, version_str))
 		return BAD_REQUEST;
 
 	std::string path, query;
@@ -240,7 +241,7 @@ HttpStatus	ParseHttp::initParse(int client_fd, std::string &remaining_buffer, in
 		return BAD_REQUEST;
 	
 	std::string normalized_path;
-	if (!ParseUri::normalize_path(path, normalized_path))
+	if (!ParseUri::normalizePath(path, normalized_path))
 		return BAD_REQUEST;
 
 	this->_request_uri = uri_str;
@@ -250,9 +251,9 @@ HttpStatus	ParseHttp::initParse(int client_fd, std::string &remaining_buffer, in
 	this->_request_method = stringToMethod(method_str);
 	
 	std::string headers_only = headers_block.substr(request_line_end + 2);
-	std::map<std::string, std::string> headers_map = parse_headers(headers_only);
+	std::map<std::string, std::string> headers_map = parseHeaders(headers_only);
 
-	HttpStatus header_validation = ParseHttpValidator::validate_headers(headers_map);
+	HttpStatus header_validation = ParseHttpValidator::validateHeaders(headers_map);
 	if (header_validation != OK)
 		return header_validation;
 
@@ -273,29 +274,29 @@ HttpStatus	ParseHttp::initParse(int client_fd, std::string &remaining_buffer, in
 	if (headers_map.find("accept") != headers_map.end())
 		this->_accept = headers_map["accept"];
 	if (headers_map.find("cookie") != headers_map.end())
-		this->_cookies = ParseCookie::parse_cookie(headers_map["cookie"]);
+		this->_cookies = ParseCookie::parseCookie(headers_map["cookie"]);
 
 	if (this->_request_method == POST) {
 		if (headers_map.find("transfer-encoding") != headers_map.end() && 
 			headers_map["transfer-encoding"] == "chunked") {
-			return ParseHttpReader::read_chunked(client_fd, remaining_buffer, this->_request_body);
+			return ParseHttpReader::readChunked(client_fd, request, this->_request_body);
 		}
 		else if (headers_map.find("content-length") != headers_map.end()) {
 			size_t content_length;
-			if (!ParseHttpValidator::validate_content_length(headers_map["content-length"], content_length))
+			if (!ParseHttpValidator::validateContentLength(headers_map["content-length"], content_length))
 				return BAD_REQUEST;
 
-			this->_request_body = remaining_buffer;
-			size_t bytes_already_read = remaining_buffer.size();
+			this->_request_body = request;
+			size_t bytes_already_read = request.size();
 
 			if (bytes_already_read >= content_length) {
 				this->_request_body = this->_request_body.substr(0, content_length);
-				remaining_buffer = remaining_buffer.substr(content_length);
+				request = request.substr(content_length);
 				return OK;
 			}
 
 			size_t bytes_remaining = content_length - bytes_already_read;
-			HttpStatus body_status = ParseHttpReader::read_body(client_fd, bytes_remaining, this->_request_body);
+			HttpStatus body_status = ParseHttpReader::readBody(client_fd, bytes_remaining, this->_request_body);
 			if (body_status != OK)
 				return body_status;
 		}

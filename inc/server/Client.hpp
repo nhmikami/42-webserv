@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 
 #include "utils/Logger.hpp"
+#include "ParseHttp.hpp"
 
 class Client {
 	private:

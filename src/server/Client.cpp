@@ -32,16 +32,24 @@ Client::~Client(void)
 
 std::string Client::receive() 
 {
-	char buffer[4096] = {0};
-	int bytes = recv(_client_fd, buffer, sizeof(buffer) - 1, 0);
+	std::string	buffer;
+	char		recv_buffer[RECV_BUFFER_SIZE];
+	ssize_t		bytes_received;
 
-	if (bytes > 0) {
-		return std::string(buffer, bytes);
+	buffer.clear();
+
+	while (true) {
+		bytes_received = recv(_client_fd, recv_buffer, sizeof(recv_buffer) -1, 0);
+		
+		if (bytes_received == 0)
+			break;
+		if (bytes_received < 0)
+			Logger::log(Logger::ERROR, "Failed to receive data.");
+		
+		buffer.append(recv_buffer, bytes_received);
 	}
-	if (bytes < 0) {
-		Logger::log(Logger::ERROR, "Failed to receive data.");
-	}
-	return "";
+
+	return buffer;
 };
 
 
