@@ -4,8 +4,6 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
-#include <sys/stat.h>
-#include <dirent.h>
 #include <map>
 
 enum HttpStatus {

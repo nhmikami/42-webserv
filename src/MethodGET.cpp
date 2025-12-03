@@ -109,8 +109,3 @@ HttpStatus MethodGET::_generateAutoindex(const std::string &path) {
 	_res.addHeader("Content-Type", "text/html");
 	return OK;
 }
-
-HttpStatus MethodGET::_runCGI(const std::string &path) {
-	(void)path;
-	return NOT_IMPLEMENTED;
-}

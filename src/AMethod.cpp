@@ -1,11 +1,14 @@
 #include "AMethod.hpp"
 
 AMethod::AMethod(const Request &req, const ServerConfig &config)
-	: _req(req), _config(config), _location(NULL) {
+	: _req(req), _config(config), _location(NULL), _cgiHandler(NULL) {
 	_location = _findLocation(_req.getPath());
 }
 
-AMethod::~AMethod(void) {}
+AMethod::~AMethod(void) {
+	if (_cgiHandler) 
+		delete _cgiHandler;
+}
 
 const Response& AMethod::getResponse(void) const {
 	return _res;
@@ -72,11 +75,6 @@ std::string AMethod::_resolvePath(const std::string &root, const std::string &re
 		finalPath += "/" + tokens[i];
 
 	return finalPath;
-}
-
-bool AMethod::_isCGI(const std::string& path) const {
-	(void)path;
-	return false;
 }
 
 const std::string AMethod::_guessMimeType(const std::string &path) const {
@@ -152,4 +150,56 @@ size_t AMethod::_getMaxBodySize(void) const {
 			return loc_size;
 	}
 	return _config.getClientMaxBodySize();
+}
+
+bool AMethod::_isCGI(const std::string& path) const {
+	size_t dotPos = path.find_last_of(".");
+	if (dotPos == std::string::npos || dotPos == path.length() - 1)
+		return false;
+	std::string extension = path.substr(dotPos);
+	
+	if (_location) {
+		const std::map<std::string, std::string>& locCgi = _location->getCgi();
+		if (locCgi.count(extension) > 0)
+			return true;
+	}
+
+	const std::map<std::string, std::string>& srvCgi = _config.getCgi();
+	if (srvCgi.count(extension) > 0)
+		return true;
+
+	return false;
+}
+
+std::map<std::string, std::string> AMethod::_getCgiExecutors(void) const {
+	std::map<std::string, std::string> cgi_map;
+
+	if (_location) {
+		const std::map<std::string, std::string>& locCgi = _location->getCgi();
+		cgi_map.insert(locCgi.begin(), locCgi.end());
+	}
+
+	const std::map<std::string, std::string>& srvCgi = _config.getCgi();
+	cgi_map.insert(srvCgi.begin(), srvCgi.end());
+
+	return cgi_map;
+}
+
+HttpStatus AMethod::_runCGI(const std::string &path) {
+	std::map<std::string, std::string> executors = _getCgiExecutors();
+	std::string ext = path.substr(path.find_last_of('.'));
+	if (executors.find(ext) == executors.end())
+		return SERVER_ERR;
+	std::string executor = executors[ext]; // e não houver suporte para a extensão?
+
+	_cgiHandler = new CgiHandler(_req, _location, path, executor);
+	try {
+		_cgiHandler->start(); 
+	} catch (std::exception &e) {
+		delete _cgiHandler;
+		_cgiHandler = NULL;
+		return SERVER_ERR;
+	}
+
+	return CGI_PENDING;
 }
