@@ -1,0 +1,48 @@
+body.bg {
+    background: url('space.jpeg') no-repeat;
+    background-size: cover;
+    color: white;
+    font-family: 'Science Gothic', Impact, Arial, sans-serif;
+}
+
+button, input {
+    padding: 10px 30px;
+    margin: 10px;
+    font-size: 30px;
+    background: transparent;
+    color: white;
+    border: 3px solid white;
+    outline: none;
+}
+
+button, input[type=file] {
+    cursor: pointer;
+}
+
+button:hover {
+    background: white;
+    color: black;
+    border: 3px solid black;
+}
+
+.container {
+    height: 95vh;
+    width: 95vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.title {
+    font-size: 80px;
+    margin: 0;
+    line-height: 1;
+}
+
+.subtitle {
+    font-size: 40px;
+    margin: 20px 0;
+    line-height: 1;
+    color: rgb(197, 197, 18);
+}
