@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ParseHttp.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: cabo-ram <cabo-ram@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 14:44:10 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/11/25 17:08:05 by marvin           ###   ########.fr       */
+/*   Updated: 2025/12/03 14:17:43 by cabo-ram         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,8 @@
 #include "ParseUri.hpp"
 #include "ParseHttpValidator.hpp"
 #include "ParseHttpReader.hpp"
+
+#define RECV_BUFFER_SIZE 4096
 
 #define RECV_BUFFER_SIZE 4096
 
