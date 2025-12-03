@@ -6,9 +6,9 @@
 #include <arpa/inet.h>
 #include <stdio.h>
 
-#include "Server.hpp"
-#include "Logger.hpp"
-#include "ParseConfig.hpp"
+#include "server/Server.hpp"
+#include "utils/Logger.hpp"
+#include "config/ParseConfig.hpp"
 
 void signalHandler(int signum) {
 	(void)signum;
@@ -47,6 +47,20 @@ void printConfig(const std::vector<ServerConfig> &servers_config)
 				std::cout << it->first << "=" << it->second;
 				std::map<int, std::string>::const_iterator next = it;
 				if (++next != errorPages.end())
+					std::cout << ", ";
+			}
+		}
+		std::cout << std::endl;
+
+		std::cout << "cgi: ";
+		const std::map<std::string, std::string>& cgiMap = servers_config[i].getCgi();
+		if (cgiMap.empty()) {
+			std::cout << "none";
+		} else {
+			for (std::map<std::string, std::string>::const_iterator cgi_it = cgiMap.begin(); cgi_it != cgiMap.end(); ++cgi_it) {
+				std::cout << cgi_it->first << " -> " << cgi_it->second;
+				std::map<std::string, std::string>::const_iterator next = cgi_it;
+				if (++next != cgiMap.end())
 					std::cout << ", ";
 			}
 		}

@@ -3,7 +3,7 @@
 
 #include "Response.hpp"
 #include "Request.hpp"
-#include "ServerConfig.hpp"
+#include "config/ServerConfig.hpp"
 #include <sstream>
 #include <sys/stat.h>
 #include <unistd.h>

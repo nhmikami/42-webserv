@@ -1,10 +1,10 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include "Client.hpp"
-#include "Logger.hpp"
-#include "ParseUtils.hpp"
-#include "ServerConfig.hpp"
+#include "server/Client.hpp"
+#include "utils/Logger.hpp"
+#include "utils/ParseUtils.hpp"
+#include "config/ServerConfig.hpp"
 
 #include <poll.h>
 #include <string>

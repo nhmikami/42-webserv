@@ -7,8 +7,8 @@
 #include <cstdlib>
 #include <algorithm>
 
-#include "ParseUtils.hpp"
-#include "ServerConfig.hpp"
+#include "utils/ParseUtils.hpp"
+#include "config/ServerConfig.hpp"
 
 class ParseConfig {
 	private:
@@ -38,7 +38,7 @@ class ParseConfig {
 		ParseConfig(const std::string &filename);
 		~ParseConfig(void);
 
-		std::vector<ServerConfig> parse();
+		std::vector<ServerConfig> parse(void);
 };
 
 #endif
