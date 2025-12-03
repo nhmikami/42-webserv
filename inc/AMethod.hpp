@@ -4,8 +4,7 @@
 #include "CgiHandler.hpp"
 #include "Response.hpp"
 #include "Request.hpp"
-#include "ServerConfig.hpp"
-#include <poll.h>
+#include "config/ServerConfig.hpp"
 #include <sstream>
 #include <sys/stat.h>
 #include <unistd.h>

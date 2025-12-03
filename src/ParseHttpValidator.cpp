@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 #include "../inc/ParseHttpValidator.hpp"
-#include "../inc/ParseUtils.hpp"
+#include "utils/ParseUtils.hpp"
 
 ParseHttpValidator::ParseHttpValidator(void) {}
 
