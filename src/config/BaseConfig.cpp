@@ -25,7 +25,7 @@ void BaseConfig::setRoot(const std::vector<std::string>& values)
 		throw std::invalid_argument("root must have exactly one value.");
 	const std::string &path = values[0];
 	struct stat st;
-    if (stat(path.c_str(), &st) != 0 || !S_ISDIR(st.st_mode))
+	if (stat(path.c_str(), &st) != 0 || !S_ISDIR(st.st_mode))
 		throw std::invalid_argument("root directory does not exist or is not a directory: " + path);
 	_root = path;
 };
