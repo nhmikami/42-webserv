@@ -26,6 +26,7 @@ void	LocationConfig::initDirectiveMap()
 	_directiveSetters["index"] = &LocationConfig::setIndexFiles;
 	_directiveSetters["error_page"] = &LocationConfig::setErrorPages;
 	_directiveSetters["cgi"] = &LocationConfig::setCgi;
+	_directiveSetters["upload"] = &LocationConfig::setUpload;
 }
 
 void	LocationConfig::parseLocation(const std::string key, const std::vector<std::string> values)
