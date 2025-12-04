@@ -25,6 +25,7 @@ void printConfig(const std::vector<ServerConfig> &servers_config)
 		std::cout << "host: " << servers_config[i].getHost() << std::endl;
 		std::cout << "port: " << servers_config[i].getPort() << std::endl;
 		std::cout << "root: " << servers_config[i].getRoot() << std::endl;
+		std::cout << "upload: " << servers_config[i].getUpload() << std::endl;
 		std::cout << "server name: " << servers_config[i].getServerName() << std::endl;
 		std::cout << "autoindex: " << (servers_config[i].getAutoIndex() ? "on" : "off") << std::endl;
 		std::cout << "client max body size: " << servers_config[i].getClientMaxBodySize() << std::endl;
@@ -74,6 +75,7 @@ void printConfig(const std::vector<ServerConfig> &servers_config)
 			std::cout << "  Location " << it->first << ":" << std::endl;
 			std::cout << "  path: " << it->second.getPath() << std::endl;
 			std::cout << "  root: " << it->second.getRoot() << std::endl;
+			std::cout << "  upload: " << it->second.getUpload() << std::endl;
 			std::cout << "  autoindex: " << (it->second.getAutoIndex() ? "on" : "off") << std::endl;
 			std::cout << "  client max body size: " << it->second.getClientMaxBodySize() << std::endl;
 			

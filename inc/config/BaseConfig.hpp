@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 #include "utils/ParseUtils.hpp"
 
@@ -17,6 +18,9 @@ class BaseConfig {
 		std::map<int, std::string>			_error_pages;
 		bool								_is_cgi;
 		std::map<std::string, std::string>	_cgi;
+		std::string							_upload;
+
+		void	validateDirectoryPath(const std::string& path, const std::string& directive_name);
 
 		void	setRoot(const std::vector<std::string>& values);
 		void	setAutoIndex(const std::vector<std::string>& values);
@@ -24,6 +28,7 @@ class BaseConfig {
 		void	setIndexFiles(const std::vector<std::string>& values);
 		void	setErrorPages(const std::vector<std::string>& values);
 		void	setCgi(const std::vector<std::string>& values);
+		void	setUpload(const std::vector<std::string>& values);
 
 	public:
 		BaseConfig(void);
@@ -36,6 +41,7 @@ class BaseConfig {
 		const std::vector<std::string>				getIndexFiles(void) const;
 		const std::map<int, std::string>			getErrorPages(void) const;
 		const std::map<std::string, std::string>	getCgi(void) const;
+		const std::string							getUpload(void) const;
 };
 
 #endif

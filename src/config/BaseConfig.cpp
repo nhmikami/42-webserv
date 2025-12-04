@@ -13,16 +13,24 @@ BaseConfig::BaseConfig(const BaseConfig &other) :
     _index_files(other._index_files),
     _error_pages(other._error_pages),
     _is_cgi(other._is_cgi),
-    _cgi(other._cgi)
+    _cgi(other._cgi),
+	_upload(other._upload)
 {};
 
 BaseConfig::~BaseConfig(void) {};
+
+void BaseConfig::validateDirectoryPath(const std::string& path, const std::string& directive_name) {
+    struct stat st;
+    if (stat(path.c_str(), &st) != 0 || !S_ISDIR(st.st_mode))
+        throw std::invalid_argument(directive_name + " directory does not exist or is not a directory: " + path);
+}
 
 void BaseConfig::setRoot(const std::vector<std::string>& values)
 {
 	if (values.size() != 1)
 		throw std::invalid_argument("root must have exactly one value.");
-	_root = values[0];
+	validateDirectoryPath(values[0], "root");
+    _root = values[0];
 };
 
 void BaseConfig::setAutoIndex(const std::vector<std::string>& values)
@@ -79,6 +87,15 @@ void BaseConfig::setCgi(const std::vector<std::string>& values)
 	_cgi[values[0]] = values[1];
 };
 
+void BaseConfig::setUpload(const std::vector<std::string>& values)
+{
+	if (values.size() != 1)
+		throw std::invalid_argument("upload must have exactly one value.");
+	validateDirectoryPath(values[0], "upload");
+    _root = values[0];
+};
+
+
 const std::string 							BaseConfig::getRoot(void) const { return _root; };
 
 const std::vector<std::string>				BaseConfig::getIndexFiles(void) const { return _index_files; };
@@ -90,3 +107,5 @@ size_t										BaseConfig::getClientMaxBodySize(void) const { return _client_ma
 const std::map<int, std::string>			BaseConfig::getErrorPages(void) const { return _error_pages; };
 
 const std::map<std::string, std::string>	BaseConfig::getCgi(void) const { return _cgi; };
+
+const std::string							BaseConfig::getUpload(void) const { return _upload; };
