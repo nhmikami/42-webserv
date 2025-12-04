@@ -19,53 +19,46 @@
 #include "Response.hpp"
 #include "LocationConfig.hpp"
 
-// Status do processamento do CGI
+static const size_t CGI_BUF_SIZE = 4096;
+
 enum CgiState {
-    CGI_NOT_STARTED,
-    CGI_WRITING_BODY, // Enviando dados para o script (POST)
-    CGI_READING,      // Lendo resposta do script
-    CGI_FINISHED,
-    CGI_ERROR
+	CGI_NOT_STARTED,
+	CGI_WRITING,
+	CGI_READING,
+	CGI_FINISHED,
+	CGI_ERROR
 };
 
 class CgiHandler {
-    private:
-        pid_t                       _pid;
-        int                         _socketFd;      // O lado do pai do socketpair
-        CgiState                    _state;
-        
-        std::string                 _scriptPath;
-        std::string                 _executorPath;
-        std::map<std::string, std::string> _envMap;
-        
-        size_t                      _bytesSent;     // Controle de quanto já enviamos
-        std::string                 _requestBody;   // O que enviar pro CGI (Stdin do script)
-        std::string                 _responseBuffer;// O que recebemos do CGI (Stdout do script)
+	private:
+		std::string							_scriptPath;
+		std::string							_executorPath;
+		std::map<std::string, std::string>  _envMap;
 
-    public:
-        CgiHandler(const Request& req, const LocationConfig* loc, const std::string& scriptPath, const std::string& executor);
-        ~CgiHandler();
+		pid_t		_pid;
+		int			_socketFd;
+		CgiState	_state;
+		
+		size_t				_bytesSent;
+		const std::string&	_requestBody;
+		std::string			_responseBuffer;
 
-        // Inicializa o processo (socketpair, fork, execve)
-        void        start();
+	public:
+		CgiHandler(const Request& req, const LocationConfig* loc, const std::string& scriptPath, const std::string& executor);
+		~CgiHandler();
 
-        // Chamado pelo loop principal (epoll/select) quando o FD está pronto
-        void        handleEvent(uint32_t events);
+		void	start(); // Inicializa o processo (socketpair, fork, execve)
+		void	handleEvent(uint32_t events); // Chamado pelo loop principal (epoll/select) quando o FD está pronto
+		bool	isFinished() const; // Verifica se terminou
+		int		getFd() const; // Retorna o FD para adicionar no epoll/select
+		void	buildResponse(Response& res); // Processa a resposta final para o objeto Response
 
-        // Verifica se terminou
-        bool        isFinished() const;
-        
-        // Retorna o FD para adicionar no epoll
-        int         getFd() const;
-
-        // Processa a resposta final para o objeto Response
-        void        buildResponse(Response& res);
-
-    private:
-        void        _initEnv(const Request& req, const LocationConfig* loc);
-        char**      _createEnvArray() const;
-        void        _freeEnvArray(char** envp) const;
-        std::string _intToString(int value) const;
+	private:
+		void	_initEnv(const Request& req, const LocationConfig* loc);
+		char**	_createEnvArray() const;
+		void	_freeEnvArray(char** envp) const;
+		void	_handleCgiWrite(void);
+		void	_handleCgiRead(void);
 };
 
 #endif

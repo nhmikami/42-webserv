@@ -8,6 +8,7 @@
 
 enum HttpStatus {
 	ZERO,
+	CGI_PENDING = -1,
 	CONTINUE = 100,
 	OK = 200,
 	CREATED = 201,

@@ -172,34 +172,26 @@ bool AMethod::_isCGI(const std::string& path) const {
 }
 
 std::map<std::string, std::string> AMethod::_getCgiExecutors(void) const {
-	std::map<std::string, std::string> cgi_map;
+	std::map<std::string, std::string> cgiMap;
 
 	if (_location) {
 		const std::map<std::string, std::string>& locCgi = _location->getCgi();
-		cgi_map.insert(locCgi.begin(), locCgi.end());
+		cgiMap.insert(locCgi.begin(), locCgi.end());
 	}
 
 	const std::map<std::string, std::string>& srvCgi = _config.getCgi();
-	cgi_map.insert(srvCgi.begin(), srvCgi.end());
+	cgiMap.insert(srvCgi.begin(), srvCgi.end());
 
-	return cgi_map;
+	return cgiMap;
 }
 
 HttpStatus AMethod::_runCGI(const std::string &path) {
 	std::map<std::string, std::string> executors = _getCgiExecutors();
-	std::string ext = path.substr(path.find_last_of('.'));
-	if (executors.find(ext) == executors.end())
-		return SERVER_ERR;
-	std::string executor = executors[ext]; // e não houver suporte para a extensão?
+	std::string	ext = path.substr(path.find_last_of('.'));
+	std::string	executor = executors[ext];
 
 	_cgiHandler = new CgiHandler(_req, _location, path, executor);
-	try {
-		_cgiHandler->start(); 
-	} catch (std::exception &e) {
-		delete _cgiHandler;
-		_cgiHandler = NULL;
-		return SERVER_ERR;
-	}
+	_cgiHandler->start(); 
 
 	return CGI_PENDING;
 }

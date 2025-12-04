@@ -13,7 +13,6 @@ class MethodGET : public AMethod {
 		HttpStatus	_serveFile(const std::string &path);
 		HttpStatus	_serveDirectory(const std::string &path);
 		HttpStatus	_generateAutoindex(const std::string &path);
-		HttpStatus	_runCGI(const std::string &path);
 
 	public:
 		MethodGET(const Request &req, const ServerConfig &config);

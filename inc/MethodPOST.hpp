@@ -9,7 +9,7 @@
 class MethodPOST : public AMethod {
 	private:
 		bool		_writeToFile(const std::string &path, const std::string &body);
-		HttpStatus	_runCGI(const std::string &path);
+		std::string	_buildAbsoluteUrl(const std::string &targetPath);
 
 	public:
 		MethodPOST(const Request &req, const ServerConfig &config);

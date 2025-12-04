@@ -13,12 +13,15 @@ HttpStatus MethodPOST::handleMethod(void) {
 		}
 	}
 
+	if (_req.getBody().size() > _getMaxBodySize())
+		return PAYLOAD_TOO_LARGE; // 413
+
 	std::string full_path = _resolvePath(_getRootPath(), _req.getPath());
 
-	if (_isCGI(full_path))
-		return _runCGI(full_path);
-
 	if (_exists(full_path)) {
+		if (_isCGI(full_path))
+			return _runCGI(full_path);
+			
 		if (_isFile(full_path)) {
 			if (!_isWritable(full_path))
 				return FORBIDDEN;
@@ -39,7 +42,7 @@ HttpStatus MethodPOST::handleMethod(void) {
 
 			std::string file_path = _resolvePath(full_path, filename);
 			if (_writeToFile(file_path, _req.getBody())) {
-				_res.addHeader("Location", _resolvePath(_req.getPath(), filename));
+				_res.addHeader("Location", _buildAbsoluteUrl(filename));
 				_res.setBody("File created successfully");
 				return CREATED;
 			}
@@ -54,7 +57,7 @@ HttpStatus MethodPOST::handleMethod(void) {
 			return FORBIDDEN;
 
 		if (_writeToFile(full_path, _req.getBody())) {
-			 _res.addHeader("Location", _req.getPath());
+			 _res.addHeader("Location", _buildAbsoluteUrl(full_path));
 			 _res.setBody("File created successfully");
 			return CREATED;
 		}
@@ -85,7 +88,10 @@ bool MethodPOST::_writeToFile(const std::string &path, const std::string &body) 
 	return true;
 }
 
-HttpStatus MethodPOST::_runCGI(const std::string &path) {
-	(void)path;
-	return NOT_IMPLEMENTED;
+std::string MethodPOST::_buildAbsoluteUrl(const std::string &targetPath) {
+	std::string host = _req.getHeader("Host");
+	if (host.empty())
+		host = "localhost";
+
+	return "http://" + host + targetPath;
 }

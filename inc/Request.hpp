@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cabo-ram <cabo-ram@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/06 15:02:39 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/11/18 15:16:42 by cabo-ram         ###   ########.fr       */
+/*   Updated: 2025/12/04 01:18:17 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,6 +49,7 @@ class Request {
 		void addHeader(const std::string &key, const std::string &value);
 
 		RequestMethod getMethod() const;
+		std::string getMethodStr() const;
 		const std::string& getUri() const;
 		const std::string& getPath() const;
 		const std::string& getQuery() const;

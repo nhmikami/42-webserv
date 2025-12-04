@@ -15,11 +15,11 @@ HttpStatus MethodDELETE::handleMethod(void) {
 
 	std::string full_path = _resolvePath(_getRootPath(), _req.getPath());
 
-	if (_isCGI(full_path))
-		return _runCGI(full_path);
-
 	if (!_exists(full_path))
 		return NOT_FOUND;
+
+	if (_isCGI(full_path))
+		return _runCGI(full_path);
 
 	if (!_canDelete(full_path))
 		return FORBIDDEN;
@@ -83,9 +83,4 @@ bool MethodDELETE::_deleteFile(const std::string &path) {
 
 bool MethodDELETE::_deleteDirectory(const std::string &path) {
 	return (rmdir(path.c_str()) == 0);
-}
-
-HttpStatus MethodDELETE::_runCGI(const std::string &path) {
-	(void)path;
-	return NOT_IMPLEMENTED;
 }

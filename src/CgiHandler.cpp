@@ -1,15 +1,9 @@
 #include "CgiHandler.hpp"
+#include "utils/ParseUtils.hpp"
 
-std::string CgiHandler::_intToString(int value) const {
-	std::stringstream ss;
-	ss << value;
-	return ss.str();
-}
 
 CgiHandler::CgiHandler(const Request& req, const LocationConfig* loc, const std::string& scriptPath, const std::string& executor)
-	: _pid(-1), _socketFd(-1), _state(CGI_NOT_STARTED), 
-	  _scriptPath(scriptPath), _executorPath(executor), 
-	  _requestBody(req.getBody()), _bytesSent(0) {
+	: _pid(-1), _socketFd(-1), _state(CGI_NOT_STARTED), _scriptPath(scriptPath), _executorPath(executor), _requestBody(req.getBody()), _bytesSent(0) {
 	_initEnv(req, loc);
 }
 
@@ -27,19 +21,41 @@ CgiHandler::~CgiHandler() {
 }
 
 void CgiHandler::_initEnv(const Request& req, const LocationConfig* loc) {
-	_envMap["SCRIPT_FILENAME"] = _scriptPath;
-	_envMap["REQUEST_METHOD"] = req.getMethod();
-	_envMap["QUERY_STRING"] = req.getQuery();
-	_envMap["SERVER_PROTOCOL"] = "HTTP/1.1";
-	_envMap["REDIRECT_STATUS"] = "200";
 	_envMap["GATEWAY_INTERFACE"] = "CGI/1.1";
-	
-	if (req.getMethod() == "POST") {
-		_envMap["CONTENT_LENGTH"] = _intToString(_requestBody.size());
-		std::string contentType = req.getHeader("Content-Type");
-		if (!contentType.empty())
-			_envMap["CONTENT_TYPE"] = contentType;
+	_envMap["SERVER_PROTOCOL"] = "HTTP/1.1";
+	_envMap["SERVER_SOFTWARE"] = "WebServ/1.0";
+	_envMap["REDIRECT_STATUS"] = "200";
+	_envMap["REQUEST_METHOD"] = req.getMethodStr();
+	_envMap["QUERY_STRING"] = req.getQuery();
+	_envMap["PATH_INFO"] = req.getPathInfo();
+	_envMap["SCRIPT_NAME"] = req.getPath();
+	_envMap["SCRIPT_FILENAME"] = _scriptPath;
+	std::string host = req.getHost();
+	if (!host.empty()) {
+		size_t pos = host.find(':');
+		if (pos != std::string::npos) {
+			_envMap["SERVER_NAME"] = host.substr(0, pos);
+			_envMap["SERVER_PORT"] = host.substr(pos + 1);
+		} else {
+			_envMap["SERVER_NAME"] = host;
+			_envMap["SERVER_PORT"] = "80";
+		}
 	}
+	const std::map<std::string, std::string>& headers = req.getHeaders();
+	for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it) {
+		std::string key = it->first;
+		std::string value = it->second;
+		std::string transformedKey = ParseUtils::toUpper(ParseUtils::replaceChar(key, '-', '_'));
+
+		if (transformedKey == "CONTENT_LENGTH")
+			 _envMap["CONTENT_LENGTH"] = value;
+		else if (transformedKey == "CONTENT_TYPE")
+			 _envMap["CONTENT_TYPE"] = value;
+		else
+			_envMap["HTTP_" + transformedKey] = value;
+	}
+	if (req.getMethod() == "POST")
+		_envMap["CONTENT_LENGTH"] = ParseUtils::itoa(_requestBody.size());
 }
 
 char** CgiHandler::_createEnvArray() const {
@@ -63,9 +79,12 @@ void CgiHandler::_freeEnvArray(char** envp) const {
 	delete[] envp;
 }
 
+int CgiHandler::getFd() const {
+	return _socketFd;
+}
+
 void CgiHandler::start() {
 	int socks[2];
-
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, socks) < 0) {
 		_state = CGI_ERROR;
 		return ;
@@ -80,17 +99,17 @@ void CgiHandler::start() {
 	}
 
 	if (_pid == 0) {
-		close(socks[0]);
 		if (dup2(socks[1], STDIN_FILENO) < 0)
 			exit(1);
 		if (dup2(socks[1], STDOUT_FILENO) < 0)
 			exit(1);
+		close(socks[0]);
 		close(socks[1]);
 
 		char** envp = _createEnvArray();
 		std::vector<char*> argv;
-		argv.push_back(const_cast<char*>(_executorPath.c_str()));
-		argv.push_back(const_cast<char*>(_scriptPath.c_str()));
+		argv.push_back(_executorPath.c_str());
+		argv.push_back(_scriptPath.c_str());
 		argv.push_back(NULL);
 		execve(argv[0], &argv[0], envp);
 		
@@ -100,16 +119,17 @@ void CgiHandler::start() {
 
 	close(socks[1]);
 	_socketFd = socks[0];
-	fcntl(_socketFd, F_SETFL, O_NONBLOCK);
+	if (fcntl(_socketFd, F_SETFL, O_NONBLOCK) == -1) {
+		close(_socketFd);
+		_socketFd = -1;
+		_state = CGI_ERROR;
+		return ;
+	}
 
 	if (!_requestBody.empty())
-		_state = CGI_WRITING_BODY;
+		_state = CGI_WRITING;
 	else
 		_state = CGI_READING;
-}
-
-int CgiHandler::getFd() const {
-	return _socketFd;
 }
 
 bool CgiHandler::isFinished() const {
@@ -120,41 +140,70 @@ void CgiHandler::handleEvent(uint32_t events) {
 	if (_state == CGI_FINISHED || _state == CGI_ERROR) 
 		return ;
 
-	if (_state == CGI_WRITING_BODY) {
-		ssize_t sent = write(_socketFd, _requestBody.c_str() + _bytesSent, _requestBody.size() - _bytesSent);
-		if (sent > 0) {
-			_bytesSent += sent;
-			if (_bytesSent >= _requestBody.size()) {
-				shutdown(_socketFd, SHUT_WR); 
-				_state = CGI_READING;
-			}
-		} else if (sent < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
-			_state = CGI_ERROR;
+	if (_state == CGI_WRITING && (events & EPOLLOUT))
+		_handleCgiWrite();
+
+	else if (_state == CGI_READING && (events & (EPOLLIN | EPOLLHUP | EPOLLERR)))
+		_handleCgiRead();
+}
+
+void CgiHandler::_handleCgiWrite(void) {
+	size_t	remaining = _requestBody.size() - _bytesSent;
+	size_t	toWrite = (remaining < CGI_BUF_SIZE) ? remaining : CGI_BUF_SIZE;
+	ssize_t	sent = write(_socketFd, _requestBody.c_str() + _bytesSent, toWrite);
+	if (sent > 0) {
+		_bytesSent += sent;
+		if (_bytesSent >= _requestBody.size()) {
+			shutdown(_socketFd, SHUT_WR);
+			_state = CGI_READING;
 		}
+	} 
+	else if (sent < 0) {
+		if (errno == EAGAIN || errno == EWOULDBLOCK)
+			return;
+		if (errno == EPIPE) {
+			shutdown(_socketFd, SHUT_WR);
+			_state = CGI_READING;
+			return ;
+		}
+		_state = CGI_ERROR;
 	}
-	
-	else if (_state == CGI_READING) {
-		char buffer[4096];
-		ssize_t bytesRead = read(_socketFd, buffer, sizeof(buffer));
-		
-		if (bytesRead > 0) {
-			_responseBuffer.append(buffer, bytesRead);
-		} else if (bytesRead == 0) {
-			int status;
+}
+
+void CgiHandler::_handleCgiRead() {
+	char	buffer[CGI_BUF_SIZE];
+	ssize_t	bytesRead = read(_socketFd, buffer, sizeof(buffer));
+
+	if (bytesRead > 0)
+		_responseBuffer.append(buffer, bytesRead);
+	else if (bytesRead == 0) {
+		int status = 0;
+		pid_t result = waitpid(_pid, &status, WNOHANG);
+		if (result == 0) {
+			kill(_pid, SIGKILL);
 			waitpid(_pid, &status, 0);
+			_state = CGI_FINISHED;
+		} 
+		else if (result > 0) {
 			if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
 				_state = CGI_FINISHED;
 			else
 				_state = CGI_ERROR;
-		} else if (bytesRead < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+		} 
+		else
 			_state = CGI_ERROR;
-		}
+	} 
+	else if (bytesRead < 0) {
+		if (errno == EAGAIN || errno == EWOULDBLOCK)
+			return ;
+		_state = CGI_ERROR;
 	}
 }
 
 void CgiHandler::buildResponse(Response& res) {
 	if (_state == CGI_ERROR) {
 		res.setStatus(500);
+		res.setBody("Internal Server Error: CGI process failed.");
 		return ;
 	}
 
@@ -168,7 +217,6 @@ void CgiHandler::buildResponse(Response& res) {
 		if (headerEnd != std::string::npos) {
 			bodyStart = headerEnd + 2;
 		} else {
-			// Nenhum header encontrado, assume tudo como body (ou erro)
 			res.setBody(_responseBuffer);
 			res.setStatus(200);
 			return ;
