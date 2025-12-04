@@ -112,7 +112,7 @@ bool ParseHttpValidator::validateContentType(const std::string &content_type) {
 		mime_type = content_type;
 	
 	mime_type = ParseUtils::trim(mime_type);
-	
+
 	slash_pos = mime_type.find('/');
 	if (slash_pos == std::string::npos || slash_pos == 0 || slash_pos == mime_type.size() - 1)
 		return false;
@@ -122,7 +122,31 @@ bool ParseHttpValidator::validateContentType(const std::string &content_type) {
 		if (!std::isalnum(c) && c != '/' && c != '-' && c != '+' && c != '.')
 			return false;
 	}
+
+	if (mime_type != "multipart/form-data")
+		return true;
+	if (semicolon_pos == std::string::npos)
+		return false;
+
+	std::string params = content_type.substr(semicolon_pos + 1);
+	params = ParseUtils::trim(params);
+
+	const std::string key = "boundary=";
+	size_t pos = params.find(key);
+	if (pos == std::string::npos)
+		return false;
 	
+	std::string boundary = params.substr(pos + key.size());
+	boundary = ParseUtils::trim(boundary);
+
+	if (boundary.empty())
+		return false;
+	
+	for (size_t i = 0; i < boundary.size(); ++i) {
+		unsigned char c = static_cast<unsigned char>(boundary[i]);
+		if (!std::isalnum(c) && c != '\'' && c != '(' && c != ')' && c != '+' && c != '_' && c != ',' && c != '-' && c != '.' && c != ':' && c != '=' && c != '?')
+			return false;
+	}
 	return true;
 }
 

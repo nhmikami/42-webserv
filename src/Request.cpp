@@ -13,7 +13,7 @@
 #include "../inc/Request.hpp"
 
 Request::Request() : _method(UNKNOWN), _uri(""), _path(""),
-					 _query(""), _http_version(""), _body("") { }
+					 _path_info(""), _query(""), _http_version(""), _body("") { }
 
 Request::Request(const Request &other) {
 	*this = other;
@@ -24,6 +24,7 @@ Request &Request::operator=(const Request &other) {
 		this->_method = other._method;
 		this->_uri = other._uri;
 		this->_path = other._path;
+		this->_path_info = other._path_info;
 		this->_query = other._query;
 		this->_http_version = other._http_version;
 		this->_headers = other._headers;
@@ -46,6 +47,10 @@ void Request::setPath(const std::string &p) {
 	_path = p;
 }
 
+void Request::setPathInfo(const std::string &pi) {
+	_path_info = pi;
+}
+
 void Request::setQuery(const std::string &q) {
 	_query = q;
 }
@@ -62,21 +67,21 @@ void Request::setBody(const std::string &b) {
 	_body = b;
 }
 
-void Request::addHeader(const std::string &key, const std::string &value) {
-	if (key.empty() || value.empty())
-		return ;
-	for (size_t i = 0; i < key.size(); ++i) {
-		unsigned char c = key[i];
-		if (c < 32 || c == 127 || c == ' ' || c == ':' || c == '\r' || c == '\n')
-			return ;
-	}
-	for (size_t i = 0; i < value.size(); ++i) {
-		unsigned char c = value[i];
-		if (c == '\r' || c == '\n')
-			return ;
-	}
-	_headers[key] = value;
-}
+// void Request::addHeader(const std::string &key, const std::string &value) {
+// 	if (key.empty() || value.empty())
+// 		return ;
+// 	for (size_t i = 0; i < key.size(); ++i) {
+// 		unsigned char c = key[i];
+// 		if (c < 32 || c == 127 || c == ' ' || c == ':' || c == '\r' || c == '\n')
+// 			return ;
+// 	}
+// 	for (size_t i = 0; i < value.size(); ++i) {
+// 		unsigned char c = value[i];
+// 		if (c == '\r' || c == '\n')
+// 			return ;
+// 	}
+// 	_headers[key] = value;
+// }
 
 RequestMethod Request::getMethod() const {
 	return _method;
@@ -88,6 +93,10 @@ const std::string& Request::getUri() const {
 
 const std::string& Request::getPath() const {
 	return _path;
+}
+
+const std::string& Request::getPathInfo() const {
+	return _path_info;
 }
 
 const std::string& Request::getQuery() const {
@@ -157,6 +166,57 @@ std::string Request::getContentType() const {
 	return getHeader("content-type");
 }
 
+std::map<std::string, std::string> Request::getContentTypeParametersMap() const {
+	std::map<std::string, std::string> params;
+	std::string content_type = getHeader("content-type");
+	
+	if (content_type.empty())
+		return params;
+	
+	size_t semicolon_pos = content_type.find(';');
+	if (semicolon_pos == std::string::npos)
+		return params;
+	
+	std::string params_str = content_type.substr(semicolon_pos + 1);
+	
+	size_t start = 0;
+	while (start < params_str.length()) {
+		size_t semicolon = params_str.find(';', start);
+		size_t end;
+		if (semicolon == std::string::npos)
+			end = params_str.length();
+		else
+			end = semicolon;
+		
+		std::string param = params_str.substr(start, end - start);
+		
+		size_t equals = param.find('=');
+		if (equals != std::string::npos) {
+			std::string key = param.substr(0, equals);
+			std::string value = param.substr(equals + 1);
+			
+			while (!key.empty() && (key[0] == ' ' || key[0] == '\t'))
+				key.erase(0, 1);
+			while (!key.empty() && (key[key.length() - 1] == ' ' || key[key.length() - 1] == '\t'))
+				key.erase(key.length() - 1);
+			
+			while (!value.empty() && (value[0] == ' ' || value[0] == '\t'))
+				value.erase(0, 1);
+			while (!value.empty() && (value[value.length() - 1] == ' ' || value[value.length() - 1] == '\t'))
+				value.erase(value.length() - 1);
+			
+			if (!key.empty())
+				params[key] = value;
+		}
+		
+		if (semicolon == std::string::npos)
+			break;
+		start = semicolon + 1;
+	}
+	
+	return params;
+}
+
 std::string Request::getQueryParameter(const std::string &key) const {
 	if (_query.empty() || key.empty())
 		return "";
@@ -185,7 +245,7 @@ std::string Request::getQueryParameter(const std::string &key) const {
 	return "";
 }
 
-std::map<std::string, std::string> Request::getQueryParameters() const {
+std::map<std::string, std::string> Request::getQueryParametersMap() const {
 	std::map<std::string, std::string> params;
 	if (_query.empty())
 		return params;
@@ -216,7 +276,7 @@ std::map<std::string, std::string> Request::getQueryParameters() const {
 }
 
 bool Request::hasQueryParameter(const std::string &key) const {
-	const std::map<std::string, std::string>& params = getQueryParameters();
+	const std::map<std::string, std::string>& params = getQueryParametersMap();
 	return params.find(key) != params.end();
 }
 

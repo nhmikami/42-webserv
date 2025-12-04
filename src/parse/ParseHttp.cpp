@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ParseHttp.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cabo-ram <cabo-ram@student.42.fr>          +#+  +:+       +#+        */
+/*   By: robert <robert@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/06 15:02:25 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/12/03 16:29:58 by cabo-ram         ###   ########.fr       */
+/*   Updated: 2025/12/04 14:42:18 by robert           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,6 +53,7 @@ Request ParseHttp::buildRequest() const {
 	req.setMethod(this->_request_method);
 	req.setUri(this->_request_uri);
 	req.setPath(this->_request_path);
+	req.setPathInfo(this->_request_path_info);
 	req.setQuery(this->_query);
 	req.setHttpVersion(this->_http_version);
 	req.setHeaders(this->_all_headers);
@@ -194,32 +195,15 @@ std::map<std::string,std::string> ParseHttp::parseHeaders(const std::string &hea
 }
 
 HttpStatus	ParseHttp::initParse(std::string &request) {
-	// std::string remaining_buffer;
-	// char	recv_buffer[RECV_BUFFER_SIZE];
-	// ssize_t	bytes_received;
 	size_t	total_header_size = 0;
 	size_t	headers_end_pos = 0;
 
-	// remaining_buffer.clear();
-
-	// while (true) {
-	// 	bytes_received = recv(client_fd, recv_buffer, sizeof(recv_buffer), 0);
-		
-	// 	if (bytes_received == 0)
-	// 		return BAD_REQUEST;
-	// 	if (bytes_received < 0)
-	// 		return BAD_REQUEST;
-		
-	// 	remaining_buffer.append(recv_buffer, bytes_received);
-	// 	total_header_size += bytes_received;
-		
-		if (total_header_size > MAX_HEADER_SIZE)
-			return PAYLOAD_TOO_LARGE;
-		
-		headers_end_pos = request.find("\r\n\r\n");
-		if (headers_end_pos != std::string::npos)
-			return BAD_REQUEST;
-	// }	
+	if (total_header_size > MAX_HEADER_SIZE)
+		return PAYLOAD_TOO_LARGE;
+	
+	headers_end_pos = request.find("\r\n\r\n");
+	if (headers_end_pos != std::string::npos)
+		return BAD_REQUEST;
 	
 	size_t body_start_pos = headers_end_pos + 4;
 	std::string headers_block = request.substr(0, headers_end_pos);
@@ -236,8 +220,8 @@ HttpStatus	ParseHttp::initParse(std::string &request) {
 	if (!parseRequestLine(request_line, method_str, uri_str, version_str))
 		return BAD_REQUEST;
 
-	std::string path, query;
-	if (!ParseUri::validate_uri(uri_str, path, query))
+	std::string path, path_info, query;
+	if (!ParseUri::validateUri(uri_str, path, path_info, query))
 		return BAD_REQUEST;
 	
 	std::string normalized_path;
@@ -246,6 +230,7 @@ HttpStatus	ParseHttp::initParse(std::string &request) {
 
 	this->_request_uri = uri_str;
 	this->_request_path = normalized_path;
+	this->_request_path_info = path_info;
 	this->_query = query;
 	this->_http_version = version_str;
 	this->_request_method = stringToMethod(method_str);
@@ -279,7 +264,8 @@ HttpStatus	ParseHttp::initParse(std::string &request) {
 	if (this->_request_method == POST) {
 		if (headers_map.find("transfer-encoding") != headers_map.end() && 
 			headers_map["transfer-encoding"] == "chunked") {
-			return ParseHttpReader::readChunked(client_fd, request, this->_request_body);
+			// return ParseHttpReader::readChunked(request, this->_request_body);
+			return OK;
 		}
 		else if (headers_map.find("content-length") != headers_map.end()) {
 			size_t content_length;
@@ -295,8 +281,9 @@ HttpStatus	ParseHttp::initParse(std::string &request) {
 				return OK;
 			}
 
-			size_t bytes_remaining = content_length - bytes_already_read;
-			HttpStatus body_status = ParseHttpReader::readBody(client_fd, bytes_remaining, this->_request_body);
+			// size_t bytes_remaining = content_length - bytes_already_read;
+			// HttpStatus body_status = ParseHttpReader::readBody(bytes_remaining, this->_request_body);
+			HttpStatus body_status = OK;
 			if (body_status != OK)
 				return body_status;
 		}

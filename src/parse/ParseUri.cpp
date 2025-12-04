@@ -26,7 +26,7 @@ int ParseUri::hexDigit(char c) {
 	return -1;
 }
 
-int ParseUri::hex_value(char hi, char lo) {
+int ParseUri::hexValue(char hi, char lo) {
 	int	high = hexDigit(hi);
 	int	low  = hexDigit(lo);
 
@@ -117,7 +117,7 @@ bool ParseUri::urlDecodePath(const std::string &str, std::string &result) {
 			if (i + 2 >= str.length())
 				return false;
 			
-			int value = hex_value(str[i + 1], str[i + 2]);
+			int value = hexValue(str[i + 1], str[i + 2]);
 			if (value < 0)
 				return false;
 			
@@ -162,7 +162,7 @@ bool ParseUri::urlDecodeQuery(const std::string &str, std::string &result) {
 			if (i + 2 >= str.length())
 				return false;
 			
-			int value = hex_value(str[i + 1], str[i + 2]);
+			int value = hexValue(str[i + 1], str[i + 2]);
 			if (value < 0) 
 				return false;
 			
@@ -192,7 +192,7 @@ bool ParseUri::urlDecodeQuery(const std::string &str, std::string &result) {
 }
 
 // valida regras básicas do URI
-bool ParseUri::validate_uri(const std::string &uri, std::string &path, std::string &query) {
+bool ParseUri::validateUri(const std::string &uri, std::string &path, std::string &path_info, std::string &query) {
 	static const size_t MAX_URI_LEN = 16 * 1024;
 
 	if (uri.empty() || uri[0] != '/')
@@ -213,25 +213,43 @@ bool ParseUri::validate_uri(const std::string &uri, std::string &path, std::stri
 			return false;
 	}
 	// separa query após '?'
-	size_t pos = uri.find('?');
-	if (pos == std::string::npos) {
-		path = uri;
+	size_t query_pos = uri.find('?');
+	std::string path_full;
+	if (query_pos == std::string::npos) {
+		path_full = uri;
 		query.clear();
 	}
 	else {
-		path = uri.substr(0, pos);
-		query = uri.substr(pos + 1);
-		
-		if (path.empty() || path == "/")
-			path = "/";
-		
-		if (query.find('?') != std::string::npos)
-			return false;
+		path_full = uri.substr(0, query_pos);
+		query = uri.substr(query_pos + 1);
 	}
-	
-	if (path.empty())
-		return false;
-	
+	size_t script = std::string::npos;
+
+	const char* extensions[] = {".php", ".cgi", ".py", ".pl", NULL};
+	for (int i = 0; extensions[i] != NULL; i++) {
+		size_t pos = path_full.find(extensions[i]);
+		while (pos != std::string::npos) {
+			size_t ext_end = pos + strlen(extensions[i]);
+			if (ext_end == path_full.size() || path_full[ext_end] == '/') {
+				script = ext_end;
+				break;
+			}
+			pos = path_full.find(extensions[i], pos + 1);
+		}
+		if (script != std::string::npos)
+			break;
+	}
+	if (script != std::string::npos) {
+		path = path_full.substr(0, script);
+		if (script < path_full.size())
+			path_info = path_full.substr(script);
+		else
+			path_info.clear();
+	}
+	else {
+		path = path_full;
+		path_info.clear();
+	}
 	return true;
 }
 

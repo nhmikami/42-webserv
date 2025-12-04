@@ -26,10 +26,10 @@ class ParseHttpReader {
 		~ParseHttpReader(void);
 
 	public:
-		static bool readUntilCrlf(int client_fd, std::string &buffer, std::string &out_line);
-		static bool hexToInt(const std::string &hex_line, size_t &out_size);
-		static HttpStatus readBody(int client_fd, size_t content_length, std::string &request_body);
-		static HttpStatus readChunked(int client_fd, std::string &buffer, std::string &request_body);
+		// static bool readUntilCrlf(int client_fd, std::string &buffer, std::string &out_line);
+		// static bool hexToInt(const std::string &hex_line, size_t &out_size);
+		// static HttpStatus readBody(size_t content_length, std::string &request_body);
+		// static HttpStatus readChunked(std::string &buffer, std::string &request_body);
 };
 
 #endif

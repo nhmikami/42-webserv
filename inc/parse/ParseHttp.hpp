@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ParseHttp.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cabo-ram <cabo-ram@student.42.fr>          +#+  +:+       +#+        */
+/*   By: robert <robert@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 14:44:10 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/12/03 16:29:59 by cabo-ram         ###   ########.fr       */
+/*   Updated: 2025/12/04 14:37:08 by robert           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,7 @@ class ParseHttp {
 		RequestMethod _request_method;
 		std::string _request_uri;
 		std::string _request_path;
+		std::string _request_path_info;
 		std::string _query;
 		std::string _http_version;
 		std::string _host_header;

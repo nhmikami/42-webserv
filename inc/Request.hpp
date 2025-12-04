@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cabo-ram <cabo-ram@student.42.fr>          +#+  +:+       +#+        */
+/*   By: robert <robert@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/06 15:02:39 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/11/18 15:16:42 by cabo-ram         ###   ########.fr       */
+/*   Updated: 2025/12/04 14:36:49 by robert           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,11 +26,12 @@ enum RequestMethod {
 
 class Request {
 	private:
-		RequestMethod _method;
-		std::string _uri;
-		std::string _path;
-		std::string _query;
-		std::string _http_version;
+	RequestMethod _method;
+	std::string _uri;
+	std::string _path;
+	std::string _path_info;
+	std::string _query;
+	std::string _http_version;
 		std::map<std::string, std::string> _headers;
 		std::string _body;
 		
@@ -42,15 +43,17 @@ class Request {
 		void setMethod(RequestMethod m);
 		void setUri(const std::string &u);
 		void setPath(const std::string &p);
+		void setPathInfo(const std::string &pi);
 		void setQuery(const std::string &q);
 		void setHttpVersion(const std::string &v);
 		void setHeaders(const std::map<std::string, std::string> &h);
 		void setBody(const std::string &b);
-		void addHeader(const std::string &key, const std::string &value);
+		// void addHeader(const std::string &key, const std::string &value);
 
 		RequestMethod getMethod() const;
 		const std::string& getUri() const;
 		const std::string& getPath() const;
+		const std::string& getPathInfo() const;
 		const std::string& getQuery() const;
 		const std::string& getHttpVersion() const;
 		const std::map<std::string, std::string>& getHeaders() const;
@@ -67,9 +70,10 @@ class Request {
 		std::string getHost() const;
 		bool isKeepAlive() const;
 		std::string getContentType() const;
+		std::map<std::string, std::string> getContentTypeParametersMap() const;
 		
 		std::string getQueryParameter(const std::string &key) const;
-		std::map<std::string, std::string> getQueryParameters() const;
+		std::map<std::string, std::string> getQueryParametersMap() const;
 		bool hasQueryParameter(const std::string &key) const;
 		
 		bool isValidForFileOperation() const;
