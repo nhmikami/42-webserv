@@ -46,7 +46,7 @@ bool		ParseUtils::isnumber(const std::string &s)
 
 std::string ParseUtils::toUpper(std::string str) {
     for (size_t i = 0; i < str.length(); ++i) {
-        str[i] = std::toupper(str[i]);
+        str[i] = std::toupper(static_cast<unsigned char>(str[i]));
     }
     return str;
 }

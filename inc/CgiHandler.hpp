@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 #include <unistd.h>
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <sys/types.h>

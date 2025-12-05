@@ -12,6 +12,7 @@ class MethodPOST : public AMethod {
 		bool		_writeToFile(const std::string &path, const char* buffer, size_t size);
 		std::string	_buildAbsoluteUrl(const std::string &targetPath);
 		HttpStatus	_handleMultipart(void);
+		std::string	_extractFilename(const std::string &filename);
 
 	public:
 		MethodPOST(const Request &req, const ServerConfig &config);

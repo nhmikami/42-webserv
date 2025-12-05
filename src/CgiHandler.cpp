@@ -54,7 +54,7 @@ void CgiHandler::_initEnv(const Request& req, const LocationConfig* loc) {
 		else
 			_envMap["HTTP_" + transformedKey] = value;
 	}
-	if (req.getMethod() == "POST")
+	if (req.getMethodStr() == "POST")
 		_envMap["CONTENT_LENGTH"] = ParseUtils::itoa(_requestBody.size());
 }
 
@@ -108,8 +108,8 @@ void CgiHandler::start(void) {
 
 		char** envp = _createEnvArray();
 		std::vector<char*> argv;
-		argv.push_back(_executorPath.c_str());
-		argv.push_back(_scriptPath.c_str());
+		argv.push_back(const_cast<char*>(_executorPath.c_str()));
+		argv.push_back(const_cast<char*>(_scriptPath.c_str()));
 		argv.push_back(NULL);
 		execve(argv[0], &argv[0], envp);
 		
@@ -128,8 +128,10 @@ void CgiHandler::start(void) {
 
 	if (!_requestBody.empty())
 		_state = CGI_WRITING;
-	else
+	else {
 		_state = CGI_READING;
+		shutdown(_socketFd, SHUT_WR);
+	}
 }
 
 bool CgiHandler::isFinished(void) const {

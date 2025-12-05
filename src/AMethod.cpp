@@ -14,6 +14,10 @@ const Response& AMethod::getResponse(void) const {
 	return _res;
 }
 
+CgiHandler* AMethod::getCgiHandler(void) const {
+	return _cgiHandler;
+}
+
 bool AMethod::_exists(const std::string &path) const {
 	struct stat info;
 	return (stat(path.c_str(), &info) == 0);
@@ -153,9 +157,17 @@ size_t AMethod::_getMaxBodySize(void) const {
 }
 
 std::string AMethod::_getUploadLocation(void) const {
+	std::string uploadPath;
 	if (_location && !_location->getUpload().empty())
-		return _location->getUpload();
-	return _config.getUpload();
+		uploadPath = _location->getUpload();
+	else
+		uploadPath = _config.getUpload();
+
+	if (uploadPath.empty())
+		return ""; 
+	if (uploadPath[0] == '/')
+		return uploadPath;
+	return _resolvePath(_getRootPath(), uploadPath);
 }
 
 bool AMethod::_isCGI(const std::string& path) const {
@@ -201,3 +213,61 @@ HttpStatus AMethod::_runCGI(const std::string &path) {
 
 	return CGI_PENDING;
 }
+
+
+// void Client::processRequest() {
+	
+// 	// ... parse request ...
+
+// 	LocationConfig* loc = _server->findLocationForRequest(_request);
+// 	// check if method is allowed in this location
+// 	if (loc && !loc->isMethodAllowed(req.getMethodStr()))
+// 		return makeErrorResponse(NOT_ALLOWED);
+
+// 	// Cria o método (GET/POST)
+// 	AMethod* method = NULL;
+// 	if (req.getMethodStr() == "GET")
+// 		method = new MethodGET(req, config, loc);
+// 	else if (req.getMethodStr() == "POST")
+// 		method = new MethodPOST(req, config, loc);
+// 	else if (req.getMethodStr() == "DELETE")
+// 		method = new MethodDELETE(req, config, loc);
+// 	else
+// 		return makeErrorResponse(NOT_ALLOWED);
+
+// 	HttpStatus status = method->handleMethod();
+
+// 	if (status == CGI_PENDING) {
+// 		// CASO ESPECIAL: CGI Assíncrono
+// 		// Não deletamos o handler ainda, pois precisamos dele para o Pipe
+// 		_cgiHandler = method->getCgiHandler(); // Salva ponteiro
+// 		_methodToCheckCgi = method;            // Salva para deletar depois
+
+// 		// Configura o poller para ouvir o Pipe do CGI
+// 		_server->addToPoller(method->getCgiOutputFd(), POLLIN, this);
+// 		_state = CLIENT_WAITING_CGI;
+// 	} 
+// 	else {
+// 		// CASO NORMAL (Arquivos estáticos, erros, etc)
+// 		// Pega a resposta gerada pelo método
+// 		_res = methodHandler->getResponse();
+		
+// 		// Se o método retornou um código de erro (ex: 404, 500) que não gerou body,
+// 		// aqui seria o lugar de gerar a página de erro padrão (Error Pages).
+// 		if (_res.getBody().empty() && status >= 400) {
+// 			_generateErrorPage(status);
+// 		} else {
+// 			// Se o método retornou status diferente do que está no _res
+// 			_res.setStatus(status); 
+// 		}
+
+// 		// Finaliza
+// 		_res.buildResponse(); // Serializa headers+body
+// 		_state = CLIENT_SENDING;
+		
+// 		// Limpeza
+// 		delete method;
+// 	}
+	
+// 	// Se não for CGI, finaliza resposta normal...
+// }

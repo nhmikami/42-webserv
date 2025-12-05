@@ -29,10 +29,16 @@ HttpStatus MethodGET::handleMethod(void) {
 }
 
 HttpStatus MethodGET::_serveFile(const std::string& path) {
-	if (!_isReadable(path)) {
+	if (!_isReadable(path))
 		return FORBIDDEN;
-	}
 
+	struct stat file_stat;
+	if (stat(path.c_str(), &file_stat) != 0)
+		return SERVER_ERR;
+	size_t file_size = static_cast<size_t>(file_stat.st_size);
+	if (file_size > _getMaxBodySize())
+		return PAYLOAD_TOO_LARGE;
+	
 	std::ifstream file(path.c_str(), std::ios::binary);
 	if (!file)
 		return SERVER_ERR;
@@ -45,6 +51,12 @@ HttpStatus MethodGET::_serveFile(const std::string& path) {
 }
 
 HttpStatus MethodGET::_serveDirectory(const std::string& path) {
+	if (_req.getPath()[_req.getPath().size() - 1] != '/') {
+			std::string new_path = _req.getPath() + "/";
+			_res.addHeader("Location", new_path);
+			return MOVED_PERMANENTLY;
+	}
+
 	std::vector<std::string> index_files = _getIndexFiles();
 	if (index_files.empty()) 
 		index_files.push_back("index.html");
@@ -84,8 +96,8 @@ HttpStatus MethodGET::_generateAutoindex(const std::string &path) {
 	closedir(dir);
 	
 	std::stringstream html;
-	html << "<html>\n<head><title>Index of " << _req.getPath() << "</title></head>\n";
-	html << "<body>\n<h1>Index of " << _req.getPath() << "</h1>\n";
+	html << "<html>\n<head><title>Index of " << _htmlEscape(_req.getPath())<< "</title></head>\n";
+	html << "<body>\n<h1>Index of " << _htmlEscape(_req.getPath()) << "</h1>\n";
 	html << "<ul>\n";
 	
 	std::sort(entries.begin(), entries.end());
@@ -94,18 +106,42 @@ HttpStatus MethodGET::_generateAutoindex(const std::string &path) {
 		std::string full_path = _resolvePath(path, entry);
 
 		if (_exists(full_path)) {
-			if (_isDirectory(full_path))
+			std::string href = _resolvePath(_req.getPath(), entry);
+			if (_isDirectory(full_path)) {
 				entry += "/";
-			
-			std::string href = _req.getPath();
-			if (!href.empty() && href[href.size() - 1] != '/')
 				href += "/";
-			href += entry;
-			html << "<li><a href=\"" << href << "\">" << entry << "</a></li>\n";
+			}
+			html << "<li><a href=\"" << _htmlEscape(href) << "\">" << _htmlEscape(entry) << "</a></li>\n";
 		}
 	}
 	html << "</ul>\n</body>\n</html>\n";
 	_res.setBody(html.str());
 	_res.addHeader("Content-Type", "text/html");
 	return OK;
+}
+
+std::string MethodGET::_htmlEscape(const std::string &s) {
+	std::string escaped;
+	for (size_t i = 0; i < s.length(); ++i) {
+		switch (s[i]) {
+			case '&':
+				escaped += "&amp;";
+				break ;
+			case '<':
+				escaped += "&lt;";
+				break ;
+			case '>':
+				escaped += "&gt;";
+				break ;
+			case '"':
+				escaped += "&quot;";
+				break ;
+			case '\'':
+				escaped += "&#39;";
+				break ;
+			default:
+				escaped += s[i];
+		}
+	}
+	return escaped;
 }

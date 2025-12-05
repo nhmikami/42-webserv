@@ -24,6 +24,7 @@ class AMethod {
 		virtual HttpStatus	handleMethod(void) = 0;
 
 		const Response&		getResponse(void) const;
+		CgiHandler*			getCgiHandler(void) const;
 
 	protected:
 		bool	_exists(const std::string& path) const;
