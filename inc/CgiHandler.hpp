@@ -45,17 +45,17 @@ class CgiHandler {
 
 	public:
 		CgiHandler(const Request& req, const LocationConfig* loc, const std::string& scriptPath, const std::string& executor);
-		~CgiHandler();
+		~CgiHandler(void);
 
-		void	start(); // Inicializa o processo (socketpair, fork, execve)
-		void	handleEvent(uint32_t events); // Chamado pelo loop principal (epoll/select) quando o FD está pronto
-		bool	isFinished() const; // Verifica se terminou
-		int		getFd() const; // Retorna o FD para adicionar no epoll/select
-		void	buildResponse(Response& res); // Processa a resposta final para o objeto Response
+		int		getFd(void) const;
+		void	start(void);
+		void	handleEvent(uint32_t events);
+		bool	isFinished(void) const;
+		void	buildResponse(Response& res);
 
 	private:
 		void	_initEnv(const Request& req, const LocationConfig* loc);
-		char**	_createEnvArray() const;
+		char**	_createEnvArray(void) const;
 		void	_freeEnvArray(char** envp) const;
 		void	_handleCgiWrite(void);
 		void	_handleCgiRead(void);

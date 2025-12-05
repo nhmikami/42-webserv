@@ -29,8 +29,8 @@ enum HttpStatus {
 
 class Response {
 	private:
-		HttpStatus	_status;
-		std::string	_body;
+		HttpStatus							_status;
+		std::string							_body;
 		std::map<std::string, std::string>	_headers;
 
 	public:
@@ -40,14 +40,14 @@ class Response {
 		void				setStatus(HttpStatus status);
 		void				setBody(const std::string &body);
 		void				addHeader(const std::string &key, const std::string &value);
-		
-		HttpStatus	getStatus(void) const;
+
+		HttpStatus			getStatus(void) const;
 		const std::string	getStatusMessage(void) const;
 		const std::string&	getBody(void) const;
 		const std::string&	getHeader(const std::string &key) const;
 		const std::map<std::string, std::string>&	getHeaders(void) const;
 
-		std::string		buildResponse(void) const;
+		std::string			buildResponse(void) const;
 };
 
 #endif

@@ -9,7 +9,9 @@
 class MethodPOST : public AMethod {
 	private:
 		bool		_writeToFile(const std::string &path, const std::string &body);
+		bool		_writeToFile(const std::string &path, const char* buffer, size_t size);
 		std::string	_buildAbsoluteUrl(const std::string &targetPath);
+		HttpStatus	_handleMultipart(void);
 
 	public:
 		MethodPOST(const Request &req, const ServerConfig &config);

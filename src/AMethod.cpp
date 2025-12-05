@@ -152,6 +152,12 @@ size_t AMethod::_getMaxBodySize(void) const {
 	return _config.getClientMaxBodySize();
 }
 
+std::string AMethod::_getUploadLocation(void) const {
+	if (_location && !_location->getUpload().empty())
+		return _location->getUpload();
+	return _config.getUpload();
+}
+
 bool AMethod::_isCGI(const std::string& path) const {
 	size_t dotPos = path.find_last_of(".");
 	if (dotPos == std::string::npos || dotPos == path.length() - 1)

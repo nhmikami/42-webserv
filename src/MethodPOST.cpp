@@ -14,54 +14,39 @@ HttpStatus MethodPOST::handleMethod(void) {
 	}
 
 	if (_req.getBody().size() > _getMaxBodySize())
-		return PAYLOAD_TOO_LARGE; // 413
+		return PAYLOAD_TOO_LARGE;
 
 	std::string full_path = _resolvePath(_getRootPath(), _req.getPath());
 
-	if (_exists(full_path)) {
-		if (_isCGI(full_path))
-			return _runCGI(full_path);
-			
-		if (_isFile(full_path)) {
-			if (!_isWritable(full_path))
-				return FORBIDDEN;
+	if (_req.getHeader("Content-Type").find("multipart/form-data") != std::string::npos)
+		return _handleMultipart();
 
-			if (_writeToFile(full_path, _req.getBody())) {
-				_res.setBody("File updated successfully");
-				return OK;
-			}
-			return SERVER_ERR;
-		}
-		else if (_isDirectory(full_path)) {
-			if (!_isWritable(full_path)) 
-				return FORBIDDEN;
+	if (_exists(full_path) && _isCGI(full_path))
+		return _runCGI(full_path);
 
-			std::string filename = _req.getHeader("X-Filename");
-			if (filename.empty())
-				return BAD_REQUEST;
+	if (_isDirectory(full_path))
+		return BAD_REQUEST;
 
-			std::string file_path = _resolvePath(full_path, filename);
-			if (_writeToFile(file_path, _req.getBody())) {
-				_res.addHeader("Location", _buildAbsoluteUrl(filename));
-				_res.setBody("File created successfully");
-				return CREATED;
-			}
-		}
-	}
-	else {
+	if (!_exists(full_path)) {
 		std::string parent = full_path.substr(0, full_path.find_last_of('/'));
 		if (!_exists(parent) || !_isDirectory(parent))
 			return NOT_FOUND;
-
 		if (!_isWritable(parent))
 			return FORBIDDEN;
+	}
+	else if (!_isWritable(full_path))
+		return FORBIDDEN;
 
-		if (_writeToFile(full_path, _req.getBody())) {
-			 _res.addHeader("Location", _buildAbsoluteUrl(full_path));
-			 _res.setBody("File created successfully");
+	if (_writeToFile(full_path, _req.getBody())) {
+		if (!_exists(full_path)) {
+			_res.addHeader("Location", _buildAbsoluteUrl(full_path));
+			_res.setBody("File created successfully");
 			return CREATED;
 		}
+		_res.setBody("File updated successfully");
+		return OK;
 	}
+	
 	return SERVER_ERR;
 }
 
@@ -88,10 +73,111 @@ bool MethodPOST::_writeToFile(const std::string &path, const std::string &body) 
 	return true;
 }
 
+bool MethodPOST::_writeToFile(const std::string &path, const char* buffer, size_t size) {
+    int flags = O_WRONLY | O_CREAT | O_TRUNC;
+    int fd = open(path.c_str(), flags, 0644);
+    if (fd < 0)
+        return false;
+
+    size_t total_written = 0;
+    while (size > 0) {
+        ssize_t written = write(fd, buffer + total_written, size);
+        if (written < 0) {
+            close(fd);
+            return false;
+        }
+        total_written += written;
+        size -= written;
+    }
+
+    close(fd);
+    return true;
+}
+
 std::string MethodPOST::_buildAbsoluteUrl(const std::string &targetPath) {
-	std::string host = _req.getHeader("Host");
+	std::string host = _req.Host();
 	if (host.empty())
 		host = "localhost";
-
 	return "http://" + host + targetPath;
+}
+
+HttpStatus MethodPOST::_handleMultipart(void) {
+    std::string contentType = _req.getHeader("Content-Type");
+    size_t bpos = contentType.find("boundary=");
+    if (bpos == std::string::npos)
+        return HTTP_BAD_REQUEST;
+
+    std::string boundary = contentType.substr(bpos + 9);
+    size_t endPos = boundary.find_first_of("; \r\n");
+    if (endPos != std::string::npos)
+        boundary = boundary.substr(0, endPos);
+    if (boundary.size() >= 2 && boundary[0] == '"' && boundary[boundary.size() - 1] == '"')
+        boundary = boundary.substr(1, boundary.size() - 2);
+    if (boundary.empty())
+        return HTTP_BAD_REQUEST;
+
+    std::string sep = "--" + boundary;
+    const std::string &body = _req.getBody();
+    
+    size_t pos = body.find(sep);
+    if (pos == std::string::npos)
+        return HTTP_BAD_REQUEST;
+    pos += sep.size();
+
+    while (true) {
+        if (pos + 2 <= body.size() && body.compare(pos, 2, "--") == 0)
+            break ;
+
+        if (pos + 2 <= body.size() && body.compare(pos, 2, "\r\n") == 0)
+            pos += 2;
+
+        size_t headersEnd = body.find("\r\n\r\n", pos);
+        if (headersEnd == std::string::npos)
+            return HTTP_BAD_REQUEST;
+
+        std::string headers = body.substr(pos, headersEnd - pos);
+        std::string filename;
+        
+        size_t cdpos = headers.find("Content-Disposition:");
+        if (cdpos != std::string::npos) {
+            size_t fnpos = headers.find("filename=\"", cdpos);
+            if (fnpos != std::string::npos) {
+                fnpos += 10;
+                size_t endQuote = headers.find("\"", fnpos);
+                if (endQuote != std::string::npos)
+                    filename = headers.substr(fnpos, endQuote - fnpos);
+            }
+        }
+
+        if (filename.empty()) {
+            size_t nextBoundary = body.find(sep, headersEnd + 4);
+            if (nextBoundary == std::string::npos) break;
+            pos = nextBoundary + sep.size();
+            continue;
+        }
+
+        size_t fileStart = headersEnd + 4;
+        size_t nextBoundary = body.find(sep, fileStart);
+        if (nextBoundary == std::string::npos)
+            return HTTP_BAD_REQUEST;
+
+        size_t fileEnd = nextBoundary;
+        if (fileEnd >= 2 && body.compare(fileEnd - 2, 2, "\r\n") == 0)
+            fileEnd -= 2;
+
+        std::string uploadLoc = _getUploadLocation(); 
+		std::string outPath = _resolvePath(uploadLoc, filename);
+
+		size_t dataSize = 0;
+		if (fileEnd > fileStart)
+			dataSize = fileEnd - fileStart;
+		if (!_writeToFile(outPath, body.c_str() + fileStart, dataSize))
+    		return HTTP_INTERNAL_SERVER_ERROR;
+
+        pos = nextBoundary + sep.size();
+    }
+
+    _res.setStatus(HTTP_CREATED);
+    _res.setBody("Files uploaded successfully\n");
+    return HTTP_CREATED;
 }

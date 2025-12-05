@@ -7,7 +7,7 @@ CgiHandler::CgiHandler(const Request& req, const LocationConfig* loc, const std:
 	_initEnv(req, loc);
 }
 
-CgiHandler::~CgiHandler() {
+CgiHandler::~CgiHandler(void) {
 	if (_socketFd != -1)
 		close(_socketFd);
 	
@@ -58,7 +58,7 @@ void CgiHandler::_initEnv(const Request& req, const LocationConfig* loc) {
 		_envMap["CONTENT_LENGTH"] = ParseUtils::itoa(_requestBody.size());
 }
 
-char** CgiHandler::_createEnvArray() const {
+char** CgiHandler::_createEnvArray(void) const {
 	char** envp = new char*[_envMap.size() + 1];
 	int i = 0;
 	for (std::map<std::string, std::string>::const_iterator it = _envMap.begin(); it != _envMap.end(); ++it) {
@@ -79,11 +79,11 @@ void CgiHandler::_freeEnvArray(char** envp) const {
 	delete[] envp;
 }
 
-int CgiHandler::getFd() const {
+int CgiHandler::getFd(void) const {
 	return _socketFd;
 }
 
-void CgiHandler::start() {
+void CgiHandler::start(void) {
 	int socks[2];
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, socks) < 0) {
 		_state = CGI_ERROR;
@@ -132,7 +132,7 @@ void CgiHandler::start() {
 		_state = CGI_READING;
 }
 
-bool CgiHandler::isFinished() const {
+bool CgiHandler::isFinished(void) const {
 	return _state == CGI_FINISHED || _state == CGI_ERROR;
 }
 
@@ -170,7 +170,7 @@ void CgiHandler::_handleCgiWrite(void) {
 	}
 }
 
-void CgiHandler::_handleCgiRead() {
+void CgiHandler::_handleCgiRead(void) {
 	char	buffer[CGI_BUF_SIZE];
 	ssize_t	bytesRead = read(_socketFd, buffer, sizeof(buffer));
 
