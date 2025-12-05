@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../inc/ParseCookie.hpp"
+#include "parse/ParseCookie.hpp"
 #include "utils/ParseUtils.hpp"
 
 ParseCookie::ParseCookie() { }
@@ -104,4 +104,11 @@ std::map<std::string, std::string> ParseCookie::parseCookie(const std::string& c
 		cookies[key] = value;
 	}
 	return cookies;
+}
+
+bool ParseCookie::validateCookie(const std::string &cookie) {
+	if (cookie.empty())
+		return false;
+	std::map<std::string, std::string> parsed = ParseCookie::parseCookie(cookie);
+	return !parsed.empty();
 }

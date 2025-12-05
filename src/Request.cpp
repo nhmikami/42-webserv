@@ -44,7 +44,9 @@ void Request::setUri(const std::string &u) {
 }
 
 void Request::setPath(const std::string &p) {
-	_path = p;
+	std::string normalized;
+	if (ParseUri::normalizePath(p, normalized))
+		_path = normalized;
 }
 
 void Request::setPathInfo(const std::string &pi) {
@@ -217,34 +219,16 @@ std::map<std::string, std::string> Request::getContentTypeParametersMap() const 
 	return params;
 }
 
+// Busca um parâmetro específico na query string
 std::string Request::getQueryParameter(const std::string &key) const {
-	if (_query.empty() || key.empty())
-		return "";
-	
-	size_t start = 0;
-	size_t end = 0;
-	
-	while (start < _query.length()) {
-		end = _query.find('&', start);
-		if (end == std::string::npos)
-			end = _query.length();
-		
-		std::string param = _query.substr(start, end - start);
-		size_t equals = param.find('=');
-		
-		if (equals != std::string::npos) {
-			std::string param_key = param.substr(0, equals);
-			if (param_key == key)
-				return param.substr(equals + 1);
-		}
-		else if (param == key)
-			return "";
-		
-		start = end + 1;
-	}
+	std::map<std::string, std::string> params = getQueryParametersMap();
+	std::map<std::string, std::string>::const_iterator it = params.find(key);
+	if (it != params.end())
+		return it->second;
 	return "";
 }
 
+// Retorna todos os parâmetros da query string em um map
 std::map<std::string, std::string> Request::getQueryParametersMap() const {
 	std::map<std::string, std::string> params;
 	if (_query.empty())
@@ -253,38 +237,70 @@ std::map<std::string, std::string> Request::getQueryParametersMap() const {
 	size_t start = 0;
 	size_t end = 0;
 	
+	// Percorre query separando por '&'
 	while (start < _query.length()) {
+		// Encontra próximo '&' ou fim da string
 		end = _query.find('&', start);
+		if (end == std::string::npos)
+			end = _query.length();
+		
+		// Extrai parâmetro completo
+		std::string param = _query.substr(start, end - start);
+		size_t equals = param.find('=');
+		
+		if (equals != std::string::npos) {
+			// Formato: key=value
+			std::string key = param.substr(0, equals);
+			std::string value = param.substr(equals + 1);
+			
+			std::string decoded_key;
+			if (!ParseUri::urlDecodeQuery(key, decoded_key))
+				decoded_key = key;
+			std::string decoded_value;
+			if (!ParseUri::urlDecodeQuery(value, decoded_value))
+				params[decoded_key] = value;
+			else
+				params[decoded_key] = decoded_value;
+		}
+		else {
+			std::string decoded_key;
+			if (!ParseUri::urlDecodeQuery(param, decoded_key))
+				decoded_key = param;
+			params[decoded_key] = "";
+		}
+		start = end + 1;
+	}
+	return params;
+}
+
+// Verifica se um parâmetro específico existe na query
+bool Request::hasQueryParameter(const std::string &key) const {
+	if (_query.empty() || key.empty())
+		return false;
+	
+	size_t start = 0;
+	while (start < _query.length()) {
+		size_t end = _query.find('&', start);
 		if (end == std::string::npos)
 			end = _query.length();
 		
 		std::string param = _query.substr(start, end - start);
 		size_t equals = param.find('=');
 		
-		if (equals != std::string::npos) {
-			std::string key = param.substr(0, equals);
-			std::string value = param.substr(equals + 1);
-			params[key] = value;
-		}
+		std::string param_key;
+		if (equals != std::string::npos)
+			param_key = param.substr(0, equals);
 		else
-			params[param] = "";
+			param_key = param;
 		
+		if (param_key == key)
+			return true;
+		
+		if (end == _query.length())
+			break;
 		start = end + 1;
 	}
-	
-	return params;
-}
-
-bool Request::hasQueryParameter(const std::string &key) const {
-	const std::map<std::string, std::string>& params = getQueryParametersMap();
-	return params.find(key) != params.end();
-}
-
-bool Request::isValidForFileOperation() const {
-	if (_path.empty() || _path[0] != '/')
-		return false;
-	
-	return true;
+	return false;
 }
 
 std::string Request::getRequestTarget() const {

@@ -3,21 +3,21 @@
 /*                                                        :::      ::::::::   */
 /*   ParseHttp.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: robert <robert@student.42.fr>              +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/06 15:02:25 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/12/04 14:42:18 by robert           ###   ########.fr       */
+/*   Updated: 2025/12/05 18:38:11 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../inc/ParseHttp.hpp"
-#include "../inc/Response.hpp"
-#include "../inc/Request.hpp"
-#include "../inc/utils/ParseUtils.hpp"
-#include "../inc/ParseUri.hpp"
-#include "../inc/ParseHttpValidator.hpp"
-#include "../inc/ParseHttpReader.hpp"
-#include "../inc/ParseCookie.hpp"
+#include "../../inc/ParseHttp.hpp"
+#include "../../inc/Response.hpp"
+#include "../../inc/Request.hpp"
+#include "../../inc/utils/ParseUtils.hpp"
+#include "../../inc/ParseUri.hpp"
+#include "../../inc/ParseHttpValidator.hpp"
+#include "../../inc/ParseHttpReader.hpp"
+#include "../../inc/ParseCookie.hpp"
 
 ParseHttp::ParseHttp() {};
 
@@ -157,6 +157,11 @@ std::ostream& operator<<(std::ostream& os, RequestMethod method) {
 	return os;
 }
 
+static void toLowerStr(std::string &str) {
+	for (size_t i = 0; i < str.size(); ++i)
+		str[i] = std::tolower(static_cast<unsigned char>(str[i]));
+}
+
 // lê os headers e separa em chave e valor
 std::map<std::string,std::string> ParseHttp::parseHeaders(const std::string &headers_block) {
 	std::map<std::string,std::string> headers;
@@ -180,14 +185,11 @@ std::map<std::string,std::string> ParseHttp::parseHeaders(const std::string &hea
 		key = ParseUtils::trim(key);
 		value = ParseUtils::trim(value);
 		
-		for (size_t i = 0; i < key.size(); ++i)
-			key[i] = std::tolower(static_cast<unsigned char>(key[i]));
+		toLowerStr(key);
 
 		// Normaliza valores de headers que são case-insensitive
-		if (key == "transfer-encoding" || key == "connection") {
-			for (size_t i = 0; i < value.size(); ++i)
-				value[i] = std::tolower(static_cast<unsigned char>(value[i]));
-		}
+		if (key == "transfer-encoding" || key == "connection")
+			toLowerStr(value);
 
 		headers[key] = value;
 	}
@@ -195,15 +197,18 @@ std::map<std::string,std::string> ParseHttp::parseHeaders(const std::string &hea
 }
 
 HttpStatus	ParseHttp::initParse(std::string &request) {
-	size_t	total_header_size = 0;
-	size_t	headers_end_pos = 0;
+	// size_t	total_header_size = 0;
+	// size_t	headers_end_pos;
 
-	if (total_header_size > MAX_HEADER_SIZE)
-		return PAYLOAD_TOO_LARGE;
+	// if (total_header_size > MAX_HEADER_SIZE)
+	// 	return PAYLOAD_TOO_LARGE;
 	
-	headers_end_pos = request.find("\r\n\r\n");
-	if (headers_end_pos != std::string::npos)
+	size_t headers_end_pos = request.find("\r\n\r\n");
+	if (headers_end_pos == std::string::npos)
 		return BAD_REQUEST;
+	
+	if (headers_end_pos > MAX_HEADER_SIZE)
+		return PAYLOAD_TOO_LARGE;
 	
 	size_t body_start_pos = headers_end_pos + 4;
 	std::string headers_block = request.substr(0, headers_end_pos);
@@ -264,28 +269,35 @@ HttpStatus	ParseHttp::initParse(std::string &request) {
 	if (this->_request_method == POST) {
 		if (headers_map.find("transfer-encoding") != headers_map.end() && 
 			headers_map["transfer-encoding"] == "chunked") {
+			this->_request_body = request;
+			request.clear();
 			// return ParseHttpReader::readChunked(request, this->_request_body);
 			return OK;
 		}
-		else if (headers_map.find("content-length") != headers_map.end()) {
+
+		if (headers_map.find("content-length") != headers_map.end()) {
 			size_t content_length;
 			if (!ParseHttpValidator::validateContentLength(headers_map["content-length"], content_length))
 				return BAD_REQUEST;
-
-			this->_request_body = request;
-			size_t bytes_already_read = request.size();
-
-			if (bytes_already_read >= content_length) {
-				this->_request_body = this->_request_body.substr(0, content_length);
-				request = request.substr(content_length);
-				return OK;
-			}
-
+			// this->_request_body = request;
+			// size_t bytes_already_read = request.size();
+			this->_request_body = request.substr(0, content_length);
+			
+			// if (bytes_already_read >= content_length) {
+			// 	this->_request_body = this->_request_body.substr(0, content_length);
+			// 	request = request.substr(content_length);
+			// 	return OK;
+			// }
 			// size_t bytes_remaining = content_length - bytes_already_read;
 			// HttpStatus body_status = ParseHttpReader::readBody(bytes_remaining, this->_request_body);
-			HttpStatus body_status = OK;
-			if (body_status != OK)
-				return body_status;
+			// HttpStatus body_status = OK;
+			// if (body_status != OK)
+			// 	return body_status;
+			if (request.size() > content_length)
+				request = request.substr(content_length);
+			else
+				request.clear();
+			return OK;
 		}
 	}
 	return OK;

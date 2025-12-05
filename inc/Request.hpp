@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: robert <robert@student.42.fr>              +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/06 15:02:39 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/12/04 14:36:49 by robert           ###   ########.fr       */
+/*   Updated: 2025/12/05 17:53:42 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,12 +26,12 @@ enum RequestMethod {
 
 class Request {
 	private:
-	RequestMethod _method;
-	std::string _uri;
-	std::string _path;
-	std::string _path_info;
-	std::string _query;
-	std::string _http_version;
+		RequestMethod _method;
+		std::string _uri;
+		std::string _path;
+		std::string _path_info;
+		std::string _query;
+		std::string _http_version;
 		std::map<std::string, std::string> _headers;
 		std::string _body;
 		
@@ -76,7 +76,6 @@ class Request {
 		std::map<std::string, std::string> getQueryParametersMap() const;
 		bool hasQueryParameter(const std::string &key) const;
 		
-		bool isValidForFileOperation() const;
 		std::string getRequestTarget() const;
 		bool requiresBody() const;
 };

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ParseHttp.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: robert <robert@student.42.fr>              +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 14:44:10 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/12/04 14:37:08 by robert           ###   ########.fr       */
+/*   Updated: 2025/12/05 18:35:33 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,13 +24,13 @@
 #include <vector>
 #include <sys/socket.h>
 #include <poll.h>
-#include "Response.hpp"
-#include "Request.hpp"
+#include "../Response.hpp"
+#include "../Request.hpp"
 #include "ParseUri.hpp"
 #include "ParseHttpValidator.hpp"
 #include "ParseHttpReader.hpp"
 
-#define RECV_BUFFER_SIZE 4096
+// #define RECV_BUFFER_SIZE 4096
 
 #define MAX_HEADER_SIZE 8192
 
@@ -44,13 +44,13 @@ class ParseHttp {
 		std::string _http_version;
 		std::string _host_header;
 		std::string _user_agent_header;
-		std::string _request_body;
 		std::string _content_length;
-		std::string _content_type;
 		std::string _transfer_encoding;
+		std::string _content_type;
 		std::string _connection;
 		std::string _accept;
 		std::map<std::string, std::string> _cookies;
+		std::string _request_body;
 		std::map<std::string, std::string> _all_headers;
 
 		bool parseRequestLine(const std::string &line,
@@ -65,6 +65,7 @@ class ParseHttp {
 		// ParseHttp &operator=(const ParseHttp &other);
 		~ParseHttp();
 
+		static void toLowerStr(std::string &str);
 		HttpStatus	initParse(std::string &request);
 		Request		buildRequest() const;
 
