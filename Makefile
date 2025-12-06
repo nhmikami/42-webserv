@@ -16,7 +16,7 @@ OBJ_DIR		=	obj/
 # source files
 SRC			=	$(addprefix $(SRC_DIR), main.cpp \
 					Request.cpp ParseHttp.cpp ParseHttpReader.cpp ParseHttpValidator.cpp ParseUri.cpp ParseCookie.cpp \
-					Response.cpp AMethod.cpp MethodGET.cpp MethodPOST.cpp MethodDELETE.cpp) \
+					Response.cpp AMethod.cpp MethodGET.cpp MethodPOST.cpp MethodDELETE.cpp CgiHandler.cpp) \
 				$(addprefix $(CONF_DIR), ParseConfig.cpp BaseConfig.cpp ServerConfig.cpp LocationConfig.cpp) \
 				$(addprefix $(SERV_DIR), Server.cpp Client.cpp) \
 				$(addprefix $(UTIL_DIR), Logger.cpp ParseUtils.cpp)

@@ -91,6 +91,19 @@ RequestMethod Request::getMethod() const {
 	return _method;
 }
 
+const std::string Request::getMethodStr() const {
+	switch (_method) {
+		case GET:
+			return "GET";
+		case POST:
+			return "POST";
+		case DELETE:
+			return "DELETE";
+		default:
+			return "UNKNOWN";
+	}
+}
+
 const std::string& Request::getUri() const {
 	return _uri;
 }
