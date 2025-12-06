@@ -208,8 +208,8 @@ HttpStatus AMethod::_runCGI(const std::string &path) {
 	std::string	ext = path.substr(path.find_last_of('.'));
 	std::string	executor = executors[ext];
 
-	_cgiHandler = new CgiHandler(_req, path, executor);
-	_cgiHandler->start(); 
+	// _cgiHandler = new CgiHandler(_req, path, executor);
+	// _cgiHandler->start(); 
 
 	return CGI_PENDING;
 }

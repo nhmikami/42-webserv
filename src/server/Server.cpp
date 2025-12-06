@@ -144,7 +144,6 @@ bool	Server::addToFDs(int server_fd)
 };
 
 void	Server::run() {
-	ServerConfig* config = NULL;
 
 	while (true) {
 		int res = poll(_fds.data(), _fds.size(), -1);
@@ -159,7 +158,7 @@ void	Server::run() {
 		for (size_t i = 0; i < _configs.size(); i++) {
 			if (_fds[i].revents & POLLIN) {
 				int server_fd = _fds[i].fd;
-				config = _fd_to_config[server_fd];
+				ServerConfig* config = _fd_to_config[server_fd];
 				acceptClient(server_fd, config);
 			}
 		}
@@ -169,7 +168,7 @@ void	Server::run() {
 			if (_fds[i].revents & (POLLERR | POLLHUP | POLLNVAL)) {
 				unhandleClient(i);
 			} else if (_fds[i].revents & POLLIN) {
-				if (handleClient(i, config)) i++;
+				if (handleClient(i)) i++;
 			} else
 				i++;
 		}
@@ -208,11 +207,12 @@ Client	*Server::findClient(size_t *j, int client_fd)
 	return NULL;
 }
 
-bool	Server::handleClient(int i, ServerConfig *config) 
+bool	Server::handleClient(int i) 
 {
 	size_t	j = 0;
 	int		client_fd = _fds[i].fd;
 	Client	*client = NULL;
+	ServerConfig *config = _client_to_config[client_fd];
 
 	client = findClient(&j, client_fd);
 
@@ -252,6 +252,7 @@ bool	Server::handleClient(int i, ServerConfig *config)
 	status = method->handleMethod();
 	Response res = method->getResponse();
 	std::string response = res.buildResponse();
+	std::cout << std::endl << "RESPONSE" << std::endl << response << std::endl;
 
 	//envia request para parsing
 	//enviar parse e serverconfig para execução

@@ -41,7 +41,7 @@ class Server {
 		bool	addToFDs(int server_fd);
 		void	acceptClient(int server_fd, ServerConfig *config);
 		Client	*findClient(size_t *j, int client_fd);
-		bool	handleClient(int i, ServerConfig *config);
+		bool	handleClient(int i);
 		void	unhandleClient(int i);
 		void	closeClient(int i, int j, Client *client);
 

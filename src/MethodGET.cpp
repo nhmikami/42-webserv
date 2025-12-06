@@ -49,6 +49,9 @@ HttpStatus MethodGET::_serveFile(const std::string& path) {
 	buffer << file.rdbuf();
 	_res.setBody(buffer.str());
 	_res.addHeader("Content-Type", _guessMimeType(path));
+	std::stringstream ss;
+	ss << _res.getBody().size();
+	_res.addHeader("Content-Length", ss.str());
 	return OK;
 }
 
