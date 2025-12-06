@@ -1,14 +1,21 @@
 #include "AMethod.hpp"
 
 AMethod::AMethod(const Request &req, const ServerConfig &config)
-	: _req(req), _config(config), _location(NULL) {
+	: _req(req), _config(config), _location(NULL), _cgiHandler(NULL) {
 	_location = _findLocation(_req.getPath());
 }
 
-AMethod::~AMethod(void) {}
+AMethod::~AMethod(void) {
+	if (_cgiHandler) 
+		delete _cgiHandler;
+}
 
 const Response& AMethod::getResponse(void) const {
 	return _res;
+}
+
+CgiHandler* AMethod::getCgiHandler(void) const {
+	return _cgiHandler;
 }
 
 bool AMethod::_exists(const std::string &path) const {
@@ -72,11 +79,6 @@ std::string AMethod::_resolvePath(const std::string &root, const std::string &re
 		finalPath += "/" + tokens[i];
 
 	return finalPath;
-}
-
-bool AMethod::_isCGI(const std::string& path) const {
-	(void)path;
-	return false;
 }
 
 const std::string AMethod::_guessMimeType(const std::string &path) const {
@@ -153,3 +155,119 @@ size_t AMethod::_getMaxBodySize(void) const {
 	}
 	return _config.getClientMaxBodySize();
 }
+
+std::string AMethod::_getUploadLocation(void) {
+	std::string uploadPath;
+	if (_location && !_location->getUpload().empty())
+		uploadPath = _location->getUpload();
+	else
+		uploadPath = _config.getUpload();
+
+	if (uploadPath.empty())
+		return ""; 
+	if (uploadPath[0] == '/')
+		return uploadPath;
+	return _resolvePath(_getRootPath(), uploadPath);
+}
+
+bool AMethod::_isCGI(const std::string& path) const {
+	size_t dotPos = path.find_last_of(".");
+	if (dotPos == std::string::npos || dotPos == path.length() - 1)
+		return false;
+	std::string extension = path.substr(dotPos);
+	
+	if (_location) {
+		const std::map<std::string, std::string>& locCgi = _location->getCgi();
+		if (locCgi.count(extension) > 0)
+			return true;
+	}
+
+	const std::map<std::string, std::string>& srvCgi = _config.getCgi();
+	if (srvCgi.count(extension) > 0)
+		return true;
+
+	return false;
+}
+
+std::map<std::string, std::string> AMethod::_getCgiExecutors(void) const {
+	std::map<std::string, std::string> cgiMap;
+
+	if (_location) {
+		const std::map<std::string, std::string>& locCgi = _location->getCgi();
+		cgiMap.insert(locCgi.begin(), locCgi.end());
+	}
+
+	const std::map<std::string, std::string>& srvCgi = _config.getCgi();
+	cgiMap.insert(srvCgi.begin(), srvCgi.end());
+
+	return cgiMap;
+}
+
+HttpStatus AMethod::_runCGI(const std::string &path) {
+	std::map<std::string, std::string> executors = _getCgiExecutors();
+	std::string	ext = path.substr(path.find_last_of('.'));
+	std::string	executor = executors[ext];
+
+	_cgiHandler = new CgiHandler(_req, path, executor);
+	_cgiHandler->start(); 
+
+	return CGI_PENDING;
+}
+
+
+// void Client::processRequest() {
+	
+// 	// ... parse request ...
+
+// 	LocationConfig* loc = _server->findLocationForRequest(_request);
+// 	// check if method is allowed in this location
+// 	if (loc && !loc->isMethodAllowed(req.getMethodStr()))
+// 		return makeErrorResponse(NOT_ALLOWED);
+
+// 	// Cria o método (GET/POST)
+// 	AMethod* method = NULL;
+// 	if (req.getMethodStr() == "GET")
+// 		method = new MethodGET(req, config, loc);
+// 	else if (req.getMethodStr() == "POST")
+// 		method = new MethodPOST(req, config, loc);
+// 	else if (req.getMethodStr() == "DELETE")
+// 		method = new MethodDELETE(req, config, loc);
+// 	else
+// 		return makeErrorResponse(NOT_ALLOWED);
+
+// 	HttpStatus status = method->handleMethod();
+
+// 	if (status == CGI_PENDING) {
+// 		// CASO ESPECIAL: CGI Assíncrono
+// 		// Não deletamos o handler ainda, pois precisamos dele para o Pipe
+// 		_cgiHandler = method->getCgiHandler(); // Salva ponteiro
+// 		_methodToCheckCgi = method;            // Salva para deletar depois
+
+// 		// Configura o poller para ouvir o Pipe do CGI
+// 		_server->addToPoller(method->getCgiOutputFd(), POLLIN, this);
+// 		_state = CLIENT_WAITING_CGI;
+// 	} 
+// 	else {
+// 		// CASO NORMAL (Arquivos estáticos, erros, etc)
+// 		// Pega a resposta gerada pelo método
+// 		_res = methodHandler->getResponse();
+		
+// 		// Se o método retornou um código de erro (ex: 404, 500) que não gerou body,
+// 		// aqui seria o lugar de gerar a página de erro padrão (Error Pages).
+// 		if (_res.getBody().empty() && status >= 400) {
+// 			_generateErrorPage(status);
+// 		} else {
+// 			// Se o método retornou status diferente do que está no _res
+// 			_res.setStatus(status); 
+// 		}
+
+// 		// Finaliza
+// 		_res.buildResponse(); // Serializa headers+body
+// 		_state = CLIENT_SENDING;
+		
+// 		// Limpeza
+// 		delete method;
+// 	}
+	
+// 	// Se não for CGI, finaliza resposta normal...
+// }

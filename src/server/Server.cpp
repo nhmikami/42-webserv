@@ -144,6 +144,7 @@ bool	Server::addToFDs(int server_fd)
 };
 
 void	Server::run() {
+	ServerConfig* config = NULL;
 
 	while (true) {
 		int res = poll(_fds.data(), _fds.size(), -1);
@@ -158,7 +159,7 @@ void	Server::run() {
 		for (size_t i = 0; i < _configs.size(); i++) {
 			if (_fds[i].revents & POLLIN) {
 				int server_fd = _fds[i].fd;
-				ServerConfig* config = _fd_to_config[server_fd];
+				config = _fd_to_config[server_fd];
 				acceptClient(server_fd, config);
 			}
 		}
@@ -168,7 +169,7 @@ void	Server::run() {
 			if (_fds[i].revents & (POLLERR | POLLHUP | POLLNVAL)) {
 				unhandleClient(i);
 			} else if (_fds[i].revents & POLLIN) {
-				if (handleClient(i)) i++;
+				if (handleClient(i, config)) i++;
 			} else
 				i++;
 		}
@@ -207,7 +208,7 @@ Client	*Server::findClient(size_t *j, int client_fd)
 	return NULL;
 }
 
-bool	Server::handleClient(int i) 
+bool	Server::handleClient(int i, ServerConfig *config) 
 {
 	size_t	j = 0;
 	int		client_fd = _fds[i].fd;
@@ -227,21 +228,77 @@ bool	Server::handleClient(int i)
 
 	Logger::log(Logger::SERVER, "Received from fd=" + ParseUtils::itoa(client_fd) + ":\n" + request);
 
+	ParseHttp parsehttp;
+	HttpStatus status = parsehttp.initParse(request);
+	if (status != OK) {
+		// tratar erro
+		Logger::log(Logger::ERROR, "");
+		return false;
+	}
+	Request req = parsehttp.buildRequest();
+	printRequest(parsehttp);
+
+	AMethod* method = NULL;
+	if (req.getMethodStr() == "GET")
+		method = new MethodGET(req, *config);
+	else if (req.getMethodStr() == "POST")
+		method = new MethodPOST(req, *config);
+	else if (req.getMethodStr() == "DELETE")
+		method = new MethodDELETE(req, *config);
+	else {
+		Logger::log(Logger::ERROR, "");
+		return false;
+	}
+	status = method->handleMethod();
+	Response res = method->getResponse();
+	std::string response = res.buildResponse();
+
 	//envia request para parsing
 	//enviar parse e serverconfig para execução
 	// ServerConfig *config = _client_to_config[client_fd];
 	
-	std::string response =
-		"HTTP/1.1 200 OK\r\n"
-		"Content-Type: text/plain\r\n"
-		"Content-Length: 13\r\n"
-		"\r\n"
-		"Hello, World!";
+	// std::string response =
+	// 	"HTTP/1.1 200 OK\r\n"
+	// 	"Content-Type: text/plain\r\n"
+	// 	"Content-Length: 13\r\n"
+	// 	"\r\n"
+	// 	"Hello, World!";
 
 	client->sendResponse(response);
+	delete method;
 
 	return true;
 };
+
+void printRequest(ParseHttp parser) {
+	std::cout << "Método: " << parser.getRequestMethod() << std::endl;
+	std::cout << "URI: " << parser.getUri() << std::endl;
+	std::cout << "Path: " << parser.getPath() << std::endl;
+	std::cout << "Versão HTTP: " << parser.getHttpVersion() << std::endl;
+	std::cout << std::endl;
+
+	std::cout << "=== Todos os Headers ===" << std::endl;
+	Request req = parser.buildRequest();
+	const std::map<std::string, std::string>& headers = req.getHeaders();
+	
+	for (std::map<std::string, std::string>::const_iterator it = headers.begin(); 
+		 it != headers.end(); ++it) {
+		std::cout << it->first << ": " << it->second << std::endl;
+	}
+
+	std::cout << std::endl;
+	std::cout << "=== Cookies ===" << std::endl;
+	const std::map<std::string, std::string>& cookies = parser.getCookies();
+	
+	if (cookies.empty()) {
+		std::cout << "(nenhum cookie)" << std::endl;
+	} else {
+		for (std::map<std::string, std::string>::const_iterator it = cookies.begin(); 
+			 it != cookies.end(); ++it) {
+			std::cout << it->first << " = " << it->second << std::endl;
+		}
+	}
+}
 
 void Server::unhandleClient(int i) {
 	size_t	j = 0;

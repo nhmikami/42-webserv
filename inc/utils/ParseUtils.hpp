@@ -5,7 +5,7 @@
 #include <sstream>
 #include <iostream>
 
-#include "utils/Logger.hpp"
+#include "Logger.hpp"
 
 class ParseUtils {
 	private:
@@ -19,6 +19,8 @@ class ParseUtils {
 		static std::string  itoa(int n);
 		static std::string  trim(const std::string &s);
 		static bool			isnumber(const std::string &s);
+		static std::string  toUpper(std::string str);
+		static std::string  replaceChar(std::string str, char find, char replace);
 };
 
 #endif

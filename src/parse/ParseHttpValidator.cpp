@@ -10,15 +10,14 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../inc/ParseHttpValidator.hpp"
-#include "utils/ParseUtils.hpp"
+#include "parse/ParseHttpValidator.hpp"
 
 ParseHttpValidator::ParseHttpValidator(void) {}
 
 ParseHttpValidator::~ParseHttpValidator(void) {}
 
 // valida o header host
-bool ParseHttpValidator::validate_host_header(const std::string &host) {
+bool ParseHttpValidator::validateHostHeader(const std::string &host) {
 	if (host.empty())
 		return false;
 	
@@ -58,8 +57,24 @@ bool ParseHttpValidator::validate_host_header(const std::string &host) {
 	return true;
 }
 
+bool ParseHttpValidator::validateUserAgent(const std::string &user_agent) {
+	if (user_agent.empty())
+		return false;
+	
+	if (user_agent.size() > 512)
+		return false;
+	
+	for (size_t i = 0; i < user_agent.size(); ++i) {
+		unsigned char c = static_cast<unsigned char>(user_agent[i]);
+		if (c < 32 || c > 126)
+			return false;
+	}
+	
+	return true;
+}
+
 // valida o content_length e se é numérico
-bool ParseHttpValidator::validate_content_length(const std::string &content_length_str, size_t &out_length) {
+bool ParseHttpValidator::validateContentLength(const std::string &content_length_str, size_t &out_length) {
 	if (content_length_str.empty())
 		return false;
 	
@@ -71,10 +86,10 @@ bool ParseHttpValidator::validate_content_length(const std::string &content_leng
 	char *end_ptr = NULL;
 	errno = 0;
 	unsigned long value = std::strtoul(content_length_str.c_str(), &end_ptr, 10);
-	
+
 	if (errno == ERANGE)
 		return false;
-	
+
 	if (end_ptr != content_length_str.c_str() + content_length_str.size())
 		return false;
 	
@@ -83,7 +98,7 @@ bool ParseHttpValidator::validate_content_length(const std::string &content_leng
 }
 
 // normaliza o transfer encoding
-bool ParseHttpValidator::validate_transfer_encoding(const std::string &transfer_encoding) {
+bool ParseHttpValidator::validateTransferEncoding(const std::string &transfer_encoding) {
 	if (transfer_encoding.empty())
 		return false;
 
@@ -95,7 +110,7 @@ bool ParseHttpValidator::validate_transfer_encoding(const std::string &transfer_
 	return false;
 }
 
-bool ParseHttpValidator::validate_content_type(const std::string &content_type) {
+bool ParseHttpValidator::validateContentType(const std::string &content_type) {
 	if (content_type.empty())
 		return false;
 	
@@ -103,16 +118,16 @@ bool ParseHttpValidator::validate_content_type(const std::string &content_type) 
 	if (slash_pos == std::string::npos || slash_pos == 0)
 		return false;
 	
-	size_t semicolon_pos = content_type.find(';');
+	size_t first_semicolon = content_type.find(';');
 	std::string mime_type;
 	
-	if (semicolon_pos != std::string::npos)
-		mime_type = content_type.substr(0, semicolon_pos);
+	if (first_semicolon != std::string::npos)
+		mime_type = content_type.substr(0, first_semicolon);
 	else
 		mime_type = content_type;
 	
 	mime_type = ParseUtils::trim(mime_type);
-	
+
 	slash_pos = mime_type.find('/');
 	if (slash_pos == std::string::npos || slash_pos == 0 || slash_pos == mime_type.size() - 1)
 		return false;
@@ -122,11 +137,130 @@ bool ParseHttpValidator::validate_content_type(const std::string &content_type) 
 		if (!std::isalnum(c) && c != '/' && c != '-' && c != '+' && c != '.')
 			return false;
 	}
+
+	if (mime_type != "multipart/form-data")
+		return true;
+	if (first_semicolon == std::string::npos)
+		return false;
+
+	std::string all_params = content_type.substr(first_semicolon + 1);
+	bool found_boundary = false;
+	size_t start = 0;
+	while (start < all_params.size()) {
+		size_t next_semicolon = all_params.find(';', start);
+		std::string single_param;
+		
+		if (next_semicolon == std::string::npos)
+			single_param = all_params.substr(start);
+		else
+			single_param = all_params.substr(start, next_semicolon - start);
+		
+		single_param = ParseUtils::trim(single_param);
+		
+		if (single_param.find("boundary=") == 0) {
+			std::string boundary = single_param.substr(9);
+			boundary = ParseUtils::trim(boundary);
+			
+			if (boundary.empty())
+				return false;
+			
+			for (size_t i = 0; i < boundary.size(); ++i) {
+				unsigned char c = static_cast<unsigned char>(boundary[i]);
+				if (!std::isalnum(c) && c != '\'' && c != '(' && c != ')'
+					&& c != '+' && c != '_' && c != ',' && c != '-'
+					&& c != '.' && c != ':' && c != '=' && c != '?')
+					return false;
+			}
+			found_boundary = true;
+		}
+		if (next_semicolon == std::string::npos)
+			break;
+		start = next_semicolon + 1;
+	}
+	return found_boundary;
+}
+
+bool ParseHttpValidator::validateConnection(const std::string &connection) {
+	if (connection.empty())
+		return false;
 	
+	std::string connec_trim = ParseUtils::trim(connection);
+	
+	if (connec_trim == "keep-alive" || connec_trim == "close")
+		return true;
+	
+	return false;
+}
+
+bool ParseHttpValidator::validateAccept(const std::string &accept) {
+	if (accept.empty())
+		return false;
+	
+	std::string accept_trimmed = ParseUtils::trim(accept);
+	if (accept_trimmed.empty())
+		return false;
+	
+	if (accept_trimmed == "*/*")
+		return true;
+	
+	size_t start = 0;
+	while (start < accept_trimmed.size()) {
+		size_t comma_pos = accept_trimmed.find(',', start);
+		std::string media_type;
+		
+		if (comma_pos == std::string::npos)
+			media_type = accept_trimmed.substr(start);
+		else
+			media_type = accept_trimmed.substr(start, comma_pos - start);
+		
+		media_type = ParseUtils::trim(media_type);
+		
+		if (media_type.empty())
+			return false;
+		
+		std::string media_and_params = media_type;
+		std::string params_str;
+		size_t semicolon_pos = media_and_params.find(';');
+		if (semicolon_pos != std::string::npos) {
+			params_str = media_and_params.substr(semicolon_pos + 1);
+			media_and_params = media_and_params.substr(0, semicolon_pos);
+		}
+		media_and_params = ParseUtils::trim(media_and_params);
+		params_str = ParseUtils::trim(params_str);
+		
+		if (semicolon_pos != std::string::npos && params_str.empty())
+			return false;
+
+		if (media_and_params.empty())
+			return false;
+		
+		size_t slash_pos = media_and_params.find('/');
+
+		if (slash_pos == std::string::npos || slash_pos == 0)
+			return false;
+		
+		std::string type = media_and_params.substr(0, slash_pos);
+		std::string subtype = media_and_params.substr(slash_pos + 1);
+		if (subtype.empty())
+			return false;
+		if (type == "*" && subtype != "*")
+			return false;
+		if (!validateTypeToken(type))
+			return false;
+		if (!validateTypeToken(subtype))
+			return false;
+
+		if (!validateParamsQ(params_str))
+			return false;
+		
+		if (comma_pos == std::string::npos)
+			break;
+		start = comma_pos + 1;
+	}
 	return true;
 }
 
-bool ParseHttpValidator::validate_quality_value(const std::string &s) {
+bool ParseHttpValidator::validateQualityValue(const std::string &s) {
 	if (s.empty())
 		return false;
 	for (size_t i = 0; i < s.size(); ++i) {
@@ -166,12 +300,11 @@ bool ParseHttpValidator::validate_quality_value(const std::string &s) {
 	return false;
 }
 
-double ParseHttpValidator::q_to_double(const std::string &s) {
+double ParseHttpValidator::qToDouble(const std::string &s) {
 	return std::strtod(s.c_str(), NULL);
 }
 
-bool ParseHttpValidator::validate_type_token(const std::string &t, bool is_type) {
-	(void)is_type;
+bool ParseHttpValidator::validateTypeToken(const std::string &t) {
 	if (t.empty())
 		return false;
 	for (size_t i = 0; i < t.size(); ++i) {
@@ -187,12 +320,11 @@ bool ParseHttpValidator::validate_type_token(const std::string &t, bool is_type)
 	return true;
 }
 
-bool ParseHttpValidator::check_params_q(const std::string &params_str, double &out_q, bool &has_q) {
-	has_q = false;
-	out_q = 1.0;
+bool ParseHttpValidator::validateParamsQ(const std::string &params_str) {
 	if (params_str.empty())
 		return true;
 
+	bool has_q = false;
 	size_t pos = 0;
 	while (pos < params_str.size()) {
 		size_t next = params_str.find(';', pos);
@@ -213,7 +345,9 @@ bool ParseHttpValidator::check_params_q(const std::string &params_str, double &o
 		std::string name = param.substr(0, eq);
 		std::string value = param.substr(eq + 1);
 		name = ParseUtils::trim(name);
-		value = ParseUtils::trim(value);
+		
+		if (name.empty() || value.empty())
+			return false;
 
 		for (size_t i = 0; i < name.size(); ++i)
 			name[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(name[i])));
@@ -221,10 +355,14 @@ bool ParseHttpValidator::check_params_q(const std::string &params_str, double &o
 		if (name == "q") {
 			if (has_q)
 				return false;
-			if (!validate_quality_value(value))
-				return false;
-			out_q = q_to_double(value);
 			has_q = true;
+			
+			std::string value_trimmed = ParseUtils::trim(value);
+			if (value != value_trimmed)
+				return false;
+			
+			if (!validateQualityValue(value))
+				return false;
 		}
 		if (next == std::string::npos)
 			break;
@@ -233,92 +371,21 @@ bool ParseHttpValidator::check_params_q(const std::string &params_str, double &o
 	return true;
 }
 
-bool ParseHttpValidator::validate_accept(const std::string &accept) {
-	if (accept.empty())
-		return false;
-	
-	std::string accept_trimmed = ParseUtils::trim(accept);
-	if (accept_trimmed.empty())
-		return false;
-	
-	if (accept_trimmed == "*/*")
-		return true;
-	
-	size_t start = 0;
-	while (start < accept_trimmed.size()) {
-		size_t comma_pos = accept_trimmed.find(',', start);
-		std::string media_type;
-		
-		if (comma_pos == std::string::npos)
-			media_type = accept_trimmed.substr(start);
-		else
-			media_type = accept_trimmed.substr(start, comma_pos - start);
-		
-		media_type = ParseUtils::trim(media_type);
-		
-		std::string media_and_params = media_type;
-		std::string params_str;
-		size_t semicolon_pos = media_and_params.find(';');
-		if (semicolon_pos != std::string::npos) {
-			params_str = media_and_params.substr(semicolon_pos + 1);
-			media_and_params = media_and_params.substr(0, semicolon_pos);
-		}
-		media_and_params = ParseUtils::trim(media_and_params);
-		params_str = ParseUtils::trim(params_str);
-
-		if (media_and_params.empty())
-			return false;
-		
-		size_t slash_pos = media_and_params.find('/');
-
-		if (slash_pos == std::string::npos || slash_pos == 0)
-			return false;
-		
-		std::string type = media_and_params.substr(0, slash_pos);
-		std::string subtype = media_and_params.substr(slash_pos + 1);
-		if (subtype.empty())
-			return false;
-		if (type == "*" && subtype != "*")
-			return false;
-		if (!validate_type_token(type, true))
-			return false;
-		if (!validate_type_token(subtype, false))
-			return false;
-
-		double q_value = 1.0;
-		bool has_q = false;
-		if (!check_params_q(params_str, q_value, has_q))
-			return false;
-		
-		if (comma_pos == std::string::npos)
-			break;
-		start = comma_pos + 1;
-	}
-	
-	return true;
-}
-
-bool ParseHttpValidator::validate_connection(const std::string &connection) {
-	if (connection.empty())
-		return false;
-	
-	std::string connec_trim = ParseUtils::trim(connection);
-	
-	if (connec_trim == "keep-alive" || connec_trim == "close")
-		return true;
-	
-	return false;
-}
-
 // Valida regras HTTP mínimas e coerência entre headers antes de aceitar/processar o corpo ou rotear a requisição
-HttpStatus ParseHttpValidator::validate_headers(const std::map<std::string, std::string> &headers) {
+HttpStatus ParseHttpValidator::validateHeaders(const std::map<std::string, std::string> &headers) {
 	std::map<std::string, std::string>::const_iterator host_it = headers.find("host");
 	if (host_it == headers.end())
 		return BAD_REQUEST;
 	
-	if (!validate_host_header(host_it->second))
+	if (!validateHostHeader(host_it->second))
 		return BAD_REQUEST;
 	
+	std::map<std::string, std::string>::const_iterator user_agent_it = headers.find("user-agent");
+	if (user_agent_it != headers.end()) {
+		if (!validateUserAgent(user_agent_it->second))
+			return BAD_REQUEST;
+	}
+
 	std::map<std::string, std::string>::const_iterator content_length_it = headers.find("content-length");
 	std::map<std::string, std::string>::const_iterator transfer_encoding_it = headers.find("transfer-encoding");
 	bool has_content_length = (content_length_it != headers.end());
@@ -329,31 +396,37 @@ HttpStatus ParseHttpValidator::validate_headers(const std::map<std::string, std:
 	
 	if (has_content_length) {
 		size_t content_length;
-		if (!validate_content_length(content_length_it->second, content_length))
+		if (!validateContentLength(content_length_it->second, content_length))
 			return BAD_REQUEST;
 	}
 	
 	if (has_transfer_encoding) {
-		if (!validate_transfer_encoding(transfer_encoding_it->second))
+		if (!validateTransferEncoding(transfer_encoding_it->second))
 			return BAD_REQUEST;
 	}
 	
 	std::map<std::string, std::string>::const_iterator content_type_it = headers.find("content-type");
 	if (content_type_it != headers.end()) {
-		if (!validate_content_type(content_type_it->second))
+		if (!validateContentType(content_type_it->second))
 			return BAD_REQUEST;
 	}
 	
 	std::map<std::string, std::string>::const_iterator connection_it = headers.find("connection");
 	if (connection_it != headers.end()) {
-		if (!validate_connection(connection_it->second))
+		if (!validateConnection(connection_it->second))
 			return BAD_REQUEST;
 	}
 	
 	std::map<std::string, std::string>::const_iterator accept_it = headers.find("accept");
 	if (accept_it != headers.end())
-		if (!validate_accept(accept_it->second))
+		if (!validateAccept(accept_it->second))
 			return BAD_REQUEST;
+	
+	std::map<std::string, std::string>::const_iterator cookie_it = headers.find("cookie");
+	if (cookie_it != headers.end()) {
+		if (!ParseCookie::validateCookie(cookie_it->second))
+			return BAD_REQUEST;
+	}
 	
 	return OK;
 }

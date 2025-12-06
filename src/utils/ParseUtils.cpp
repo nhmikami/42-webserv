@@ -1,4 +1,4 @@
-#include "utils/ParseUtils.hpp"
+#include "../../inc/utils/ParseUtils.hpp"
 
 // ParseUtils::ParseUtils(void) {};
 
@@ -42,4 +42,19 @@ bool		ParseUtils::isnumber(const std::string &s)
             return false;
     }
 	return true;
+}
+
+std::string ParseUtils::toUpper(std::string str) {
+    for (size_t i = 0; i < str.length(); ++i) {
+        str[i] = std::toupper(static_cast<unsigned char>(str[i]));
+    }
+    return str;
+}
+
+std::string ParseUtils::replaceChar(std::string str, char find, char replace) {
+    for (size_t i = 0; i < str.length(); ++i) {
+        if (str[i] == find)
+            str[i] = replace;
+    }
+    return str;
 }

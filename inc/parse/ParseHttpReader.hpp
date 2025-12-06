@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ParseUri.hpp                                       :+:      :+:    :+:   */
+/*   ParseHttpReader.hpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,24 +10,26 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef PARSEURI_HPP
-#define PARSEURI_HPP
+#ifndef PARSEHTTPREADER_HPP
+#define PARSEHTTPREADER_HPP
 
 #include <string>
-#include <vector>
+#include <sys/socket.h>
+#include <poll.h>
+#include <cerrno>
+#include <cstdlib>
+#include "../Response.hpp"
 
-class ParseUri {
+class ParseHttpReader {
 	private:
-		ParseUri(void);
-		~ParseUri(void);
+		ParseHttpReader(void);
+		~ParseHttpReader(void);
 
 	public:
-		static int hex_digit(char c);
-		static int hex_value(char hi, char lo);
-		static bool isValidUTF8(const std::string &s);
-		static bool urlDecode(const std::string &str, std::string &result);
-		static bool validate_uri(const std::string &uri, std::string &path, std::string &query);
-		static bool normalize_path(const std::string &raw_path, std::string &normalized_path);
+		// static bool readUntilCrlf(int client_fd, std::string &buffer, std::string &out_line);
+		// static bool hexToInt(const std::string &hex_line, size_t &out_size);
+		// static HttpStatus readBody(size_t content_length, std::string &request_body);
+		// static HttpStatus readChunked(std::string &buffer, std::string &request_body);
 };
 
 #endif
