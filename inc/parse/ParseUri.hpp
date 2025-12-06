@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ParseHttpReader.hpp                                :+:      :+:    :+:   */
+/*   ParseUri.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,26 +10,26 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef PARSEHTTPREADER_HPP
-#define PARSEHTTPREADER_HPP
+#ifndef PARSEURI_HPP
+#define PARSEURI_HPP
 
 #include <string>
-#include <sys/socket.h>
-#include <poll.h>
-#include <cerrno>
-#include <cstdlib>
-#include "Response.hpp"
+#include <cstring>
+#include <vector>
 
-class ParseHttpReader {
+class ParseUri {
 	private:
-		ParseHttpReader(void);
-		~ParseHttpReader(void);
+		ParseUri(void);
+		~ParseUri(void);
 
 	public:
-		static bool read_until_crlf(int client_fd, std::string &buffer, std::string &out_line);
-		static bool hex_to_int(const std::string &hex_line, size_t &out_size);
-		static HttpStatus read_body(int client_fd, size_t content_length, std::string &request_body);
-		static HttpStatus read_chunked(int client_fd, std::string &buffer, std::string &request_body);
+		static int hexDigit(char c);
+		static int hexValue(char hi, char lo);
+		static bool isValidUTF8(const std::string &s);
+		static bool urlDecodePath(const std::string &str, std::string &result);
+		static bool urlDecodeQuery(const std::string &str, std::string &result);
+		static bool validateUri(const std::string &uri, std::string &path, std::string &path_info, std::string &query);
+		static bool normalizePath(const std::string &raw_path, std::string &normalized_path);
 };
 
 #endif

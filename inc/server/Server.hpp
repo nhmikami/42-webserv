@@ -5,6 +5,7 @@
 #include "utils/Logger.hpp"
 #include "utils/ParseUtils.hpp"
 #include "config/ServerConfig.hpp"
+#include "ParseHttp.hpp"
 
 #include <poll.h>
 #include <string>
