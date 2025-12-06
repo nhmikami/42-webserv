@@ -21,7 +21,7 @@ HttpStatus MethodPOST::handleMethod(void) {
 	if (_req.getHeader("Content-Type").find("multipart/form-data") != std::string::npos)
 		return _handleMultipart();
 
-	if (_exists(full_path) && _isCGI(full_path))
+	if (_exists(full_path) && _isCGI(full_path) && _isFile(full_path))
 		return _runCGI(full_path);
 
 	if (_isDirectory(full_path))
@@ -155,9 +155,7 @@ HttpStatus MethodPOST::_handleMultipart(void) {
 		filename = _extractFilename(filename);
 		std::string outPath = _resolvePath(uploadLoc, filename);
 
-		size_t dataSize = 0;
-		if (fileEnd > fileStart)
-			dataSize = fileEnd - fileStart;
+		size_t dataSize = (fileEnd > fileStart) ? fileEnd - fileStart : 0;
 		if (!_writeToFile(outPath, body.c_str() + fileStart, dataSize))
 			return SERVER_ERR;
 

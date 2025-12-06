@@ -18,7 +18,7 @@ HttpStatus MethodGET::handleMethod(void) {
 	if (!_exists(full_path))
 		return NOT_FOUND;
 
-	if (_isCGI(full_path))
+	if (_isCGI(full_path) && _isFile(full_path))
 		return _runCGI(full_path);
 	else if (_isFile(full_path))
 		return _serveFile(full_path);
@@ -34,6 +34,8 @@ HttpStatus MethodGET::_serveFile(const std::string& path) {
 
 	struct stat file_stat;
 	if (stat(path.c_str(), &file_stat) != 0)
+		return SERVER_ERR;
+	if (file_stat.st_size < 0)
 		return SERVER_ERR;
 	size_t file_size = static_cast<size_t>(file_stat.st_size);
 	if (file_size > _getMaxBodySize())
@@ -96,7 +98,7 @@ HttpStatus MethodGET::_generateAutoindex(const std::string &path) {
 	closedir(dir);
 	
 	std::stringstream html;
-	html << "<html>\n<head><title>Index of " << _htmlEscape(_req.getPath())<< "</title></head>\n";
+	html << "<html>\n<head><title>Index of " << _htmlEscape(_req.getPath()) << "</title></head>\n";
 	html << "<body>\n<h1>Index of " << _htmlEscape(_req.getPath()) << "</h1>\n";
 	html << "<ul>\n";
 	

@@ -18,7 +18,7 @@ HttpStatus MethodDELETE::handleMethod(void) {
 	if (!_exists(full_path))
 		return NOT_FOUND;
 
-	if (_isCGI(full_path))
+	if (_isCGI(full_path) && _isFile(full_path))
 		return _runCGI(full_path);
 
 	if (!_canDelete(full_path))

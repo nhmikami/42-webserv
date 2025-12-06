@@ -8,15 +8,15 @@ CgiHandler::CgiHandler(const Request& req, const LocationConfig* loc, const std:
 }
 
 CgiHandler::~CgiHandler(void) {
-	if (_socketFd != -1)
+	if (_socketFd != -1) {
 		close(_socketFd);
+		_socketFd = -1
+	}
 	
 	if (_pid > 0) {
-		int status;
-		if (waitpid(_pid, &status, WNOHANG) == 0) {
-			kill(_pid, SIGKILL);
-			waitpid(_pid, &status, 0);
-		}
+		kill(_pid, SIGKILL) == 0;
+		waitpid(_pid, NULL, 0);
+		_pid = -1;
 	}
 }
 
@@ -126,9 +126,9 @@ void CgiHandler::start(void) {
 		return ;
 	}
 
-	if (!_requestBody.empty())
+	if (!_requestBody.empty()) {
 		_state = CGI_WRITING;
-	else {
+	} else {
 		_state = CGI_READING;
 		shutdown(_socketFd, SHUT_WR);
 	}
@@ -152,53 +152,67 @@ void CgiHandler::handleEvent(uint32_t events) {
 void CgiHandler::_handleCgiWrite(void) {
 	size_t	remaining = _requestBody.size() - _bytesSent;
 	size_t	toWrite = (remaining < CGI_BUF_SIZE) ? remaining : CGI_BUF_SIZE;
-	ssize_t	sent = write(_socketFd, _requestBody.c_str() + _bytesSent, toWrite);
-	if (sent > 0) {
-		_bytesSent += sent;
-		if (_bytesSent >= _requestBody.size()) {
-			shutdown(_socketFd, SHUT_WR);
-			_state = CGI_READING;
+	ssize_t	sent;
+	while (true) {
+		sent = write(_socketFd, _requestBody.c_str() + _bytesSent, toWrite);
+		if (sent > 0) {
+			_bytesSent += sent;
+			if (_bytesSent >= _requestBody.size()) {
+				shutdown(_socketFd, SHUT_WR);
+				_state = CGI_READING;
+			}
+			break ;
+		} else if (sent < 0) {
+			if (errno == EINTR)
+				continue ;
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+				return ;
+			if (errno == EPIPE) {
+				shutdown(_socketFd, SHUT_WR);
+				_state = CGI_READING;
+				return ;
+			}
+			_state = CGI_ERROR;
+			break ;
+		} else {
+			_state = CGI_ERROR;
+			break ;
 		}
-	} 
-	else if (sent < 0) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-			return;
-		if (errno == EPIPE) {
-			shutdown(_socketFd, SHUT_WR);
-			_state = CGI_READING;
-			return ;
-		}
-		_state = CGI_ERROR;
 	}
 }
 
 void CgiHandler::_handleCgiRead(void) {
 	char	buffer[CGI_BUF_SIZE];
-	ssize_t	bytesRead = read(_socketFd, buffer, sizeof(buffer));
-
-	if (bytesRead > 0)
-		_responseBuffer.append(buffer, bytesRead);
-	else if (bytesRead == 0) {
-		int status = 0;
-		pid_t result = waitpid(_pid, &status, WNOHANG);
-		if (result == 0) {
-			kill(_pid, SIGKILL);
-			waitpid(_pid, &status, 0);
-			_state = CGI_FINISHED;
-		} 
-		else if (result > 0) {
-			if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+	ssize_t	bytesRead;
+	while (true) {
+		bytesRead = read(_socketFd, buffer, sizeof(buffer));
+		if (bytesRead > 0) {
+			_responseBuffer.append(buffer, bytesRead);
+			break ;
+		} else if (bytesRead == 0) {
+			int status = 0;
+			pid_t result = waitpid(_pid, &status, WNOHANG);
+			if (result == 0) {
+				kill(_pid, SIGKILL);
+				waitpid(_pid, &status, 0);
 				_state = CGI_FINISHED;
-			else
+			} else if (result == _pid) {
+				if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+					_state = CGI_FINISHED;
+				else
+					_state = CGI_ERROR;
+			} else {
 				_state = CGI_ERROR;
-		} 
-		else
+			}
+			break ;
+		} else if (bytesRead < 0) {
+			if (errno == EINTR)
+				continue ;
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+				return ;
 			_state = CGI_ERROR;
-	} 
-	else if (bytesRead < 0) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-			return ;
-		_state = CGI_ERROR;
+			break ;
+		}
 	}
 }
 
@@ -241,7 +255,6 @@ void CgiHandler::buildResponse(Response& res) {
 			std::string key = line.substr(0, sep);
 			std::string val = line.substr(sep + 1);
 			
-			// Trim
 			size_t first = val.find_first_not_of(" \t");
 			if (first != std::string::npos) 
 				val = val.substr(first);
