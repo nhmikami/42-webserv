@@ -43,7 +43,7 @@ class AMethod {
 		bool						_getAutoindex(void) const;
 		size_t						_getMaxBodySize(void) const;
 		std::vector<std::string>	_getIndexFiles(void) const;
-		std::string					_getUploadLocation(void) const;
+		std::string					_getUploadLocation(void);
 
 		std::map<std::string, std::string>	_getCgiExecutors(void) const;
 		HttpStatus							_runCGI(const std::string &path);

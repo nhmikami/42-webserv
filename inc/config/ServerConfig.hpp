@@ -5,7 +5,7 @@
 #include <utility>
 
 #include "BaseConfig.hpp"
-#include "LocationConfig.hpp"
+#include "config/LocationConfig.hpp"
 #include "utils/ParseUtils.hpp"
 
 class ServerConfig : public BaseConfig {

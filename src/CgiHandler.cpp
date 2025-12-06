@@ -2,25 +2,25 @@
 #include "utils/ParseUtils.hpp"
 
 
-CgiHandler::CgiHandler(const Request& req, const LocationConfig* loc, const std::string& scriptPath, const std::string& executor)
-	: _pid(-1), _socketFd(-1), _state(CGI_NOT_STARTED), _scriptPath(scriptPath), _executorPath(executor), _requestBody(req.getBody()), _bytesSent(0) {
-	_initEnv(req, loc);
+CgiHandler::CgiHandler(const Request& req, const std::string& scriptPath, const std::string& executor)
+	: _scriptPath(scriptPath), _executorPath(executor), _pid(-1), _socketFd(-1), _state(CGI_NOT_STARTED), _bytesSent(0), _requestBody(req.getBody()) {
+	_initEnv(req);
 }
 
 CgiHandler::~CgiHandler(void) {
 	if (_socketFd != -1) {
 		close(_socketFd);
-		_socketFd = -1
+		_socketFd = -1;
 	}
 	
 	if (_pid > 0) {
-		kill(_pid, SIGKILL) == 0;
+		kill(_pid, SIGKILL);
 		waitpid(_pid, NULL, 0);
 		_pid = -1;
 	}
 }
 
-void CgiHandler::_initEnv(const Request& req, const LocationConfig* loc) {
+void CgiHandler::_initEnv(const Request& req) {
 	_envMap["GATEWAY_INTERFACE"] = "CGI/1.1";
 	_envMap["SERVER_PROTOCOL"] = "HTTP/1.1";
 	_envMap["SERVER_SOFTWARE"] = "WebServ/1.0";
@@ -217,54 +217,55 @@ void CgiHandler::_handleCgiRead(void) {
 }
 
 void CgiHandler::buildResponse(Response& res) {
-	if (_state == CGI_ERROR) {
-		res.setStatus(500);
-		res.setBody("Internal Server Error: CGI process failed.");
-		return ;
-	}
+	(void)res;
+	// if (_state == CGI_ERROR) {
+	// 	res.setStatus(500);
+	// 	res.setBody("Internal Server Error: CGI process failed.");
+	// 	return ;
+	// }
 
-	size_t headerEnd = _responseBuffer.find("\r\n\r\n");
-	size_t bodyStart = 0;
+	// size_t headerEnd = _responseBuffer.find("\r\n\r\n");
+	// size_t bodyStart = 0;
 
-	if (headerEnd != std::string::npos) {
-		bodyStart = headerEnd + 4;
-	} else {
-		headerEnd = _responseBuffer.find("\n\n");
-		if (headerEnd != std::string::npos) {
-			bodyStart = headerEnd + 2;
-		} else {
-			res.setBody(_responseBuffer);
-			res.setStatus(200);
-			return ;
-		}
-	}
+	// if (headerEnd != std::string::npos) {
+	// 	bodyStart = headerEnd + 4;
+	// } else {
+	// 	headerEnd = _responseBuffer.find("\n\n");
+	// 	if (headerEnd != std::string::npos) {
+	// 		bodyStart = headerEnd + 2;
+	// 	} else {
+	// 		res.setBody(_responseBuffer);
+	// 		res.setStatus(200);
+	// 		return ;
+	// 	}
+	// }
 
-	std::string headers = _responseBuffer.substr(0, headerEnd);
-	std::string body = _responseBuffer.substr(bodyStart);
+	// std::string headers = _responseBuffer.substr(0, headerEnd);
+	// std::string body = _responseBuffer.substr(bodyStart);
 
-	std::stringstream ss(headers);
-	std::string line;
-	while (std::getline(ss, line)) {
-		if (!line.empty() && line[line.size() - 1] == '\r')
-			line.erase(line.size() - 1);
-		if (line.empty())
-			continue ;
+	// std::stringstream ss(headers);
+	// std::string line;
+	// while (std::getline(ss, line)) {
+	// 	if (!line.empty() && line[line.size() - 1] == '\r')
+	// 		line.erase(line.size() - 1);
+	// 	if (line.empty())
+	// 		continue ;
 
-		size_t sep = line.find(':');
-		if (sep != std::string::npos) {
-			std::string key = line.substr(0, sep);
-			std::string val = line.substr(sep + 1);
+	// 	size_t sep = line.find(':');
+	// 	if (sep != std::string::npos) {
+	// 		std::string key = line.substr(0, sep);
+	// 		std::string val = line.substr(sep + 1);
 			
-			size_t first = val.find_first_not_of(" \t");
-			if (first != std::string::npos) 
-				val = val.substr(first);
-			if (key == "Status")
-				res.setStatus(std::atoi(val.c_str()));
-			else
-				res.addHeader(key, val);
-		}
-	}
+	// 		size_t first = val.find_first_not_of(" \t");
+	// 		if (first != std::string::npos) 
+	// 			val = val.substr(first);
+	// 		if (key == "Status")
+	// 			res.setStatus(std::atoi(val.c_str()));
+	// 		else
+	// 			res.addHeader(key, val);
+	// 	}
+	// }
 
-	res.setBody(body);
-	if (res.getStatus() == 0) res.setStatus(200);
+	// res.setBody(body);
+	// if (res.getStatus() == 0) res.setStatus(200);
 }

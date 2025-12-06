@@ -5,7 +5,12 @@
 #include "utils/Logger.hpp"
 #include "utils/ParseUtils.hpp"
 #include "config/ServerConfig.hpp"
-#include "ParseHttp.hpp"
+#include "parse/ParseHttp.hpp"
+#include "Request.hpp"
+#include "Response.hpp"
+#include "MethodGET.hpp"
+#include "MethodPOST.hpp"
+#include "MethodDELETE.hpp"
 
 #include <poll.h>
 #include <string>
@@ -36,7 +41,7 @@ class Server {
 		bool	addToFDs(int server_fd);
 		void	acceptClient(int server_fd, ServerConfig *config);
 		Client	*findClient(size_t *j, int client_fd);
-		bool	handleClient(int i);
+		bool	handleClient(int i, ServerConfig *config);
 		void	unhandleClient(int i);
 		void	closeClient(int i, int j, Client *client);
 
@@ -48,5 +53,7 @@ class Server {
 
 		void run();
 };
+
+void printRequest(ParseHttp parser);
 
 #endif

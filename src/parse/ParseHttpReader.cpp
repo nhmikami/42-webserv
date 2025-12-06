@@ -10,9 +10,9 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../../inc/ParseHttpReader.hpp"
-#include "../../inc/utils/ParseUtils.hpp"
-#include "../../inc/ParseHttp.hpp"
+#include "parse/ParseHttpReader.hpp"
+#include "parse/ParseHttp.hpp"
+#include "utils/ParseUtils.hpp"
 
 ParseHttpReader::ParseHttpReader(void) {}
 

@@ -18,7 +18,7 @@
 
 #include "Request.hpp"
 #include "Response.hpp"
-#include "LocationConfig.hpp"
+#include "config/LocationConfig.hpp"
 
 static const size_t CGI_BUF_SIZE = 4096;
 
@@ -45,7 +45,7 @@ class CgiHandler {
 		std::string			_responseBuffer;
 
 	public:
-		CgiHandler(const Request& req, const LocationConfig* loc, const std::string& scriptPath, const std::string& executor);
+		CgiHandler(const Request& req, const std::string& scriptPath, const std::string& executor);
 		~CgiHandler(void);
 
 		int		getFd(void) const;
@@ -55,7 +55,7 @@ class CgiHandler {
 		void	buildResponse(Response& res);
 
 	private:
-		void	_initEnv(const Request& req, const LocationConfig* loc);
+		void	_initEnv(const Request& req);
 		char**	_createEnvArray(void) const;
 		void	_freeEnvArray(char** envp) const;
 		void	_handleCgiWrite(void);

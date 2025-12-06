@@ -3,21 +3,21 @@
 /*                                                        :::      ::::::::   */
 /*   ParseHttp.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cabo-ram <cabo-ram@student.42.fr>          +#+  +:+       +#+        */
+/*   By: naharumi <naharumi@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/06 15:02:25 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/12/06 15:38:40 by cabo-ram         ###   ########.fr       */
+/*   Updated: 2025/12/06 18:25:35 by naharumi         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../../inc/parse/ParseHttp.hpp"
-#include "../../inc/Response.hpp"
-#include "../../inc/Request.hpp"
-#include "../../inc/utils/ParseUtils.hpp"
-#include "../../inc/parse/ParseUri.hpp"
-#include "../../inc/parse/ParseHttpValidator.hpp"
-#include "../../inc//parse/ParseHttpReader.hpp"
-#include "../../inc/parse/ParseCookie.hpp"
+#include "Response.hpp"
+#include "Request.hpp"
+#include "parse/ParseHttp.hpp"
+#include "parse/ParseHttpValidator.hpp"
+#include "parse/ParseHttpReader.hpp"
+#include "parse/ParseUri.hpp"
+#include "parse/ParseCookie.hpp"
+#include "utils/ParseUtils.hpp"
 
 ParseHttp::ParseHttp() {};
 

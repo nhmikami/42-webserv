@@ -156,7 +156,7 @@ size_t AMethod::_getMaxBodySize(void) const {
 	return _config.getClientMaxBodySize();
 }
 
-std::string AMethod::_getUploadLocation(void) const {
+std::string AMethod::_getUploadLocation(void) {
 	std::string uploadPath;
 	if (_location && !_location->getUpload().empty())
 		uploadPath = _location->getUpload();
@@ -208,7 +208,7 @@ HttpStatus AMethod::_runCGI(const std::string &path) {
 	std::string	ext = path.substr(path.find_last_of('.'));
 	std::string	executor = executors[ext];
 
-	_cgiHandler = new CgiHandler(_req, _location, path, executor);
+	_cgiHandler = new CgiHandler(_req, path, executor);
 	_cgiHandler->start(); 
 
 	return CGI_PENDING;
