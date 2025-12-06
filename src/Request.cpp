@@ -48,7 +48,7 @@ void Request::setPath(const std::string &p) {
 	if (ParseUri::normalizePath(p, normalized))
 		_path = normalized;
 	else
-		_path = "";
+		_path = p;
 }
 
 void Request::setPathInfo(const std::string &pi) {
@@ -252,10 +252,20 @@ std::map<std::string, std::string> Request::getQueryParametersMap() const {
 			bool key_decoded = ParseUri::urlDecodeQuery(key, decoded_key);
 			std::string decoded_value;
 			bool value_decoded = ParseUri::urlDecodeQuery(value, decoded_value);
-			if (key_decoded && value_decoded)
-				params[decoded_key] = decoded_value;
+			
+			std::string final_key;
+			if (key_decoded)
+				final_key = decoded_key;
 			else
-				params[key] = value;
+				final_key = key;
+			
+			std::string final_value;
+			if (value_decoded)
+				final_value = decoded_value;
+			else
+				final_value = value;
+			
+			params[final_key] = final_value;
 		}
 		else {
 			std::string decoded_key;
