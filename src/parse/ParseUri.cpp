@@ -10,13 +10,13 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../inc/ParseUri.hpp"
+#include "../../inc/parse/ParseUri.hpp"
 
 ParseUri::ParseUri(void) {}
 
 ParseUri::~ParseUri(void) {}
 
-int ParseUri::hex_digit(char c) {
+int ParseUri::hexDigit(char c) {
 	if (c >= '0' && c <= '9')
 		return c - '0';
 	if (c >= 'A' && c <= 'F')
@@ -26,9 +26,9 @@ int ParseUri::hex_digit(char c) {
 	return -1;
 }
 
-int ParseUri::hex_value(char hi, char lo) {
-	int	high = hex_digit(hi);
-	int	low  = hex_digit(lo);
+int ParseUri::hexValue(char hi, char lo) {
+	int	high = hexDigit(hi);
+	int	low  = hexDigit(lo);
 
 	if (high < 0 || low < 0)
 		return -1;
@@ -108,25 +108,79 @@ bool ParseUri::isValidUTF8(const std::string &s) {
 	return true;
 }
 
-// decodifica URL encoded strings (converte %XX para caractere e + para espaço)
-bool ParseUri::urlDecode(const std::string &str, std::string &result) {
-	
+// Decodifica URL encoded PATH (percent-encoding)
+bool ParseUri::urlDecodePath(const std::string &str, std::string &result) {
 	result.clear();
 	for (size_t i = 0; i < str.length(); ++i) {
 		if (str[i] == '%') {
+			// Valida formato %XX
 			if (i + 2 >= str.length())
 				return false;
-			int value = hex_value(str[i + 1], str[i + 2]);
-			if (value < 0 || value == 0)
+			
+			int value = hexValue(str[i + 1], str[i + 2]);
+			if (value < 0)
 				return false;
-			unsigned char uc = static_cast<unsigned char>(value);
-			if (value < ' ')
+			
+			// Rejeita %00 (null byte)
+			if (value == 0)
 				return false;
-			result.push_back(static_cast<char>(uc));
+			
+			// Rejeita caracteres não printáveis
+			if (value < 0x20)
+				return false;
+			
+			// Não decodifica %2F (/) no path
+			if (value == 0x2F) {
+				result.push_back('%');
+				result.push_back(str[i + 1]);
+				result.push_back(str[i + 2]);
+				i += 2;
+				continue;
+			}
+			result.push_back(static_cast<char>(value));
 			i += 2;
 		}
 		else {
 			unsigned char uc = static_cast<unsigned char>(str[i]);
+			// Rejeita caracteres de controle não codificados
+			if (uc < ' ')
+				return false;
+			result.push_back(str[i]);
+		}
+	}
+	if (!isValidUTF8(result))
+		return false;
+	return true;
+}
+
+// Decodifica URL encoded QUERY (percent-encoding)
+bool ParseUri::urlDecodeQuery(const std::string &str, std::string &result) {
+	result.clear();
+	for (size_t i = 0; i < str.length(); ++i) {
+		if (str[i] == '%') {
+			// Valida formato %XX
+			if (i + 2 >= str.length())
+				return false;
+			
+			int value = hexValue(str[i + 1], str[i + 2]);
+			if (value < 0) 
+				return false;
+			
+			// Rejeita %00 (null byte)
+			if (value == 0)
+				return false;
+			
+			// Rejeita caracteres não printáveis
+			if (value < 0x20)
+				return false;
+			
+			// Decodifica tudo na query (incluindo %2F)
+			result.push_back(static_cast<char>(value));
+			i += 2;
+		}
+		else {
+			unsigned char uc = static_cast<unsigned char>(str[i]);
+			// Rejeita caracteres de controle não codificados
 			if (uc < ' ')
 				return false;
 			result.push_back(str[i]);
@@ -138,7 +192,7 @@ bool ParseUri::urlDecode(const std::string &str, std::string &result) {
 }
 
 // valida regras básicas do URI
-bool ParseUri::validate_uri(const std::string &uri, std::string &path, std::string &query) {
+bool ParseUri::validateUri(const std::string &uri, std::string &path, std::string &path_info, std::string &query) {
 	static const size_t MAX_URI_LEN = 16 * 1024;
 
 	if (uri.empty() || uri[0] != '/')
@@ -159,39 +213,53 @@ bool ParseUri::validate_uri(const std::string &uri, std::string &path, std::stri
 			return false;
 	}
 	// separa query após '?'
-	size_t pos = uri.find('?');
-	if (pos == std::string::npos) {
-		path = uri;
+	size_t query_pos = uri.find('?');
+	std::string path_full;
+	if (query_pos == std::string::npos) {
+		path_full = uri;
 		query.clear();
 	}
 	else {
-		path = uri.substr(0, pos);
-		query = uri.substr(pos + 1);
-		
-		if (path.empty() || path == "/")
-			path = "/";
-		
-		if (query.find('?') != std::string::npos)
-			return false;
+		path_full = uri.substr(0, query_pos);
+		query = uri.substr(query_pos + 1);
 	}
-	
-	if (path.empty())
-		return false;
-	
+	size_t script = std::string::npos;
+
+	const char* extensions[] = {".php", ".cgi", ".py", ".pl", NULL};
+	for (int i = 0; extensions[i] != NULL; i++) {
+		size_t pos = path_full.find(extensions[i]);
+		while (pos != std::string::npos) {
+			size_t ext_end = pos + strlen(extensions[i]);
+			if (ext_end == path_full.size() || path_full[ext_end] == '/') {
+				script = ext_end;
+				break;
+			}
+			pos = path_full.find(extensions[i], pos + 1);
+		}
+		if (script != std::string::npos)
+			break;
+	}
+	if (script != std::string::npos) {
+		path = path_full.substr(0, script);
+		if (script < path_full.size())
+			path_info = path_full.substr(script);
+		else
+			path_info.clear();
+	}
+	else {
+		path = path_full;
+		path_info.clear();
+	}
 	return true;
 }
 
 // verifica e normaliza os paths 
-bool ParseUri::normalize_path(const std::string &raw_path, std::string &normalized_path) {
+bool ParseUri::normalizePath(const std::string &raw_path, std::string &normalized_path) {
 	if (raw_path.empty() || raw_path[0] != '/')
 		return false;
-	
-	// decodifica URL antes de validar (previne bypass com %2e%2e etc)
 	std::string	decoded_path;
-	if (!urlDecode(raw_path, decoded_path))
+	if (!urlDecodePath(raw_path, decoded_path))
 		return false;
-	
-	// valida caracteres após decodificação
 	for (size_t i = 0; i < decoded_path.size(); ++i) {
 		unsigned char c = static_cast<unsigned char>(decoded_path[i]);
 		if (c < ' ' && c != '\t')
@@ -216,24 +284,21 @@ bool ParseUri::normalize_path(const std::string &raw_path, std::string &normaliz
 			|| segment.find(' ') != std::string::npos)
 			return false;
 		
-		if (segment.empty() || segment == ".") {
-		}
+		if (segment.empty() || segment == ".") { }
 		else if (segment == "..") {
 			if (!stack.empty())
 				stack.pop_back();
 		}
-		else {
+		else
 			stack.push_back(segment);
-		}
 		
 		if (j == std::string::npos)
 			break;
 		i = j + 1;
 	}
 	
-	if (stack.empty()) {
+	if (stack.empty())
 		normalized_path = "/";
-	}
 	else {
 		normalized_path.clear();
 		for (size_t k = 0; k < stack.size(); ++k) {
@@ -241,6 +306,5 @@ bool ParseUri::normalize_path(const std::string &raw_path, std::string &normaliz
 			normalized_path += stack[k];
 		}
 	}
-	
 	return true;
 }

@@ -227,6 +227,9 @@ bool	Server::handleClient(int i)
 
 	Logger::log(Logger::SERVER, "Received from fd=" + ParseUtils::itoa(client_fd) + ":\n" + request);
 
+	ParseHttp parsehttp;
+	int status = parsehttp.initParse(request);
+
 	//envia request para parsing
 	//enviar parse e serverconfig para execução
 	// ServerConfig *config = _client_to_config[client_fd];
