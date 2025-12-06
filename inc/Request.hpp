@@ -6,7 +6,7 @@
 /*   By: cabo-ram <cabo-ram@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/06 15:02:39 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/12/06 15:29:45 by cabo-ram         ###   ########.fr       */
+/*   Updated: 2025/12/06 16:03:01 by cabo-ram         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,8 @@
 #include <iostream>
 #include <map>
 #include <cstdlib>
-# include "parse/ParseUri.hpp"
+#include "parse/ParseUri.hpp"
+#include "utils/ParseUtils.hpp"
 
 enum RequestMethod {
 	GET,
