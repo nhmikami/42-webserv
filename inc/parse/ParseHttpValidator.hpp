@@ -19,6 +19,8 @@
 #include <cstdlib>
 #include <cctype>
 #include "../Response.hpp"
+#include "ParseCookie.hpp"
+#include "../utils/ParseUtils.hpp"
 
 class ParseHttpValidator {
 	private:

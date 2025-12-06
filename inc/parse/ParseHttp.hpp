@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ParseHttp.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: cabo-ram <cabo-ram@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/31 14:44:10 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/12/05 18:35:33 by marvin           ###   ########.fr       */
+/*   Updated: 2025/12/06 15:38:47 by cabo-ram         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@
 #include "ParseUri.hpp"
 #include "ParseHttpValidator.hpp"
 #include "ParseHttpReader.hpp"
+#include "ParseUri.hpp"
 
 // #define RECV_BUFFER_SIZE 4096
 
@@ -65,7 +66,7 @@ class ParseHttp {
 		// ParseHttp &operator=(const ParseHttp &other);
 		~ParseHttp();
 
-		static void toLowerStr(std::string &str);
+		void toLowerStr(std::string &str);
 		HttpStatus	initParse(std::string &request);
 		Request		buildRequest() const;
 

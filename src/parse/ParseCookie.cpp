@@ -10,8 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "parse/ParseCookie.hpp"
-#include "utils/ParseUtils.hpp"
+#include "../../inc/parse/ParseCookie.hpp"
 
 ParseCookie::ParseCookie() { }
 

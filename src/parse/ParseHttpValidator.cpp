@@ -10,9 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "parse/ParseHttpValidator.hpp"
-#include "parse/ParseCookie.hpp"
-#include "utils/ParseUtils.hpp"
+#include "../../inc/parse/ParseHttpValidator.hpp"
 
 ParseHttpValidator::ParseHttpValidator(void) {}
 

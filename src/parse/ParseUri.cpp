@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "parse/ParseUri.hpp"
+#include "../../inc/parse/ParseUri.hpp"
 
 ParseUri::ParseUri(void) {}
 

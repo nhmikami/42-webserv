@@ -3,21 +3,21 @@
 /*                                                        :::      ::::::::   */
 /*   ParseHttp.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: cabo-ram <cabo-ram@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/06 15:02:25 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/12/05 18:38:11 by marvin           ###   ########.fr       */
+/*   Updated: 2025/12/06 15:38:40 by cabo-ram         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../../inc/ParseHttp.hpp"
+#include "../../inc/parse/ParseHttp.hpp"
 #include "../../inc/Response.hpp"
 #include "../../inc/Request.hpp"
 #include "../../inc/utils/ParseUtils.hpp"
-#include "../../inc/ParseUri.hpp"
-#include "../../inc/ParseHttpValidator.hpp"
-#include "../../inc/ParseHttpReader.hpp"
-#include "../../inc/ParseCookie.hpp"
+#include "../../inc/parse/ParseUri.hpp"
+#include "../../inc/parse/ParseHttpValidator.hpp"
+#include "../../inc//parse/ParseHttpReader.hpp"
+#include "../../inc/parse/ParseCookie.hpp"
 
 ParseHttp::ParseHttp() {};
 
@@ -157,7 +157,7 @@ std::ostream& operator<<(std::ostream& os, RequestMethod method) {
 	return os;
 }
 
-static void toLowerStr(std::string &str) {
+void ParseHttp::toLowerStr(std::string &str) {
 	for (size_t i = 0; i < str.size(); ++i)
 		str[i] = std::tolower(static_cast<unsigned char>(str[i]));
 }

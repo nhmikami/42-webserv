@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: cabo-ram <cabo-ram@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/06 15:02:39 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/12/05 17:53:42 by marvin           ###   ########.fr       */
+/*   Updated: 2025/12/06 15:29:45 by cabo-ram         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include <iostream>
 #include <map>
 #include <cstdlib>
+# include "parse/ParseUri.hpp"
 
 enum RequestMethod {
 	GET,
