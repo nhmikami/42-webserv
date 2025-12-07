@@ -207,14 +207,30 @@ Client	*Server::findClient(size_t *j, int client_fd)
 	return NULL;
 }
 
+ServerConfig *Server::findServerConfig(int client_fd)
+{
+	std::map<int, ServerConfig*>::iterator it = _client_to_config.find(client_fd);
+	if (it == _client_to_config.end()) {
+		Logger::log(Logger::ERROR, "Client config not found for fd=" + ParseUtils::itoa(client_fd));
+		return NULL;
+	}
+	return it->second;
+}
+
 bool	Server::handleClient(int i) 
 {
 	size_t	j = 0;
 	int		client_fd = _fds[i].fd;
 	Client	*client = NULL;
-	ServerConfig *config = _client_to_config[client_fd];
+	ServerConfig *config = NULL;
 
 	client = findClient(&j, client_fd);
+	config = findServerConfig(client_fd);
+
+	if (!config && client) {
+		closeClient(i, j, client);
+		return false;
+	}
 
 	if (!client) return true;
 

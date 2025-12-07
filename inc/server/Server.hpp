@@ -35,15 +35,16 @@ class Server {
 		
 		Server &operator=(const Server &other);
 
-		bool	startServer();
-		bool	bindServer(int server_fd, struct sockaddr_in address, int port);
-		bool	startListen(int server_fd, std::string host, int port);
-		bool	addToFDs(int server_fd);
-		void	acceptClient(int server_fd, ServerConfig *config);
-		Client	*findClient(size_t *j, int client_fd);
-		bool	handleClient(int i);
-		void	unhandleClient(int i);
-		void	closeClient(int i, int j, Client *client);
+		bool			startServer();
+		bool			bindServer(int server_fd, struct sockaddr_in address, int port);
+		bool			startListen(int server_fd, std::string host, int port);
+		bool			addToFDs(int server_fd);
+		void			acceptClient(int server_fd, ServerConfig *config);
+		Client			*findClient(size_t *j, int client_fd);
+		ServerConfig	*findServerConfig(int client_fd);
+		bool			handleClient(int i);
+		void			unhandleClient(int i);
+		void			closeClient(int i, int j, Client *client);
 
 	public:
 		Server(void); //private del?
