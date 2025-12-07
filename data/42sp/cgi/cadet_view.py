@@ -1,18 +1,20 @@
-#!/usr/bin/python3
-import os, urllib.parse
+#!/usr/bin/env python3
+import os, urllib.parse, html
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), "../cadets/cadets.txt")
 UPLOAD_DIR = "/cadets/uploads/"
 
 # ------------------------------
-# LER NOME DO ARQUIVO
+# READ FILENAME
 # ------------------------------
 query = os.environ.get("QUERY_STRING", "")
 params = urllib.parse.parse_qs(query)
 filename = params.get("file", [""])[0]
+# Sanitize filename to prevent path traversal
+filename = os.path.basename(filename)
 
 # ------------------------------
-# BUSCAR O NOME DO CADETE
+# SEARCH FOR CADET NAME
 # ------------------------------
 cadet_name = "Unknown"
 
@@ -23,11 +25,11 @@ try:
             if photo == filename:
                 cadet_name = name
                 break
-except:
+except Exception:
     pass
 
 # ------------------------------
-# HTML DE RESPOSTA
+# HTML RESPONSE
 # ------------------------------
 print("Content-Type: text/html")
 print()
@@ -37,16 +39,16 @@ print(f"""
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Cadet {cadet_name}</title>
+    <title>Cadet {html.escape(cadet_name)}</title>
     <link rel="stylesheet" href="/style.css">
 </head>
 
 <body class="bg">
-    <p class="title">{cadet_name}</p>
+    <p class="title">{html.escape(cadet_name)}</p>
 
-    <img src="{UPLOAD_DIR}{filename}" style="max-width:400px; border-radius:12px; margin-top:20px">
+    <img src="{UPLOAD_DIR}{html.escape(filename)}" style="max-width:400px; border-radius:12px; margin-top:20px">
 
-    <form method="POST" action="/cadet_delete?file={filename}">
+    <form method="POST" action="/cadet_delete?file={urllib.parse.quote(filename)}">
         <button class="btn" type="submit">Delete Cadet</button>
     </form>
 

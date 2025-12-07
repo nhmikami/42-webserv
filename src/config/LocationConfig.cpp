@@ -1,7 +1,7 @@
 #include "config/LocationConfig.hpp"
 
 LocationConfig::LocationConfig(std::string path) :
-	BaseConfig(),
+	BaseConfig(0),
 	_path(path)
 {
 	initDirectiveMap();

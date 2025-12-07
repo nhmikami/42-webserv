@@ -4,17 +4,28 @@
 	<meta charset="UTF-8">
 	<title>42sp - New Cadet</title>
 	<link rel="stylesheet" href="../style.css">
+	<link href="https://fonts.googleapis.com/css2?family=Science+Gothic&display=swap" rel="stylesheet">
+	<script src="../script.js"></script>
 </head>
 
 <body class="bg">
 	<div class="container">
 		<p class="title">Cadet Registry</p>
-		<p class="subtitle">Create Remove cadets</p>
+		<p class="subtitle">Create or Remove cadets</p>
 	
-		<!-- FORMULÁRIO DE CRIAÇÃO -->
 		<form action="/cadet" method="POST" enctype="multipart/form-data" class="cadet-form">
-			<input type="text" name="name" placeholder="Cadet name" required />
-			<input type="file" name="photo" accept="image/*" required />
+			<input 
+				type="text"
+				name="name"
+				placeholder="Cadet name"
+				maxlength="50"
+                pattern="[A-Za-z0-9\s\-]+"
+				required />
+			<input 
+				type="file"
+				name="photo"
+				accept="image/jpeg,image/png,image/gif,image/webp"
+				required />
 			<button class="btn" type="submit">Add Cadet</button>
 		</form>
 
@@ -23,10 +34,5 @@
 			<button id="cadets_list">Dynamic Cadets List</button>
 		</div>
 	</div>
-
-	<script src="../script.js"></script>
 </body>
 </html>
-
-<link href="https://fonts.googleapis.com/css2?family=Science+Gothic&display=swap" rel="stylesheet">
-

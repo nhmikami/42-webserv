@@ -1,5 +1,5 @@
-#!/usr/bin/python3
-import os
+#!/usr/bin/env python3
+import os, html
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), "../cadets/cadets.txt")
 print("Content-Type: text/html")
@@ -13,14 +13,14 @@ try:
             name, photo = line.strip().split(",")
             print(f"""
             <li>
-                {name} –
-                <a href="/cadets/uploads/{photo}" target="_blank">Photo</a>
-                <form style='display:inline' method="POST" action="/cadet?delete={photo}">
+                {html.escape(name)} –
+                <a href="/cadets/uploads/{html.escape(photo)}" target="_blank">Photo</a>
+                <form style='display:inline' method="POST" action="/cadet?delete={urllib.parse.quote(photo)}">
                     <button type="submit">Delete</button>
                 </form>
             </li>
             """)
-except:
+except Exception:
     print("<li>No cadets registered.</li>")
 
 print("</ul>")

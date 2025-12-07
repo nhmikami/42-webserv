@@ -207,11 +207,25 @@ Client	*Server::findClient(size_t *j, int client_fd)
 	return NULL;
 }
 
+ServerConfig *Server::findServerConfig(int client_fd)
+{
+	std::map<int, ServerConfig*>::iterator it = _client_to_config.find(client_fd);
+	if (it == _client_to_config.end()) {
+		Logger::log(Logger::ERROR, "Client config not found for fd=" + ParseUtils::itoa(client_fd));
+		return NULL;
+	}
+	return it->second;
+}
+
 bool	Server::handleClient(int i) 
 {
 	size_t			j = 0;
 	int				client_fd = _fds[i].fd;
-	ServerConfig*	config = _client_to_config[client_fd];
+	ServerConfig*	config = findServerConfig(client_fd);
+	if (!config) {
+		closeClient(i, j, client);
+		return false;
+	}
 	Client*			client = findClient(&j, client_fd);
 	if (!client)
 		return true;
@@ -235,7 +249,7 @@ bool	Server::handleClient(int i)
 	printRequest(parser); // for debugging
 
 	LocationConfig* location = config->findLocationForRequest(request);
-	if (!_isMethodAllowed(request.getMethodStr(), location)) {
+	if (!isMethodAllowed(request.getMethodStr(), location)) {
 		Logger::log(Logger::ERROR, "Method is not allowed: " + request.getMethodStr());
 		return false;
 	}
@@ -263,7 +277,7 @@ bool	Server::handleClient(int i)
 	return true;
 };
 
-bool Server::_isMethodAllowed(const std::string& method, const LocationConfig* location) {
+bool Server::isMethodAllowed(const std::string& method, const LocationConfig* location) {
 	if (!location)
 		return true;
 	

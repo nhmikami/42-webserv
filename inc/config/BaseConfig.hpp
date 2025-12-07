@@ -9,6 +9,8 @@
 
 #include "utils/ParseUtils.hpp"
 
+static const size_t DEFAULT_CLIENT_MAX_BODY_SIZE = 1024 * 1024; // 1MB
+
 class BaseConfig {
 	protected:
 		std::string     					_root;
@@ -32,6 +34,7 @@ class BaseConfig {
 
 	public:
 		BaseConfig(void);
+		BaseConfig(size_t client_body_size);
 		BaseConfig(const BaseConfig &other);
 		virtual ~BaseConfig(void);
 
