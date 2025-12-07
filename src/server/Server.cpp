@@ -252,18 +252,7 @@ bool	Server::handleClient(int i)
 	status = method->handleMethod();
 	Response res = method->getResponse();
 	std::string response = res.buildResponse();
-	std::cout << std::endl << "RESPONSE" << std::endl << response << std::endl;
-
-	//envia request para parsing
-	//enviar parse e serverconfig para execução
-	// ServerConfig *config = _client_to_config[client_fd];
-	
-	// std::string response =
-	// 	"HTTP/1.1 200 OK\r\n"
-	// 	"Content-Type: text/plain\r\n"
-	// 	"Content-Length: 13\r\n"
-	// 	"\r\n"
-	// 	"Hello, World!";
+	// std::cout << std::endl << "RESPONSE" << std::endl << response << std::endl;
 
 	client->sendResponse(response);
 	delete method;
