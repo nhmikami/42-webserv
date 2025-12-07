@@ -2,8 +2,14 @@
 
 BaseConfig::BaseConfig(void) : 
     _autoindex(false), 
-    _client_max_body_size(1000), 
+    _client_max_body_size(DEFAULT_CLIENT_MAX_BODY_SIZE), 
     _is_cgi(false)
+{};
+
+BaseConfig::BaseConfig(size_t client_body_size) :
+	_autoindex(false),
+	_client_max_body_size(client_body_size),
+	_is_cgi(false)
 {};
 
 BaseConfig::BaseConfig(const BaseConfig &other) :

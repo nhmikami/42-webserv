@@ -144,7 +144,6 @@ bool	Server::addToFDs(int server_fd)
 };
 
 void	Server::run() {
-	ServerConfig* config = NULL;
 
 	while (true) {
 		int res = poll(_fds.data(), _fds.size(), -1);
@@ -159,7 +158,7 @@ void	Server::run() {
 		for (size_t i = 0; i < _configs.size(); i++) {
 			if (_fds[i].revents & POLLIN) {
 				int server_fd = _fds[i].fd;
-				config = _fd_to_config[server_fd];
+				ServerConfig* config = _fd_to_config[server_fd];
 				acceptClient(server_fd, config);
 			}
 		}
@@ -169,7 +168,7 @@ void	Server::run() {
 			if (_fds[i].revents & (POLLERR | POLLHUP | POLLNVAL)) {
 				unhandleClient(i);
 			} else if (_fds[i].revents & POLLIN) {
-				if (handleClient(i, config)) i++;
+				if (handleClient(i)) i++;
 			} else
 				i++;
 		}
@@ -208,15 +207,32 @@ Client	*Server::findClient(size_t *j, int client_fd)
 	return NULL;
 }
 
-bool	Server::handleClient(int i, ServerConfig *config) 
+ServerConfig *Server::findServerConfig(int client_fd)
+{
+	std::map<int, ServerConfig*>::iterator it = _client_to_config.find(client_fd);
+	if (it == _client_to_config.end()) {
+		Logger::log(Logger::ERROR, "Client config not found for fd=" + ParseUtils::itoa(client_fd));
+		return NULL;
+	}
+	return it->second;
+}
+
+bool	Server::handleClient(int i) 
 {
 	size_t	j = 0;
 	int		client_fd = _fds[i].fd;
 	Client	*client = NULL;
+	ServerConfig *config = NULL;
 
 	client = findClient(&j, client_fd);
-
 	if (!client) return true;
+
+	config = findServerConfig(client_fd);
+	if (!config) {
+		closeClient(i, j, client);
+		return false;
+	}
+
 
 	std::string request = client->receive();
 	
@@ -252,17 +268,7 @@ bool	Server::handleClient(int i, ServerConfig *config)
 	status = method->handleMethod();
 	Response res = method->getResponse();
 	std::string response = res.buildResponse();
-
-	//envia request para parsing
-	//enviar parse e serverconfig para execução
-	// ServerConfig *config = _client_to_config[client_fd];
-	
-	// std::string response =
-	// 	"HTTP/1.1 200 OK\r\n"
-	// 	"Content-Type: text/plain\r\n"
-	// 	"Content-Length: 13\r\n"
-	// 	"\r\n"
-	// 	"Hello, World!";
+	// std::cout << std::endl << "RESPONSE" << std::endl << response << std::endl;
 
 	client->sendResponse(response);
 	delete method;
