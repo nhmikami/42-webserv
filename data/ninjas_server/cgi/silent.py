@@ -10,7 +10,7 @@ def read_state():
     try:
         with open(STATE_FILE, "r") as f:
             return f.read().strip()
-    except:
+    except FileNotFoundError:
         return "OFF"
 
 def write_state(state):

@@ -25,7 +25,7 @@ try:
             if photo == filename:
                 cadet_name = name
                 break
-except:
+except Exception:
     pass
 
 # ------------------------------
