@@ -20,7 +20,8 @@ if os.path.exists(target):
 new_lines = []
 with open(DATA_FILE, "r") as f:
     for line in f:
-        if filename not in line:
+        parts = line.strip().split(",")
+        if len(parts) != 2 or os.path.basename(parts[1]) != filename:
             new_lines.append(line)
 
 with open(DATA_FILE, "w") as f:
