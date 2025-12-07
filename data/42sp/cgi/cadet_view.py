@@ -10,6 +10,8 @@ UPLOAD_DIR = "/cadets/uploads/"
 query = os.environ.get("QUERY_STRING", "")
 params = urllib.parse.parse_qs(query)
 filename = params.get("file", [""])[0]
+# Sanitize filename to prevent path traversal
+filename = os.path.basename(filename)
 
 # ------------------------------
 # BUSCAR O NOME DO CADETE
