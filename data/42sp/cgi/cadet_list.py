@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import os, html
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), "../cadets/cadets.txt")
