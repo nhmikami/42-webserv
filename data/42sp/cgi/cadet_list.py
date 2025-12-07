@@ -15,7 +15,7 @@ try:
             <li>
                 {html.escape(name)} –
                 <a href="/cadets/uploads/{html.escape(photo)}" target="_blank">Photo</a>
-                <form style='display:inline' method="POST" action="/cadet?delete={html.escape(photo)}">
+                <form style='display:inline' method="POST" action="/cadet?delete={urllib.parse.quote(photo)}">
                     <button type="submit">Delete</button>
                 </form>
             </li>

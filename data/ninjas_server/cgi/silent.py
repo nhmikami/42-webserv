@@ -5,7 +5,7 @@ import urllib.parse
 
 STATE_FILE = os.path.join(os.path.dirname(__file__), "silent_state.txt")
 
-# -------------- função auxiliar --------------
+# -------------- helper function --------------
 def read_state():
     try:
         with open(STATE_FILE, "r") as f:
@@ -17,11 +17,11 @@ def write_state(state):
     with open(STATE_FILE, "w") as f:
         f.write(state)
 
-# ------------------ ler GET ------------------
+# ------------------ read GET ------------------
 query_string = os.environ.get("QUERY_STRING", "")
 get_params = urllib.parse.parse_qs(query_string)
 
-# ------------------ ler POST ------------------
+# ------------------ read POST ------------------
 method = os.environ.get("REQUEST_METHOD", "")
 post_params = {}
 
@@ -30,12 +30,11 @@ if method == "POST":
     body = sys.stdin.read(length)
     post_params = urllib.parse.parse_qs(body)
 
-# ------------------ estado atual ------------------
+# ------------------ current statte ------------------
 current_state = read_state()
 
-# ------------------ lógica do POST ------------------
+# ------------------ POST logic ------------------
 if method == "POST":
-    # Alterna o estado
     if current_state == "ON":
         current_state = "OFF"
     else:
@@ -45,7 +44,7 @@ if method == "POST":
 
 # ------------------ HTML ------------------
 print("Content-Type: text/html")
-print()  # obrigatório
+print() 
 
 html = f"""
 <!DOCTYPE html>

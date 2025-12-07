@@ -225,14 +225,14 @@ bool	Server::handleClient(int i)
 	ServerConfig *config = NULL;
 
 	client = findClient(&j, client_fd);
-	config = findServerConfig(client_fd);
+	if (!client) return true;
 
-	if (!config && client) {
+	config = findServerConfig(client_fd);
+	if (!config) {
 		closeClient(i, j, client);
 		return false;
 	}
 
-	if (!client) return true;
 
 	std::string request = client->receive();
 	
