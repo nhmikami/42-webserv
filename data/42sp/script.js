@@ -1,6 +1,6 @@
 const cadet = document.getElementById("cadet");
-const uploads = document.getElementById("cadets_uploads")
-const list = document.getElementById("cadets_list")
+const uploads = document.getElementById("cadets_uploads");
+const list = document.getElementById("cadets_list");
 
 if (cadet) {
     cadet.addEventListener('click', () => changeRoute("./cadet/"));
