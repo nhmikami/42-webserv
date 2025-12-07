@@ -1,14 +1,18 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
+#include "config/ServerConfig.hpp"
+#include "config/LocationConfig.hpp"
+#include "utils/FileUtils.hpp"
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <map>
 
 enum HttpStatus {
-	ZERO,
 	CGI_PENDING = -1,
+	ZERO = 0,
 	CONTINUE = 100,
 	OK = 200,
 	CREATED = 201,
@@ -35,6 +39,7 @@ class Response {
 
 	public:
 		Response(void);
+		Response(HttpStatus status);
 		~Response(void);
 
 		void				setStatus(HttpStatus status);
@@ -48,6 +53,8 @@ class Response {
 		const std::map<std::string, std::string>&	getHeaders(void) const;
 
 		std::string			buildResponse(void) const;
+		HttpStatus			processError(HttpStatus status, const ServerConfig& server, const LocationConfig* location);
+		std::string			_getErrorPage(int status, const ServerConfig& server, const LocationConfig* location) const;
 };
 
 #endif

@@ -5,6 +5,8 @@
 #include "Response.hpp"
 #include "Request.hpp"
 #include "config/ServerConfig.hpp"
+#include "utils/Logger.hpp"
+#include <fstream>
 #include <sstream>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -44,9 +46,11 @@ class AMethod {
 		size_t						_getMaxBodySize(void) const;
 		std::vector<std::string>	_getIndexFiles(void) const;
 		std::string					_getUploadLocation(void);
+		std::string					_getErrorPage(int status) const;
 
 		std::map<std::string, std::string>	_getCgiExecutors(void) const;
 		HttpStatus							_runCGI(const std::string &path);
+		HttpStatus							_processError(HttpStatus status);
 
 };
 

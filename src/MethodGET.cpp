@@ -14,6 +14,7 @@ HttpStatus MethodGET::handleMethod(void) {
 	}
 
 	std::string full_path = _resolvePath(_getRootPath(), _req.getPath());
+	std::cout << "DEBUG: full path = " << full_path << std::endl;
 
 	if (!_exists(full_path))
 		return NOT_FOUND;
@@ -35,37 +36,38 @@ HttpStatus MethodGET::_serveFile(const std::string& path) {
 	struct stat file_stat;
 	if (stat(path.c_str(), &file_stat) != 0)
 		return SERVER_ERR;
+	std::cout << "DEBUG: stat size = " << file_stat.st_size << std::endl;
 	if (file_stat.st_size < 0)
 		return SERVER_ERR;
 	size_t file_size = static_cast<size_t>(file_stat.st_size);
-	if (file_size > _getMaxBodySize())
+	if (file_size > _getMaxBodySize()) {
+		std::cout << "DEBUG: file size > max body size\n";
 		return PAYLOAD_TOO_LARGE;
+	}		
 	
 	std::ifstream file(path.c_str(), std::ios::binary);
 	if (!file)
 		return SERVER_ERR;
+	std::vector<char> buffer(file_size);
+	file.read(buffer.data(), file_size);
+	if (!file)
+		return SERVER_ERR;
 
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-	_res.setBody(buffer.str());
-	_res.addHeader("Content-Type", _guessMimeType(path));
-	std::stringstream ss;
-	ss << _res.getBody().size();
-	_res.addHeader("Content-Length", ss.str());
+	_res.setBody(std::string(buffer.begin(), buffer.end()));
+	_res.addHeader("Content-Type", _guessMimeType(path));	
 	return OK;
 }
 
 HttpStatus MethodGET::_serveDirectory(const std::string& path) {
 	if (_req.getPath()[_req.getPath().size() - 1] != '/') {
-			std::string new_path = _req.getPath() + "/";
-			_res.addHeader("Location", new_path);
-			return MOVED_PERMANENTLY;
+		std::string new_path = _req.getPath() + "/";
+		_res.addHeader("Location", new_path);
+		return MOVED_PERMANENTLY;
 	}
 
 	std::vector<std::string> index_files = _getIndexFiles();
-	if (index_files.empty()) 
-		index_files.push_back("index.html");
-
+	// if (index_files.empty()) 
+	// 	index_files.push_back("index.html");
 	for (size_t i = 0; i < index_files.size(); i++) {
 		std::string index_path;
 		index_path = _resolvePath(path, index_files[i]);
@@ -76,7 +78,6 @@ HttpStatus MethodGET::_serveDirectory(const std::string& path) {
 			return _serveFile(index_path);
 		}
 	}
-
 	if (_getAutoindex())
 		return _generateAutoindex(path);
 		

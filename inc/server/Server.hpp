@@ -44,6 +44,7 @@ class Server {
 		bool	handleClient(int i);
 		void	unhandleClient(int i);
 		void	closeClient(int i, int j, Client *client);
+		bool	_isMethodAllowed(const std::string& method, const LocationConfig* location);
 
 	public:
 		Server(void); //private del?

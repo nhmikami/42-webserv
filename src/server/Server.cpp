@@ -209,69 +209,74 @@ Client	*Server::findClient(size_t *j, int client_fd)
 
 bool	Server::handleClient(int i) 
 {
-	size_t	j = 0;
-	int		client_fd = _fds[i].fd;
-	Client	*client = NULL;
-	ServerConfig *config = _client_to_config[client_fd];
+	size_t			j = 0;
+	int				client_fd = _fds[i].fd;
+	ServerConfig*	config = _client_to_config[client_fd];
+	Client*			client = findClient(&j, client_fd);
+	if (!client)
+		return true;
 
-	client = findClient(&j, client_fd);
-
-	if (!client) return true;
-
-	std::string request = client->receive();
-	
-	if (request.empty()){
+	std::string raw_request = client->receive();
+	if (raw_request.empty()) {
 		Logger::log(Logger::SERVER, "Client disconnected (fd=" + ParseUtils::itoa(client_fd) + ")");
 		closeClient(i, j, client);
 		return false;
 	}
+	Logger::log(Logger::SERVER, "Received from fd=" + ParseUtils::itoa(client_fd) + ":\n" + raw_request);
 
-	Logger::log(Logger::SERVER, "Received from fd=" + ParseUtils::itoa(client_fd) + ":\n" + request);
-
-	ParseHttp parsehttp;
-	HttpStatus status = parsehttp.initParse(request);
+	ParseHttp	parser;
+	HttpStatus	status = parser.initParse(raw_request);
 	if (status != OK) {
 		// tratar erro
 		Logger::log(Logger::ERROR, "");
 		return false;
 	}
-	Request req = parsehttp.buildRequest();
-	printRequest(parsehttp);
+	Request	request = parser.buildRequest();
+	printRequest(parser); // for debugging
+
+	LocationConfig* location = config->findLocationForRequest(request);
+	if (!_isMethodAllowed(request.getMethodStr(), location)) {
+		Logger::log(Logger::ERROR, "Method is not allowed: " + request.getMethodStr());
+		return false;
+	}
 
 	AMethod* method = NULL;
-	if (req.getMethodStr() == "GET")
-		method = new MethodGET(req, *config);
-	else if (req.getMethodStr() == "POST")
-		method = new MethodPOST(req, *config);
-	else if (req.getMethodStr() == "DELETE")
-		method = new MethodDELETE(req, *config);
+	if (request.getMethodStr() == "GET")
+		method = new MethodGET(request, *config);
+	else if (request.getMethodStr() == "POST")
+		method = new MethodPOST(request, *config);
+	else if (request.getMethodStr() == "DELETE")
+		method = new MethodDELETE(request, *config);
 	else {
-		Logger::log(Logger::ERROR, "");
+		Logger::log(Logger::ERROR, "Method is not allowed: " + request.getMethodStr());
 		return false;
 	}
 	status = method->handleMethod();
 	Response res = method->getResponse();
 	std::string response = res.buildResponse();
-	std::cout << std::endl << "RESPONSE" << std::endl << response << std::endl;
 
-	//envia request para parsing
-	//enviar parse e serverconfig para execução
-	// ServerConfig *config = _client_to_config[client_fd];
-	
-	// std::string response =
-	// 	"HTTP/1.1 200 OK\r\n"
-	// 	"Content-Type: text/plain\r\n"
-	// 	"Content-Length: 13\r\n"
-	// 	"\r\n"
-	// 	"Hello, World!";
+	Logger::log(Logger::SERVER, "RESPONSE:\n" + response);
 
 	client->sendResponse(response);
+	
 	delete method;
-
 	return true;
 };
 
-void printRequest(ParseHttp parser) {
+bool Server::_isMethodAllowed(const std::string& method, const LocationConfig* location) {
+	if (!location)
+		return true;
+	
+	const std::set<std::string>& allowed_methods = location->getMethods();
+	if (allowed_methods.empty())
+		return true;
+	if (allowed_methods.find(method) == allowed_methods.end())
+		return false;
+
+	return true;
+}
+
+void printRequest(ParseHttp parser) {  // for debugging
 	std::cout << "Método: " << parser.getRequestMethod() << std::endl;
 	std::cout << "URI: " << parser.getUri() << std::endl;
 	std::cout << "Path: " << parser.getPath() << std::endl;

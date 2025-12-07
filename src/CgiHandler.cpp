@@ -1,7 +1,6 @@
 #include "CgiHandler.hpp"
 #include "utils/ParseUtils.hpp"
 
-
 CgiHandler::CgiHandler(const Request& req, const std::string& scriptPath, const std::string& executor)
 	: _scriptPath(scriptPath), _executorPath(executor), _pid(-1), _socketFd(-1), _state(CGI_NOT_STARTED), _bytesSent(0), _requestBody(req.getBody()) {
 	_initEnv(req);

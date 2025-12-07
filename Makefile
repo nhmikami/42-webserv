@@ -20,7 +20,7 @@ SRC			=	$(addprefix $(SRC_DIR), main.cpp Request.cpp \
 				$(addprefix $(PARSE_DIR), ParseHttp.cpp ParseHttpReader.cpp ParseHttpValidator.cpp ParseUri.cpp ParseCookie.cpp) \
 				$(addprefix $(CONF_DIR), ParseConfig.cpp BaseConfig.cpp ServerConfig.cpp LocationConfig.cpp) \
 				$(addprefix $(SERV_DIR), Server.cpp Client.cpp) \
-				$(addprefix $(UTIL_DIR), Logger.cpp ParseUtils.cpp)
+				$(addprefix $(UTIL_DIR), Logger.cpp ParseUtils.cpp FileUtils.cpp)
 OBJ			=	$(SRC:$(SRC_DIR)%.cpp=$(OBJ_DIR)%.o)
 INC			=	-I $(INC_DIR)
 

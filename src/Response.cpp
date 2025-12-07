@@ -2,6 +2,8 @@
 
 Response::Response(void) : _status(OK) {}
 
+Response::Response(HttpStatus status) : _status(status) {}
+
 Response::~Response(void) {}
 
 void Response::setStatus(HttpStatus status) {
@@ -56,6 +58,57 @@ const std::string& Response::getHeader(const std::string &key) const {
 
 const std::map<std::string, std::string>& Response::getHeaders() const {
 	return _headers;
+}
+
+std::string Response::_getErrorPage(int status, const ServerConfig& server, const LocationConfig* location) const {
+	std::string	error_path;
+	std::map<int, std::string>	error_pages;
+	if (location) {
+		error_pages = location->getErrorPages();
+		if (error_pages.count(status))
+			error_path = error_pages[status];
+	}
+	if (error_path.empty()) {
+		error_pages = server.getErrorPages();
+		if (error_pages.count(status))
+			error_path = error_pages[status];
+	}
+	return error_path;
+}
+
+HttpStatus Response::processError(HttpStatus status, const ServerConfig& server, const LocationConfig* location) {
+	_status = status;
+	int status_int = static_cast<int>(status);
+	std::string error_page = _getErrorPage(status_int, server, location);
+
+	if (!error_page.empty()) {
+		std::string path = FileUtils::resolvePath(server.getRoot(), error_page);
+		if (FileUtils::exists(path) && FileUtils::isFile(path) && FileUtils::isReadable(path)) {
+			struct stat file_stat;
+			if (stat(path.c_str(), &file_stat) == 0 && file_stat.st_size > 0) {
+				size_t file_size = static_cast<size_t>(file_stat.st_size);
+				std::ifstream file(path.c_str(), std::ios::binary);
+				if (file) {
+					std::vector<char> buffer(file_size);
+					file.read(buffer.data(), file_size);
+					if (file) {
+						setBody(std::string(buffer.begin(), buffer.end()));
+						addHeader("Content-Type", FileUtils::guessMimeType(path));
+						return status;
+					}
+				}
+			}
+		}
+	}
+	std::stringstream html;
+	html << "<html><head><title>" << static_cast<int>(status) << " " << getStatusMessage() 
+		 << "</title></head><body><h1>" << static_cast<int>(status) << " " << getStatusMessage()
+		 << "</h1></body></html>";
+
+	std::string body = html.str();
+	setBody(body);
+	addHeader("Content-Type", "text/html");
+	return status;
 }
 
 std::string Response::buildResponse(void) const {
