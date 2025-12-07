@@ -20,7 +20,7 @@ try:
                 </form>
             </li>
             """)
-except:
+except Exception:
     print("<li>No cadets registered.</li>")
 
 print("</ul>")
