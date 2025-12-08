@@ -25,6 +25,7 @@ const std::string Response::getStatusMessage(void) const {
 		case NOT_ALLOWED: return "Method Not Allowed";
 		case TIMEOUT: return "Request Timeout";
 		case CONFLICT: return "Conflict";
+		case LENGTH_REQUIRED: return "Length Required";
 		case PAYLOAD_TOO_LARGE: return "Payload Too Large";
 		case SERVER_ERR: return "Internal Server Error";
 		case NOT_IMPLEMENTED: return "Not Implemented";

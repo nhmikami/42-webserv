@@ -1,184 +1,110 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   ParseHttpReader.cpp                                :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/24 17:30:00 by marvin            #+#    #+#             */
-/*   Updated: 2025/11/24 17:30:00 by marvin           ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "parse/ParseHttpReader.hpp"
-#include "parse/ParseHttp.hpp"
-#include "utils/ParseUtils.hpp"
 
 ParseHttpReader::ParseHttpReader(void) {}
 
 ParseHttpReader::~ParseHttpReader(void) {}
 
-// // lê os dados do socket até encontrar "\r\n"
-// bool ParseHttpReader::readUntilCrlf(int client_fd, std::string &buffer, std::string &out_line) {
-// 	static const size_t MAX_LINE = 16 * 1024;
-// 	static const int TIMEOUT_MS = 5000;
+HttpStatus ParseHttpReader::validateBodyContentLength(
+	const std::string &content_length_header,
+	size_t max_body_size,
+	std::string &buffer,
+	std::string &out_body)
+{
+	size_t content_length;
+	if (!ParseHttpValidator::validateContentLength(content_length_header, content_length))
+		return BAD_REQUEST;
 	
-// 	while (true) {
-// 		size_t crlf_pos = buffer.find("\r\n");
-// 		if (crlf_pos != std::string::npos) {
-// 			out_line = buffer.substr(0, crlf_pos);
-// 			buffer.erase(0, crlf_pos + 2);
-// 			return true;
-// 		}
-		
-// 		if (buffer.size() > MAX_LINE)
-// 			return false;
-		
-// 		// struct pollfd pfd = {client_fd, POLLIN, 0};
+	if (content_length > max_body_size)
+		return PAYLOAD_TOO_LARGE;
+	
+	if (buffer.size() < content_length)
+		return INCOMPLETE;
+	
+	out_body = buffer.substr(0, content_length);
+	buffer = buffer.substr(content_length);
+	
+	return OK;
+}
 
-// 		// int poll_result = poll(&pfd, 1, TIMEOUT_MS);
+bool ParseHttpReader::hexToSize(const std::string &hex_str, size_t &out_size) {
+	if (hex_str.empty())
+		return false;
+	
+	std::string hex_clean = ParseUtils::trim(hex_str);
+	
+	size_t semicolon_pos = hex_clean.find(';');
+	if (semicolon_pos != std::string::npos)
+		hex_clean = hex_clean.substr(0, semicolon_pos);
+	
+	hex_clean = ParseUtils::trim(hex_clean);
+	if (hex_clean.empty())
+		return false;
+	
+	out_size = 0;
+	for (size_t i = 0; i < hex_clean.size(); i++) {
+		char c = hex_clean[i];
+		int digit;
 		
-// 		// if (poll_result == 0)
-// 		// 	return false;
-// 		// if (poll_result < 0) {
-// 		// 	if (errno == EINTR)
-// 		// 		continue;
-// 		// 	return false;
-// 		// }
-// 		// if (poll_result > 0) {
-// 		// 	for (int i = 0; i < 2; ++i) {
-// 		// 		if (pfd.revents & POLLERR || POLLHUP ||POLLNVAL)
-// 		// 			return false;
-// 		// 	}
-// 		// 	if (!(pfd.revents & POLLIN))
-// 		// 		continue;
-// 		// }
+		if (c >= '0' && c <= '9')
+			digit = c - '0';
+		else if (c >= 'a' && c <= 'f')
+			digit = c - 'a' + 10;
+		else if (c >= 'A' && c <= 'F')
+			digit = c - 'A' + 10;
+		else
+			return false;
 		
-// 		char temp[RECV_BUFFER_SIZE];
-// 		ssize_t bytes_received = recv(client_fd, temp, sizeof(temp), 0);
+		if (out_size > (SIZE_MAX - digit) / 16)
+			return false;
 		
-// 		if (bytes_received <= 0)
-// 			return false;
-		
-// 		// Verifica tamanho antes de adicionar
-// 		if (buffer.size() + static_cast<size_t>(bytes_received) > MAX_LINE)
-// 			return false;
-// 		buffer.append(temp, static_cast<size_t>(bytes_received));
-// 	}
-// }
+		out_size = (out_size * 16) + digit;
+	}
+	return true;
+}
 
-// // converte hexadecimal para inteiro (tamanho do chunk)
-// bool ParseHttpReader::hexToInt(const std::string &hex_line, size_t &out_size) {
-// 	std::string hex_str = hex_line;
+HttpStatus ParseHttpReader::validateBodyChunked(
+	size_t max_body_size,
+	std::string &buffer,
+	std::string &out_body)
+{
+	size_t total_body_size = out_body.size();
 	
-// 	size_t semicolon_pos = hex_str.find(";");
-// 	if (semicolon_pos != std::string::npos)
-// 		hex_str = hex_str.substr(0, semicolon_pos);
-	
-// 	hex_str = ParseUtils::trim(hex_str);
-// 	if (hex_str.empty())
-// 		return false;
-	
-// 	char *end_ptr = NULL;
-// 	errno = 0;
-// 	unsigned long hex_value = strtoul(hex_str.c_str(), &end_ptr, 16);
-	
-// 	if (end_ptr == hex_str.c_str())
-// 		return false;
-	
-// 	if (errno == ERANGE)
-// 		return false;
-	
-// 	out_size = static_cast<size_t>(hex_value);
-// 	return true;
-// }
-
-// HttpStatus ParseHttpReader::readBody(size_t content_length, std::string &request_body) {
-// 	static const size_t MAX_TOTAL = 10 * 1024 * 1024;
-	
-// 	if (content_length == 0)
-// 		return OK;
-	
-// 	if (request_body.size() + content_length > MAX_TOTAL)
-// 		return PAYLOAD_TOO_LARGE;
-	
-// 	char buffer[RECV_BUFFER_SIZE];
-// 	ssize_t	bytes_read;
-// 	size_t	total_read = 0;
-// 	request_body.reserve(request_body.size() + content_length);
-
-// 	while (total_read < content_length) {
-// 		size_t bytes_to_read = content_length - total_read;
-// 		if (bytes_to_read > RECV_BUFFER_SIZE)
-// 			bytes_to_read = RECV_BUFFER_SIZE;
+	while (true) {
+		size_t crlf_pos = buffer.find("\r\n");
+		if (crlf_pos == std::string::npos)
+			return INCOMPLETE;
 		
-// 		bytes_read = recv(client_fd, buffer, bytes_to_read, 0);
+		std::string size_line = buffer.substr(0, crlf_pos);
+		size_t chunk_size;
+		if (!hexToSize(size_line, chunk_size))
+			return BAD_REQUEST;
 		
-// 		if (bytes_read <= 0)
-// 			return BAD_REQUEST;
+		buffer = buffer.substr(crlf_pos + 2);
 		
-// 		if (static_cast<size_t>(bytes_read) > MAX_TOTAL - total_read)
-// 			return PAYLOAD_TOO_LARGE;
-		
-// 		request_body.append(buffer, static_cast<size_t>(bytes_read));
-// 		total_read += static_cast<size_t>(bytes_read);
-// 	}
-// 	return OK;
-// }
-
-// HttpStatus ParseHttpReader::readChunked(std::string &buffer, std::string &request_body) {
-// 	request_body.clear();
-// 	static const size_t MAX_TOTAL = 10 * 1024 * 1024;
-// 	size_t total_bytes_read = 0;
-	
-// 	while (true) {
-// 		std::string chunk_size_line;
-// 		if (!readUntilCrlf(client_fd, buffer, chunk_size_line))
-// 			return BAD_REQUEST;
-		
-// 		size_t chunk_size;
-// 		if (!hexToInt(chunk_size_line, chunk_size))
-// 			return BAD_REQUEST;
-		
-// 		if (chunk_size == 0) {
-// 			while (true) {
-// 				std::string trailer_line;
-// 				if (!readUntilCrlf(client_fd, buffer, trailer_line))
-// 					return BAD_REQUEST;
-// 				if (trailer_line.empty())
-// 					return OK;
-// 			}
-// 		}
-		
-// 		if (chunk_size > MAX_TOTAL - total_bytes_read)
-// 			return PAYLOAD_TOO_LARGE;
-		
-// 		while (buffer.size() < chunk_size) {
-// 			char temp[RECV_BUFFER_SIZE];
-// 			ssize_t bytes_received = recv(client_fd, temp, sizeof(temp), 0);
+		if (chunk_size == 0) {
+			if (buffer.size() < 2)
+				return INCOMPLETE;
 			
-// 			if (bytes_received <= 0)
-// 				return BAD_REQUEST;
+			size_t final_crlf = buffer.find("\r\n");
+			if (final_crlf == std::string::npos)
+				return INCOMPLETE;
 			
-// 			buffer.append(temp, static_cast<size_t>(bytes_received));
-// 		}
+			buffer = buffer.substr(final_crlf + 2);
+			return OK;
+		}
 		
-// 		request_body.append(buffer.substr(0, chunk_size));
-// 		buffer.erase(0, chunk_size);
-// 		total_bytes_read += chunk_size;
+		if (total_body_size + chunk_size > max_body_size)
+			return PAYLOAD_TOO_LARGE;
 		
-// 		while (buffer.size() < 2) {
-// 			char temp[RECV_BUFFER_SIZE];
-// 			ssize_t bytes_received = recv(client_fd, temp, sizeof(temp), 0);
-			
-// 			if (bytes_received <= 0)
-// 				return BAD_REQUEST;
-			
-// 			buffer.append(temp, static_cast<size_t>(bytes_received));
-// 		}
+		if (buffer.size() < chunk_size + 2)
+			return INCOMPLETE;
 		
-// 		if (buffer.size() < 2 || buffer[0] != '\r' || buffer[1] != '\n')
-// 			return BAD_REQUEST;
-// 		buffer.erase(0, 2);
-// 	}
-// }
+		if (buffer[chunk_size] != '\r' || buffer[chunk_size + 1] != '\n')
+			return BAD_REQUEST;
+		
+		out_body.append(buffer.substr(0, chunk_size));
+		total_body_size += chunk_size;
+		
+		buffer = buffer.substr(chunk_size + 2);
+	}
+}

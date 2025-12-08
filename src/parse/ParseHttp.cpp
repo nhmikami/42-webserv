@@ -1,25 +1,6 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   ParseHttp.cpp                                      :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: naharumi <naharumi@student.42.fr>          +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/06 15:02:25 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/12/06 18:25:35 by naharumi         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
-#include "Response.hpp"
-#include "Request.hpp"
 #include "parse/ParseHttp.hpp"
-#include "parse/ParseHttpValidator.hpp"
-#include "parse/ParseHttpReader.hpp"
-#include "parse/ParseUri.hpp"
-#include "parse/ParseCookie.hpp"
-#include "utils/ParseUtils.hpp"
 
-ParseHttp::ParseHttp() {};
+ParseHttp::ParseHttp() : _max_body_size(DEFAULT_CLIENT_MAX_BODY_SIZE) {};
 
 // ParseHttp::ParseHttp(const ParseHttp &other) {
 // 	*this = other;
@@ -46,6 +27,10 @@ ParseHttp::ParseHttp() {};
 // }
 
 ParseHttp::~ParseHttp() { }
+
+void ParseHttp::setMaxBodySize(size_t max_body_size) {
+	_max_body_size = max_body_size;
+}
 
 Request ParseHttp::buildRequest() const {
 	Request	req;
@@ -197,12 +182,6 @@ std::map<std::string,std::string> ParseHttp::parseHeaders(const std::string &hea
 }
 
 HttpStatus	ParseHttp::initParse(std::string &request) {
-	// size_t	total_header_size = 0;
-	// size_t	headers_end_pos;
-
-	// if (total_header_size > MAX_HEADER_SIZE)
-	// 	return PAYLOAD_TOO_LARGE;
-	
 	size_t headers_end_pos = request.find("\r\n\r\n");
 	if (headers_end_pos == std::string::npos)
 		return BAD_REQUEST;
@@ -267,36 +246,35 @@ HttpStatus	ParseHttp::initParse(std::string &request) {
 		this->_cookies = ParseCookie::parseCookie(headers_map["cookie"]);
 
 	if (this->_request_method == POST) {
-		if (headers_map.find("transfer-encoding") != headers_map.end() && 
-			headers_map["transfer-encoding"] == "chunked") {
-			this->_request_body = request;
-			request.clear();
-			// return ParseHttpReader::readChunked(request, this->_request_body);
+		bool has_content_length = headers_map.find("content-length") != headers_map.end();
+		bool has_chunked = headers_map.find("transfer-encoding") != headers_map.end() 
+							&& headers_map["transfer-encoding"] == "chunked";
+		
+		if (!has_content_length && !has_chunked)
+			return LENGTH_REQUIRED;
+		
+		if (has_chunked) {
+			HttpStatus status = ParseHttpReader::validateBodyChunked(
+				_max_body_size,
+				body_buffer,
+				this->_request_body
+			);
+			if (status != OK)
+				return status;
+			request = body_buffer;
 			return OK;
 		}
-
-		if (headers_map.find("content-length") != headers_map.end()) {
-			size_t content_length;
-			if (!ParseHttpValidator::validateContentLength(headers_map["content-length"], content_length))
-				return BAD_REQUEST;
-			// this->_request_body = request;
-			// size_t bytes_already_read = request.size();
-			this->_request_body = request.substr(0, content_length);
-			
-			// if (bytes_already_read >= content_length) {
-			// 	this->_request_body = this->_request_body.substr(0, content_length);
-			// 	request = request.substr(content_length);
-			// 	return OK;
-			// }
-			// size_t bytes_remaining = content_length - bytes_already_read;
-			// HttpStatus body_status = ParseHttpReader::readBody(bytes_remaining, this->_request_body);
-			// HttpStatus body_status = OK;
-			// if (body_status != OK)
-			// 	return body_status;
-			if (request.size() > content_length)
-				request = request.substr(content_length);
-			else
-				request.clear();
+		
+		if (has_content_length) {
+			HttpStatus status = ParseHttpReader::validateBodyContentLength(
+				headers_map["content-length"],
+				_max_body_size,
+				body_buffer,
+				this->_request_body
+			);
+			if (status != OK)
+				return status;
+			request = body_buffer;
 			return OK;
 		}
 	}

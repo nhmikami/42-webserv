@@ -44,11 +44,7 @@ void Request::setUri(const std::string &u) {
 }
 
 void Request::setPath(const std::string &p) {
-	std::string normalized;
-	if (ParseUri::normalizePath(p, normalized))
-		_path = normalized;
-	else
-		_path = p;
+	_path = p;
 }
 
 void Request::setPathInfo(const std::string &pi) {

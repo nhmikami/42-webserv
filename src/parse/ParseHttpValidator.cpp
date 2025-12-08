@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   ParseHttpValidator.cpp                             :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/24 17:30:00 by marvin            #+#    #+#             */
-/*   Updated: 2025/11/24 17:30:00 by marvin           ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "parse/ParseHttpValidator.hpp"
 
 ParseHttpValidator::ParseHttpValidator(void) {}

@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   ParseHttp.hpp                                      :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: cabo-ram <cabo-ram@student.42.fr>          +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/31 14:44:10 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/12/06 15:38:47 by cabo-ram         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef PARSEHTTP_HPP
 #define PARSEHTTP_HPP
 
@@ -24,12 +12,16 @@
 #include <vector>
 #include <sys/socket.h>
 #include <poll.h>
+
 #include "../Response.hpp"
 #include "../Request.hpp"
+#include "../config/BaseConfig.hpp"
 #include "ParseUri.hpp"
 #include "ParseHttpValidator.hpp"
 #include "ParseHttpReader.hpp"
 #include "ParseUri.hpp"
+#include "parse/ParseCookie.hpp"
+#include "utils/ParseUtils.hpp"
 
 // #define RECV_BUFFER_SIZE 4096
 
@@ -53,6 +45,7 @@ class ParseHttp {
 		std::map<std::string, std::string> _cookies;
 		std::string _request_body;
 		std::map<std::string, std::string> _all_headers;
+		size_t _max_body_size;
 
 		bool parseRequestLine(const std::string &line,
 			std::string &out_method,
@@ -67,6 +60,7 @@ class ParseHttp {
 		~ParseHttp();
 
 		void toLowerStr(std::string &str);
+		void setMaxBodySize(size_t max_body_size);
 		HttpStatus	initParse(std::string &request);
 		Request		buildRequest() const;
 
