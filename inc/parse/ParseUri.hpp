@@ -1,9 +1,9 @@
 #ifndef PARSEURI_HPP
-#define PARSEURI_HPP
+# define PARSEURI_HPP
 
-#include <string>
-#include <cstring>
-#include <vector>
+# include <string>
+# include <cstring>
+# include <vector>
 
 class ParseUri {
 	private:

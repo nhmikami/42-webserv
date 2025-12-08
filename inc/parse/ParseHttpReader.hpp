@@ -1,18 +1,15 @@
 #ifndef PARSEHTTPREADER_HPP
-#define PARSEHTTPREADER_HPP
+# define PARSEHTTPREADER_HPP
 
-#include <string>
-#include <sys/socket.h>
-#include <poll.h>
-#include <cerrno>
-#include <cstdlib>
-#include <stdint.h>
-#include <limits.h>
+# include <string>
+# include <sys/socket.h>
+# include <cstdlib>
+# include <cstdint>
+# include <climits>
 
-#include "../Response.hpp"
-#include "parse/ParseHttp.hpp"
-#include "parse/ParseHttpValidator.hpp"
-#include "utils/ParseUtils.hpp"
+# include "../Response.hpp"
+# include "utils/ParseUtils.hpp"
+# include "ParseHttpValidator.hpp"
 
 class ParseHttpReader {
 	private:
@@ -30,7 +27,7 @@ class ParseHttpReader {
 			size_t max_body_size,
 			std::string &buffer,
 			std::string &out_body);
-			static bool hexToSize(const std::string &hex_str, size_t &out_size);
+		static bool hexToSize(const std::string &hex_str, size_t &out_size);
 };
 
 #endif

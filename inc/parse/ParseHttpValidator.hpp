@@ -1,15 +1,15 @@
 #ifndef PARSEHTTPVALIDATOR_HPP
-#define PARSEHTTPVALIDATOR_HPP
+# define PARSEHTTPVALIDATOR_HPP
 
-#include <string>
-#include <map>
-#include <cerrno>
-#include <cstdlib>
-#include <cctype>
+# include <string>
+# include <map>
+# include <cerrno>
+# include <cstdlib>
+# include <cctype>
 
-#include "../Response.hpp"
-#include "../utils/ParseUtils.hpp"
-#include "ParseCookie.hpp"
+# include "../Response.hpp"
+# include "ParseCookie.hpp"
+# include "../utils/ParseUtils.hpp"
 
 class ParseHttpValidator {
 	private:

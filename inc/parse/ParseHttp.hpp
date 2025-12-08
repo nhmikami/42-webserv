@@ -1,31 +1,30 @@
 #ifndef PARSEHTTP_HPP
-#define PARSEHTTP_HPP
+# define PARSEHTTP_HPP
 
-#include <iostream>
-#include <cstdlib>
-#include <cerrno>
-#include <cstring>
-#include <cctype>
-#include <climits>
-#include <sstream>
-#include <map>
-#include <vector>
-#include <sys/socket.h>
-#include <poll.h>
+# include <iostream>
+# include <cstdlib>
+# include <cerrno>
+# include <cstring>
+# include <cctype>
+# include <climits>
+# include <sstream>
+# include <map>
+# include <vector>
+# include <sys/socket.h>
+# include <poll.h>
 
-#include "../Response.hpp"
-#include "../Request.hpp"
-#include "../config/BaseConfig.hpp"
-#include "ParseUri.hpp"
-#include "ParseHttpValidator.hpp"
-#include "ParseHttpReader.hpp"
-#include "ParseUri.hpp"
-#include "parse/ParseCookie.hpp"
-#include "utils/ParseUtils.hpp"
+# include "../Response.hpp"
+# include "../Request.hpp"
+# include "../config/BaseConfig.hpp"
+# include "ParseUri.hpp"
+# include "ParseHttpValidator.hpp"
+# include "ParseHttpReader.hpp"
+# include "parse/ParseCookie.hpp"
+# include "utils/ParseUtils.hpp"
 
 // #define RECV_BUFFER_SIZE 4096
 
-#define MAX_HEADER_SIZE 8192
+# define MAX_HEADER_SIZE 8192
 
 class ParseHttp {
 	private:
