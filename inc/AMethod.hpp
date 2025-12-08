@@ -21,7 +21,7 @@ class AMethod {
 		CgiHandler*				_cgiHandler;
 
 	public:
-		AMethod(const Request &req, const ServerConfig &config);
+		AMethod(const Request &req, const ServerConfig &config, const LocationConfig* location);
 		virtual ~AMethod(void);
 		virtual HttpStatus	handleMethod(void) = 0;
 
@@ -50,7 +50,6 @@ class AMethod {
 
 		std::map<std::string, std::string>	_getCgiExecutors(void) const;
 		HttpStatus							_runCGI(const std::string &path);
-		HttpStatus							_processError(HttpStatus status);
 
 };
 

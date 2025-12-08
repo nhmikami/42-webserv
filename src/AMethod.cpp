@@ -1,8 +1,7 @@
 #include "AMethod.hpp"
 
-AMethod::AMethod(const Request &req, const ServerConfig &config)
-	: _req(req), _config(config), _location(NULL), _cgiHandler(NULL) {
-	_location = _findLocation(_req.getPath());
+AMethod::AMethod(const Request &req, const ServerConfig &config, const LocationConfig* location)
+	: _req(req), _config(config), _location(location), _cgiHandler(NULL) {
 }
 
 AMethod::~AMethod(void) {

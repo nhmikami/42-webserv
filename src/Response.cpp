@@ -146,3 +146,56 @@ std::string Response::buildResponse(void) const {
 	response << "\r\n" << _body;
 	return response.str();
 }
+
+void Response::parseCgiOutput(const std::string& rawOutput) {
+    // 1. Separar cabeçalho do corpo
+    size_t headerEnd = rawOutput.find("\r\n\r\n");
+    if (headerEnd == std::string::npos) {
+        // Fallback: Se não achar separador, trata tudo como corpo (comportamento de script mal comportado)
+        _body = rawOutput;
+        return;
+    }
+
+    std::string headersPart = rawOutput.substr(0, headerEnd);
+    _body = rawOutput.substr(headerEnd + 4); // Pula o \r\n\r\n
+
+    // 2. Processar cabeçalhos linha a linha
+    std::stringstream ss(headersPart);
+    std::string line;
+    
+    while (std::getline(ss, line)) {
+        if (!line.empty() && line[line.size() - 1] == '\r') {
+            line.erase(line.size() - 1); // Remove \r
+        }
+        if (line.empty()) continue;
+
+        size_t colonPos = line.find(':');
+        if (colonPos != std::string::npos) {
+            std::string key = line.substr(0, colonPos);
+            std::string value = line.substr(colonPos + 1);
+            
+            // Trim espaços
+            size_t first = value.find_first_not_of(' ');
+            if (first != std::string::npos)
+                value = value.substr(first);
+
+            // Tratamento especial para "Status"
+            if (key == "Status") {
+                // Exemplo: "Status: 404 Not Found"
+                // O servidor deve usar esse status na linha de resposta HTTP
+                size_t spacePos = value.find(' ');
+                if (spacePos != std::string::npos) {
+                    int statusCode = std::atoi(value.substr(0, spacePos).c_str());
+                    setStatusCode(statusCode); // Método da sua classe Response
+                }
+            }
+            else {
+                // Adiciona aos headers da resposta
+                setHeader(key, value);
+            }
+        }
+    }
+    
+    // Ajusta o Content-Length baseado no corpo real extraído
+    setHeader("Content-Length", ParseUtils::itoa(_body.size()));
+}

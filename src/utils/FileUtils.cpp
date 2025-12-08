@@ -1,4 +1,4 @@
-#include "FileUtils.hpp"
+#include "utils/FileUtils.hpp"
 
 bool FileUtils::exists(const std::string &path) {
 	struct stat info;

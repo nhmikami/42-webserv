@@ -31,6 +31,9 @@ class Server {
 		std::vector<struct pollfd>		_fds;
 		std::vector<Client*>			_clients;
 
+		std::map<int, CgiHandler*>		_cgiHandlers;
+		std::map<int, Client*>			_cgiClient;
+
 		Server(const Server &other); //del?
 		
 		Server &operator=(const Server &other);
@@ -45,7 +48,11 @@ class Server {
 		bool			handleClient(int i);
 		void			unhandleClient(int i);
 		void			closeClient(int i, int j, Client *client);
-		bool			isMethodAllowed(const std::string& method, const LocationConfig* location);
+		bool			_isMethodAllowed(const std::string& method, const LocationConfig* location);
+
+		bool	_handleCgiEvent(size_t i);
+		void	_registerCgiHandler(int client_fd, CgiHandler *cgi, Client *client);
+		void	_finalizeCgiResponse(size_t index, int cgi_fd);
 
 	public:
 		Server(void); //private del?

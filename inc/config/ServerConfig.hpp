@@ -36,30 +36,8 @@ class ServerConfig : public BaseConfig {
 		int											getPort(void) const;
 		const std::string 							getServerName(void) const;
 		const std::map<std::string, LocationConfig>	getLocations(void) const;
+		const LocationConfig*						findLocation(const std::string& path);
 		LocationConfig*								getLocation(const std::string path);
 };
-
-const LocationConfig* ServerConfig::_findLocation(const std::string& path) {
-	const std::map<std::string, LocationConfig> &locations = _config.getLocations();
-	const LocationConfig* bestMatch = NULL;
-	std::string bestKey = "";
-
-	for (std::map<std::string, LocationConfig>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
-		const std::string &key = it->first;
-
-		if (key.size() > path.size())
-			continue;
-
-		if (path.compare(0, key.size(), key) == 0) {
-			if (key.size() == path.size() || path[key.size()] == '/' || key == "/") {
-				if (key.size() > bestKey.size()) {
-					bestMatch = &(it->second);
-					bestKey = key;
-				}
-			}
-		}
-	}
-	return bestMatch;
-}
 
 #endif

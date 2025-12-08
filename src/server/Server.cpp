@@ -43,7 +43,7 @@ Server::~Server(void)
 	for (size_t i = 0; i < _configs.size(); i++){
 		close(_fds[i].fd);
 	}
-    _fds.clear();
+	_fds.clear();
 
 	_fd_to_config.clear();
 	_client_to_config.clear();
@@ -144,16 +144,14 @@ bool	Server::addToFDs(int server_fd)
 };
 
 void	Server::run() {
-
 	while (true) {
 		int res = poll(_fds.data(), _fds.size(), -1);
-
 		if (res == -1) {
-            Logger::log(Logger::ERROR, "Failed to poll.");
-            continue;
-        }
-
-		if (res == 0) continue; 
+			Logger::log(Logger::ERROR, "Failed to poll.");
+			continue ;
+		} else if (res == 0) {
+			continue ;
+		}
 
 		for (size_t i = 0; i < _configs.size(); i++) {
 			if (_fds[i].revents & POLLIN) {
@@ -165,14 +163,22 @@ void	Server::run() {
 
 		size_t i = _configs.size();
 		while (i < _fds.size()) {
-			if (_fds[i].revents & (POLLERR | POLLHUP | POLLNVAL)) {
-				unhandleClient(i);
-			} else if (_fds[i].revents & POLLIN) {
-				if (handleClient(i)) i++;
-			} else
-				i++;
+			int fd = _fds[i].fd;
+			if (_cgiHandlers.count(fd)) {
+				if (!_handleCgiEvent(i))
+					i++;
+			} else {
+				if (_fds[i].revents & (POLLERR | POLLHUP | POLLNVAL)) {
+					unhandleClient(i);
+				} else if (_fds[i].revents & POLLIN) {
+					if (handleClient(i))
+						i++;
+				} else {
+					i++;
+				}
+			}
 		}
-    }
+	}
 }
 
 void	Server::acceptClient(int server_fd, ServerConfig *config)
@@ -183,9 +189,9 @@ void	Server::acceptClient(int server_fd, ServerConfig *config)
 	int client_fd = accept(server_fd, (struct sockaddr*)&address, &addrlen);
 
 	if (client_fd < 0) {
-        Logger::log(Logger::ERROR, "Failed to accept client.");
-        return;
-    }
+		Logger::log(Logger::ERROR, "Failed to accept client.");
+		return;
+	}
 
 	addToFDs(client_fd);
 
@@ -217,18 +223,18 @@ ServerConfig *Server::findServerConfig(int client_fd)
 	return it->second;
 }
 
-bool	Server::handleClient(int i) 
-{
-	size_t			j = 0;
-	int				client_fd = _fds[i].fd;
+bool	Server::handleClient(int i) {
+	size_t	j = 0;
+	int		client_fd = _fds[i].fd;
+	Client*	client = findClient(&j, client_fd);
+	if (!client)
+		return true;
+
 	ServerConfig*	config = findServerConfig(client_fd);
 	if (!config) {
 		closeClient(i, j, client);
 		return false;
 	}
-	Client*			client = findClient(&j, client_fd);
-	if (!client)
-		return true;
 
 	std::string raw_request = client->receive();
 	if (raw_request.empty()) {
@@ -248,24 +254,31 @@ bool	Server::handleClient(int i)
 	Request	request = parser.buildRequest();
 	printRequest(parser); // for debugging
 
-	LocationConfig* location = config->findLocationForRequest(request);
-	if (!isMethodAllowed(request.getMethodStr(), location)) {
+	const LocationConfig* location = config->findLocation(FileUtils::normalizePath(request.getPath()));
+	if (!_isMethodAllowed(request.getMethodStr(), location)) {
 		Logger::log(Logger::ERROR, "Method is not allowed: " + request.getMethodStr());
 		return false;
 	}
 
 	AMethod* method = NULL;
 	if (request.getMethodStr() == "GET")
-		method = new MethodGET(request, *config);
+		method = new MethodGET(request, *config, location);
 	else if (request.getMethodStr() == "POST")
-		method = new MethodPOST(request, *config);
+		method = new MethodPOST(request, *config, location);
 	else if (request.getMethodStr() == "DELETE")
-		method = new MethodDELETE(request, *config);
+		method = new MethodDELETE(request, *config, location);
 	else {
 		Logger::log(Logger::ERROR, "Method is not allowed: " + request.getMethodStr());
 		return false;
 	}
 	status = method->handleMethod();
+	if (status == CGI_PENDING) {
+		_registerCgiHandler(client_fd, method->getCgiHandler(), client);
+		Logger::log(Logger::SERVER, "CGI started for client fd=" + ParseUtils::itoa(client_fd));
+		delete method;
+		return true;
+	}
+
 	Response res = method->getResponse();
 	std::string response = res.buildResponse();
 
@@ -277,7 +290,128 @@ bool	Server::handleClient(int i)
 	return true;
 };
 
-bool Server::isMethodAllowed(const std::string& method, const LocationConfig* location) {
+void Server::unhandleClient(int i) {
+	size_t	j = 0;
+	int		client_fd = _fds[i].fd;
+	Client	*client = NULL;
+
+	client = findClient(&j, client_fd);
+
+	if (client) {
+		Logger::log(Logger::SERVER, "Connection error or hangup (fd=" + ParseUtils::itoa(client_fd) + ")");
+		closeClient(i, j, client);
+		return ;
+	}
+	_fds.erase(_fds.begin() + i);
+}
+
+void	Server::closeClient(int i, int j, Client *client) {
+	int client_fd = client->getFd();
+
+	std::vector<int> cgisToRemove;
+    for (std::map<int, Client*>::iterator it = _cgiClient.begin(); it != _cgiClient.end(); ++it) {
+        if (it->second == client) {
+            int cgi_fd = it->first;
+            cgisToRemove.push_back(cgi_fd);
+        }
+    }
+
+	for (size_t k = 0; k < cgisToRemove.size(); k++) {
+        int cgi_fd = cgisToRemove[k];
+        CgiHandler* handler = _cgiHandlers[cgi_fd];
+        
+        for (size_t f = 0; f < _fds.size(); f++) {
+            if (_fds[f].fd == cgi_fd) {
+                close(cgi_fd);
+                _fds.erase(_fds.begin() + f);
+                if (f < (size_t)i)
+					i--;
+                break ;
+            }
+        }
+        delete handler;
+        _cgiHandlers.erase(cgi_fd);
+        _cgiClient.erase(cgi_fd);
+        Logger::log(Logger::ERROR, "Killed orphan CGI for client fd=" + ParseUtils::itoa(client_fd));
+    }
+
+	close(client_fd);
+	_fds.erase(_fds.begin() + i);
+	_clients.erase(_clients.begin() + j);
+	_client_to_config.erase(client_fd);
+
+	delete client;
+}
+
+bool Server::_handleCgiEvent(size_t i) {
+	int cgi_fd = _fds[i].fd;
+	CgiHandler *cgi = _cgiHandlers[cgi_fd];
+	if (!cgi)
+		return false;
+
+	uint32_t events = 0;
+	if (_fds[i].revents & POLLIN)     events |= EPOLLIN;
+	if (_fds[i].revents & POLLOUT)    events |= EPOLLOUT;
+	if (_fds[i].revents & POLLERR)    events |= EPOLLERR;
+	if (_fds[i].revents & POLLHUP)    events |= EPOLLHUP;
+
+	cgi->handleEvent(events);
+
+	if (cgi->isFinished()) {
+		_finalizeCgiResponse(i, cgi_fd);
+		return true;
+	}
+	if (cgi->getState() == CGI_WRITING) {
+		_fds[i].events = POLLOUT | POLLERR | POLLHUP;
+	} else if (cgi->getState() == CGI_READING) {
+		_fds[i].events = POLLIN | POLLERR | POLLHUP;
+	}
+	return false;
+}
+
+void Server::_registerCgiHandler(int client_fd, CgiHandler *cgi, Client *client) {
+	int cgi_fd = cgi->getSocketFd();
+
+	struct pollfd p;
+	p.fd = cgi_fd;
+	p.revents = 0;
+	if (cgi->getState() == CGI_WRITING)
+		p.events = POLLOUT | POLLERR | POLLHUP;
+	else if (cgi->getState() == CGI_READING)
+		p.events = POLLIN | POLLERR | POLLHUP;
+
+	_fds.push_back(p);
+	_cgiHandlers[cgi_fd] = cgi;
+	_cgiClient[cgi_fd] = client;
+
+	Logger::log(Logger::SERVER,
+		"CGI registered (cgi_fd=" + ParseUtils::itoa(cgi_fd)
+		+ ", client_fd=" + ParseUtils::itoa(client_fd) + ")");
+}
+
+void Server::_finalizeCgiResponse(size_t index, int cgi_fd) {
+	CgiHandler *cgi = _cgiHandlers[cgi_fd];
+	Client *client = _cgiClient[cgi_fd];
+
+	if (!cgi || !client)
+		return ;
+
+	std::string rawCgi = cgi->getOutput();
+	Response res;
+	res.parseCgiOutput(rawCgi);
+	std::string httpResponse = res.buildResponse();
+	client->sendResponse(httpResponse);
+
+	// Remover de poll()
+	close(cgi_fd);
+	_fds.erase(_fds.begin() + index);
+	_cgiHandlers.erase(cgi_fd);
+	_cgiClient.erase(cgi_fd);
+
+	delete cgi;
+}
+
+bool Server::_isMethodAllowed(const std::string& method, const LocationConfig* location) {
 	if (!location)
 		return true;
 	
@@ -318,29 +452,4 @@ void printRequest(ParseHttp parser) {  // for debugging
 			std::cout << it->first << " = " << it->second << std::endl;
 		}
 	}
-}
-
-void Server::unhandleClient(int i) {
-	size_t	j = 0;
-	int		client_fd = _fds[i].fd;
-	Client	*client = NULL;
-
-	client = findClient(&j, client_fd);
-
-	if (client) {
-		Logger::log(Logger::SERVER, "Connection error or hangup (fd=" + ParseUtils::itoa(client_fd) + ")");
-		closeClient(i, j, client);
-		return ;
-	}
-	_fds.erase(_fds.begin() + i);
-}
-
-void	Server::closeClient(int i, int j, Client *client) {
-	int client_fd = client->getFd();
-
-	_fds.erase(_fds.begin() + i);
-	_clients.erase(_clients.begin() + j);
-	_client_to_config.erase(client_fd);
-
-	delete client;
 }

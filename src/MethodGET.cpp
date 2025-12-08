@@ -6,13 +6,6 @@ MethodGET::MethodGET(const Request &req, const ServerConfig &config)
 MethodGET::~MethodGET(void) {}
 
 HttpStatus MethodGET::handleMethod(void) {
-	if (_location) {
-		std::set<std::string> allowed = _location->getMethods();
-		if (!allowed.empty() && allowed.find("GET") == allowed.end()) {
-			return NOT_ALLOWED;
-		}
-	}
-
 	std::string full_path = _resolvePath(_getRootPath(), _req.getPath());
 	std::cout << "DEBUG: full path = " << full_path << std::endl;
 
@@ -36,14 +29,11 @@ HttpStatus MethodGET::_serveFile(const std::string& path) {
 	struct stat file_stat;
 	if (stat(path.c_str(), &file_stat) != 0)
 		return SERVER_ERR;
-	std::cout << "DEBUG: stat size = " << file_stat.st_size << std::endl;
 	if (file_stat.st_size < 0)
 		return SERVER_ERR;
 	size_t file_size = static_cast<size_t>(file_stat.st_size);
-	if (file_size > _getMaxBodySize()) {
-		std::cout << "DEBUG: file size > max body size\n";
+	if (file_size > _getMaxBodySize())
 		return PAYLOAD_TOO_LARGE;
-	}		
 	
 	std::ifstream file(path.c_str(), std::ios::binary);
 	if (!file)
