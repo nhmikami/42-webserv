@@ -16,7 +16,7 @@ class MethodGET : public AMethod {
 		std::string	_htmlEscape(const std::string &s);
 
 	public:
-		MethodGET(const Request &req, const ServerConfig &config);
+		MethodGET(const Request &req, const ServerConfig &config, const LocationConfig* location);
 		~MethodGET(void);
 		
 		HttpStatus	handleMethod(void);

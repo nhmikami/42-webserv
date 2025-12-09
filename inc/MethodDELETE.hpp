@@ -14,7 +14,7 @@ class MethodDELETE : public AMethod {
 		bool	_deleteDirectory(const std::string &path);
 
 	public:
-		MethodDELETE(const Request &req, const ServerConfig &config);
+		MethodDELETE(const Request &req, const ServerConfig &config, const LocationConfig* location);
 		~MethodDELETE(void);
 
 		HttpStatus handleMethod(void);

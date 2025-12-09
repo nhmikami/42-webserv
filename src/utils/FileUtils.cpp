@@ -34,11 +34,6 @@ bool FileUtils::isExecutable(const std::string &path) {
 }
 
 std::string FileUtils::resolvePath(const std::string &root, const std::string &reqPath) {
-	std::string str1 = normalizePath(root);
-	std::string str2 = normalizePath(reqPath);
-	std::string final_path = str1 + '/' + str2;
-	return final_path;
-
 	std::string cleanRoot = root;
 	if (!cleanRoot.empty() && cleanRoot[cleanRoot.size() - 1] == '/')
 		cleanRoot.erase(cleanRoot.size() - 1);

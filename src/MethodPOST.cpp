@@ -1,7 +1,7 @@
 #include "MethodPOST.hpp"
 
-MethodPOST::MethodPOST(const Request &req, const ServerConfig &config)
-	: AMethod(req, config) {}
+MethodPOST::MethodPOST(const Request &req, const ServerConfig &config, const LocationConfig* location)
+	: AMethod(req, config, location) {}
 
 MethodPOST::~MethodPOST(void) {}
 

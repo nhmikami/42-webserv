@@ -1,7 +1,7 @@
 #include "MethodDELETE.hpp"
 
-MethodDELETE::MethodDELETE(const Request &req, const ServerConfig &config)
-	: AMethod(req, config) {}
+MethodDELETE::MethodDELETE(const Request &req, const ServerConfig &config, const LocationConfig* location)
+	: AMethod(req, config, location) {}
 
 MethodDELETE::~MethodDELETE(void) {}
 

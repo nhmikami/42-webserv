@@ -17,6 +17,153 @@ CgiHandler* AMethod::getCgiHandler(void) const {
 	return _cgiHandler;
 }
 
+CgiHandler* AMethod::releaseCgiHandler(void) {
+	CgiHandler* temp = _cgiHandler;
+	_cgiHandler = NULL;
+	return temp;
+}
+
+std::string AMethod::_getRootPath(void) const {
+	if (_location && !_location->getRoot().empty())
+		return _location->getRoot();
+	return _config.getRoot();
+}
+
+bool AMethod::_getAutoindex(void) const {
+	if (_location)
+		return _location->getAutoIndex();
+	return _config.getAutoIndex();
+}
+
+size_t AMethod::_getMaxBodySize(void) const {
+	if (_location) {
+		size_t loc_size = _location->getClientMaxBodySize();
+		if (loc_size > 0)
+			return loc_size;
+	}
+	return _config.getClientMaxBodySize();
+}
+
+std::vector<std::string> AMethod::_getIndexFiles(void) const {
+	if (_location) {
+		std::vector<std::string> index_files = _location->getIndexFiles();
+		if (!index_files.empty())
+			return index_files;
+	}
+	return _config.getIndexFiles();
+}
+
+std::string AMethod::_getUploadLocation(void) {
+	std::string uploadPath;
+	if (_location && !_location->getUpload().empty())
+		uploadPath = _location->getUpload();
+	else
+		uploadPath = _config.getUpload();
+
+	if (uploadPath.empty())
+		return ""; 
+	if (uploadPath[0] == '/')
+		return uploadPath;
+	return _resolvePath(_getRootPath(), uploadPath);
+}
+
+
+// std::string AMethod::_getErrorPage(int status) const {
+// 	std::string	error_path;
+// 	std::map<int, std::string>	error_pages;
+// 	if (_location) {
+// 		error_pages = _location->getErrorPages();
+// 		if (error_pages.count(status))
+// 			error_path = error_pages[status];
+// 	}
+// 	if (error_path.empty()) {
+// 		error_pages = _config.getErrorPages();
+// 		if (error_pages.count(status))
+// 			error_path = error_pages[status];
+// 	}
+// 	return error_path;
+// }
+
+// HttpStatus AMethod::_processError(HttpStatus status) {
+// 	_res.setStatus(status);
+// 	int status_int = static_cast<int>(status);
+// 	std::string error_page = _getErrorPage(status_int);
+	
+// 	if (!error_page.empty()) {
+// 		std::string path = _resolvePath(_config.getRoot(), error_page);
+// 		if (_exists(path) && _isFile(path) && _isReadable(path)) {
+// 			struct stat file_stat;
+// 			if (stat(path.c_str(), &file_stat) == 0 && file_stat.st_size > 0) {
+// 				size_t file_size = static_cast<size_t>(file_stat.st_size);
+// 				std::ifstream file(path.c_str(), std::ios::binary);
+// 				if (file) {
+// 					std::vector<char> buffer(file_size);
+// 					file.read(buffer.data(), file_size);
+// 					if (file) {
+// 						_res.setBody(std::string(buffer.begin(), buffer.end()));
+// 						_res.addHeader("Content-Type", _guessMimeType(path));
+// 						return status;
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// 	std::stringstream html;
+// 	html << "<html><head><title>" << static_cast<int>(status) << " " << _res.getStatusMessage() 
+// 		 << "</title></head><body><h1>" << static_cast<int>(status) << " " << _res.getStatusMessage()
+// 		 << "</h1></body></html>";
+
+// 	std::string body = html.str();
+// 	_res.setBody(body);
+// 	_res.addHeader("Content-Type", "text/html");
+// 	return status;
+// }
+
+bool AMethod::_isCGI(const std::string& path) const {
+	size_t dotPos = path.find_last_of('.');
+	if (dotPos == std::string::npos || dotPos == path.length() - 1)
+		return false;
+	std::string extension = path.substr(dotPos);
+	
+	if (_location) {
+		const std::map<std::string, std::string>& locCgi = _location->getCgi();
+		if (locCgi.count(extension) > 0)
+			return true;
+	}
+
+	const std::map<std::string, std::string>& srvCgi = _config.getCgi();
+	if (srvCgi.count(extension) > 0)
+		return true;
+
+	return false;
+}
+
+std::map<std::string, std::string> AMethod::_getCgiExecutors(void) const {
+	std::map<std::string, std::string> cgiMap;
+
+	if (_location) {
+		const std::map<std::string, std::string>& locCgi = _location->getCgi();
+		cgiMap.insert(locCgi.begin(), locCgi.end());
+	}
+
+	const std::map<std::string, std::string>& srvCgi = _config.getCgi();
+	cgiMap.insert(srvCgi.begin(), srvCgi.end());
+
+	return cgiMap;
+}
+
+HttpStatus AMethod::_runCGI(const std::string &path) {
+	std::map<std::string, std::string> executors = _getCgiExecutors();
+	std::string	ext = path.substr(path.find_last_of('.'));
+	std::string	executor = executors[ext];
+
+	_cgiHandler = new CgiHandler(_req, path, executor);
+	_cgiHandler->start(); 
+
+	return CGI_PENDING;
+}
+
+// File system utilities
 bool AMethod::_exists(const std::string &path) const {
 	struct stat info;
 	return (stat(path.c_str(), &info) == 0);
@@ -124,146 +271,6 @@ const LocationConfig* AMethod::_findLocation(const std::string& path) {
 	}
 	return bestMatch;
 }
-
-std::string AMethod::_getRootPath(void) const {
-	if (_location && !_location->getRoot().empty())
-		return _location->getRoot();
-	return _config.getRoot();
-}
-
-bool AMethod::_getAutoindex(void) const {
-	if (_location)
-		return _location->getAutoIndex();
-	return _config.getAutoIndex();
-}
-
-std::vector<std::string> AMethod::_getIndexFiles(void) const {
-	if (_location) {
-		std::vector<std::string> index_files = _location->getIndexFiles();
-		if (!index_files.empty())
-			return index_files;
-	}
-	return _config.getIndexFiles();
-}
-
-// std::string AMethod::_getErrorPage(int status) const {
-// 	std::string	error_path;
-// 	std::map<int, std::string>	error_pages;
-// 	if (_location) {
-// 		error_pages = _location->getErrorPages();
-// 		if (error_pages.count(status))
-// 			error_path = error_pages[status];
-// 	}
-// 	if (error_path.empty()) {
-// 		error_pages = _config.getErrorPages();
-// 		if (error_pages.count(status))
-// 			error_path = error_pages[status];
-// 	}
-// 	return error_path;
-// }
-
-size_t AMethod::_getMaxBodySize(void) const {
-	if (_location) {
-		size_t loc_size = _location->getClientMaxBodySize();
-		if (loc_size > 0)
-			return loc_size;
-	}
-	return _config.getClientMaxBodySize();
-}
-
-std::string AMethod::_getUploadLocation(void) {
-	std::string uploadPath;
-	if (_location && !_location->getUpload().empty())
-		uploadPath = _location->getUpload();
-	else
-		uploadPath = _config.getUpload();
-
-	if (uploadPath.empty())
-		return ""; 
-	if (uploadPath[0] == '/')
-		return uploadPath;
-	return _resolvePath(_getRootPath(), uploadPath);
-}
-
-// HttpStatus AMethod::_processError(HttpStatus status) {
-// 	_res.setStatus(status);
-// 	int status_int = static_cast<int>(status);
-// 	std::string error_page = _getErrorPage(status_int);
-	
-// 	if (!error_page.empty()) {
-// 		std::string path = _resolvePath(_config.getRoot(), error_page);
-// 		if (_exists(path) && _isFile(path) && _isReadable(path)) {
-// 			struct stat file_stat;
-// 			if (stat(path.c_str(), &file_stat) == 0 && file_stat.st_size > 0) {
-// 				size_t file_size = static_cast<size_t>(file_stat.st_size);
-// 				std::ifstream file(path.c_str(), std::ios::binary);
-// 				if (file) {
-// 					std::vector<char> buffer(file_size);
-// 					file.read(buffer.data(), file_size);
-// 					if (file) {
-// 						_res.setBody(std::string(buffer.begin(), buffer.end()));
-// 						_res.addHeader("Content-Type", _guessMimeType(path));
-// 						return status;
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// 	std::stringstream html;
-// 	html << "<html><head><title>" << static_cast<int>(status) << " " << _res.getStatusMessage() 
-// 		 << "</title></head><body><h1>" << static_cast<int>(status) << " " << _res.getStatusMessage()
-// 		 << "</h1></body></html>";
-
-// 	std::string body = html.str();
-// 	_res.setBody(body);
-// 	_res.addHeader("Content-Type", "text/html");
-// 	return status;
-// }
-
-bool AMethod::_isCGI(const std::string& path) const {
-	size_t dotPos = path.find_last_of('.');
-	if (dotPos == std::string::npos || dotPos == path.length() - 1)
-		return false;
-	std::string extension = path.substr(dotPos);
-	
-	if (_location) {
-		const std::map<std::string, std::string>& locCgi = _location->getCgi();
-		if (locCgi.count(extension) > 0)
-			return true;
-	}
-
-	const std::map<std::string, std::string>& srvCgi = _config.getCgi();
-	if (srvCgi.count(extension) > 0)
-		return true;
-
-	return false;
-}
-
-std::map<std::string, std::string> AMethod::_getCgiExecutors(void) const {
-	std::map<std::string, std::string> cgiMap;
-
-	if (_location) {
-		const std::map<std::string, std::string>& locCgi = _location->getCgi();
-		cgiMap.insert(locCgi.begin(), locCgi.end());
-	}
-
-	const std::map<std::string, std::string>& srvCgi = _config.getCgi();
-	cgiMap.insert(srvCgi.begin(), srvCgi.end());
-
-	return cgiMap;
-}
-
-HttpStatus AMethod::_runCGI(const std::string &path) {
-	std::map<std::string, std::string> executors = _getCgiExecutors();
-	std::string	ext = path.substr(path.find_last_of('.'));
-	std::string	executor = executors[ext];
-
-	_cgiHandler = new CgiHandler(_req, path, executor);
-	_cgiHandler->start(); 
-
-	return CGI_PENDING;
-}
-
 
 // void Client::processRequest() {
 	

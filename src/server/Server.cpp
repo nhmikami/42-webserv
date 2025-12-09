@@ -248,7 +248,7 @@ bool	Server::handleClient(int i) {
 	HttpStatus	status = parser.initParse(raw_request);
 	if (status != OK) {
 		// tratar erro
-		Logger::log(Logger::ERROR, "");
+		Logger::log(Logger::ERROR, "HTTP parsing failed with status: " + ParseUtils::itoa(status));
 		return false;
 	}
 	Request	request = parser.buildRequest();
@@ -273,7 +273,8 @@ bool	Server::handleClient(int i) {
 	}
 	status = method->handleMethod();
 	if (status == CGI_PENDING) {
-		_registerCgiHandler(client_fd, method->getCgiHandler(), client);
+		CgiHandler* cgi = method->releaseCgiHandler();
+		_registerCgiHandler(client_fd, cgi, client);
 		Logger::log(Logger::SERVER, "CGI started for client fd=" + ParseUtils::itoa(client_fd));
 		delete method;
 		return true;
@@ -309,31 +310,31 @@ void	Server::closeClient(int i, int j, Client *client) {
 	int client_fd = client->getFd();
 
 	std::vector<int> cgisToRemove;
-    for (std::map<int, Client*>::iterator it = _cgiClient.begin(); it != _cgiClient.end(); ++it) {
-        if (it->second == client) {
-            int cgi_fd = it->first;
-            cgisToRemove.push_back(cgi_fd);
-        }
-    }
+	for (std::map<int, Client*>::iterator it = _cgiClient.begin(); it != _cgiClient.end(); ++it) {
+		if (it->second == client) {
+			int cgi_fd = it->first;
+			cgisToRemove.push_back(cgi_fd);
+		}
+	}
 
 	for (size_t k = 0; k < cgisToRemove.size(); k++) {
-        int cgi_fd = cgisToRemove[k];
-        CgiHandler* handler = _cgiHandlers[cgi_fd];
-        
-        for (size_t f = 0; f < _fds.size(); f++) {
-            if (_fds[f].fd == cgi_fd) {
-                close(cgi_fd);
-                _fds.erase(_fds.begin() + f);
-                if (f < (size_t)i)
+		int cgi_fd = cgisToRemove[k];
+		CgiHandler* handler = _cgiHandlers[cgi_fd];
+		
+		for (size_t f = 0; f < _fds.size(); f++) {
+			if (_fds[f].fd == cgi_fd) {
+				close(cgi_fd);
+				_fds.erase(_fds.begin() + f);
+				if (f < (size_t)i)
 					i--;
-                break ;
-            }
-        }
-        delete handler;
-        _cgiHandlers.erase(cgi_fd);
-        _cgiClient.erase(cgi_fd);
-        Logger::log(Logger::ERROR, "Killed orphan CGI for client fd=" + ParseUtils::itoa(client_fd));
-    }
+				break ;
+			}
+		}
+		delete handler;
+		_cgiHandlers.erase(cgi_fd);
+		_cgiClient.erase(cgi_fd);
+		Logger::log(Logger::ERROR, "Killed orphan CGI for client fd=" + ParseUtils::itoa(client_fd));
+	}
 
 	close(client_fd);
 	_fds.erase(_fds.begin() + i);
@@ -390,8 +391,8 @@ void Server::_registerCgiHandler(int client_fd, CgiHandler *cgi, Client *client)
 }
 
 void Server::_finalizeCgiResponse(size_t index, int cgi_fd) {
-	CgiHandler *cgi = _cgiHandlers[cgi_fd];
-	Client *client = _cgiClient[cgi_fd];
+	CgiHandler* cgi = _cgiHandlers[cgi_fd];
+	Client* client = _cgiClient[cgi_fd];
 
 	if (!cgi || !client)
 		return ;
@@ -402,7 +403,6 @@ void Server::_finalizeCgiResponse(size_t index, int cgi_fd) {
 	std::string httpResponse = res.buildResponse();
 	client->sendResponse(httpResponse);
 
-	// Remover de poll()
 	close(cgi_fd);
 	_fds.erase(_fds.begin() + index);
 	_cgiHandlers.erase(cgi_fd);

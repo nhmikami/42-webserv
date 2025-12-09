@@ -27,6 +27,7 @@ class AMethod {
 
 		const Response&		getResponse(void) const;
 		CgiHandler*			getCgiHandler(void) const;
+		CgiHandler*			releaseCgiHandler(void);
 
 	protected:
 		bool	_exists(const std::string& path) const;

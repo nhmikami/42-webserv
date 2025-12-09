@@ -148,54 +148,165 @@ std::string Response::buildResponse(void) const {
 }
 
 void Response::parseCgiOutput(const std::string& rawOutput) {
-    // 1. Separar cabeçalho do corpo
+    if (rawOutput.empty()) {
+        _body.clear();
+        return ;
+    }
+
+    // Encontra separador de headers/body (prefere CRLF CRLF)
     size_t headerEnd = rawOutput.find("\r\n\r\n");
+    size_t sepLen = 4;
     if (headerEnd == std::string::npos) {
-        // Fallback: Se não achar separador, trata tudo como corpo (comportamento de script mal comportado)
-        _body = rawOutput;
+        headerEnd = rawOutput.find("\n\n");
+        sepLen = 2;
+    }
+    // Se não encontrou separador, trata tudo como body
+    if (headerEnd == std::string::npos) {
+        setBody(rawOutput);
         return;
     }
 
     std::string headersPart = rawOutput.substr(0, headerEnd);
-    _body = rawOutput.substr(headerEnd + 4); // Pula o \r\n\r\n
+    std::string bodyPart = rawOutput.substr(headerEnd + sepLen);
 
-    // 2. Processar cabeçalhos linha a linha
-    std::stringstream ss(headersPart);
-    std::string line;
-    
-    while (std::getline(ss, line)) {
-        if (!line.empty() && line[line.size() - 1] == '\r') {
-            line.erase(line.size() - 1); // Remove \r
-        }
-        if (line.empty()) continue;
-
-        size_t colonPos = line.find(':');
-        if (colonPos != std::string::npos) {
-            std::string key = line.substr(0, colonPos);
-            std::string value = line.substr(colonPos + 1);
-            
-            // Trim espaços
-            size_t first = value.find_first_not_of(' ');
-            if (first != std::string::npos)
-                value = value.substr(first);
-
-            // Tratamento especial para "Status"
-            if (key == "Status") {
-                // Exemplo: "Status: 404 Not Found"
-                // O servidor deve usar esse status na linha de resposta HTTP
-                size_t spacePos = value.find(' ');
-                if (spacePos != std::string::npos) {
-                    int statusCode = std::atoi(value.substr(0, spacePos).c_str());
-                    setStatusCode(statusCode); // Método da sua classe Response
-                }
+    // Split linhas (suporta CRLF ou LF)
+    std::vector<std::string> lines;
+    size_t pos = 0;
+    while (pos < headersPart.size()) {
+        size_t next = headersPart.find("\r\n", pos);
+        if (next == std::string::npos) {
+            next = headersPart.find('\n', pos);
+            if (next == std::string::npos) {
+                lines.push_back(headersPart.substr(pos));
+                break;
             }
-            else {
-                // Adiciona aos headers da resposta
-                setHeader(key, value);
-            }
+            lines.push_back(headersPart.substr(pos, next - pos));
+            pos = next + 1;
+        } else {
+            lines.push_back(headersPart.substr(pos, next - pos));
+            pos = next + 2;
         }
     }
+
+    // utilitários simples de trim
+    auto ltrim = [](std::string &s) {
+        size_t i = 0;
+        while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i]))) ++i;
+        if (i) s.erase(0, i);
+    };
+    auto rtrim = [](std::string &s) {
+        size_t i = s.size();
+        while (i > 0 && std::isspace(static_cast<unsigned char>(s[i - 1]))) --i;
+        if (i != s.size()) s.erase(i);
+    };
+    auto trim = [&ltrim, &rtrim](std::string &s) { ltrim(s); rtrim(s); };
+
+    // Processa linhas de headers
+    for (size_t i = 0; i < lines.size(); ++i) {
+        std::string line = lines[i];
+        trim(line);
+        if (line.empty())
+            continue;
+
+        // Caso: primeira linha pode ser "HTTP/1.1 200 OK"
+        if (i == 0 && line.size() > 5 && line.substr(0, 5) == "HTTP/") {
+            // tenta extrair o código de status
+            std::istringstream ss(line);
+            std::string proto;
+            int code = 0;
+            ss >> proto >> code;
+            if (code > 0)
+                _status = static_cast<HttpStatus>(code);
+            continue;
+        }
+
+        // Header normal "Name: value"
+        size_t colon = line.find(':');
+        if (colon == std::string::npos) {
+            // linha inválida, ignora
+            continue;
+        }
+        std::string name = line.substr(0, colon);
+        std::string value = line.substr(colon + 1);
+        trim(name);
+        trim(value);
+
+        // Header especial "Status: 200 OK" -> define status
+        std::string nameLower = name;
+        for (size_t k = 0; k < nameLower.size(); ++k) nameLower[k] = std::tolower(static_cast<unsigned char>(nameLower[k]));
+        if (nameLower == "status") {
+            // extrai número do início do value
+            std::istringstream ss(value);
+            int code = 0;
+            ss >> code;
+            if (code > 0)
+                _status = static_cast<HttpStatus>(code);
+            continue;
+        }
+
+        // Adiciona header ao response (sobrescreve se já existir)
+        addHeader(name, value);
+    }
+
+    // Define body e garante Content-Length correto
+    setBody(bodyPart);
+    addHeader("Content-Length", std::to_string(_body.size()));
+
+    // Se CGI não forneceu Content-Type, mantém o que já estava ou adiciona "text/plain"
+    if (getHeader("Content-Type").empty())
+        addHeader("Content-Type", "text/plain");
+}
+
+	// void Response::parseCgiOutput(const std::string& rawOutput) {
+	// 	(void)rawOutput;
+    // // 1. Separar cabeçalho do corpo
+    // size_t headerEnd = rawOutput.find("\r\n\r\n");
+    // if (headerEnd == std::string::npos) {
+    //     // Fallback: Se não achar separador, trata tudo como corpo (comportamento de script mal comportado)
+    //     _body = rawOutput;
+    //     return;
+    // }
+
+    // std::string headersPart = rawOutput.substr(0, headerEnd);
+    // _body = rawOutput.substr(headerEnd + 4); // Pula o \r\n\r\n
+
+    // // 2. Processar cabeçalhos linha a linha
+    // std::stringstream ss(headersPart);
+    // std::string line;
+    
+    // while (std::getline(ss, line)) {
+    //     if (!line.empty() && line[line.size() - 1] == '\r') {
+    //         line.erase(line.size() - 1); // Remove \r
+    //     }
+    //     if (line.empty()) continue;
+
+    //     size_t colonPos = line.find(':');
+    //     if (colonPos != std::string::npos) {
+    //         std::string key = line.substr(0, colonPos);
+    //         std::string value = line.substr(colonPos + 1);
+            
+    //         // Trim espaços
+    //         size_t first = value.find_first_not_of(' ');
+    //         if (first != std::string::npos)
+    //             value = value.substr(first);
+
+    //         // Tratamento especial para "Status"
+    //         if (key == "Status") {
+    //             // Exemplo: "Status: 404 Not Found"
+    //             // O servidor deve usar esse status na linha de resposta HTTP
+    //             size_t spacePos = value.find(' ');
+    //             if (spacePos != std::string::npos) {
+    //                 int statusCode = std::atoi(value.substr(0, spacePos).c_str());
+    //                 setStatusCode(statusCode); // Método da sua classe Response
+    //             }
+    //         }
+    //         else {
+    //             // Adiciona aos headers da resposta
+    //             setHeader(key, value);
+    //         }
+    //     }
+    // }
     
     // Ajusta o Content-Length baseado no corpo real extraído
-    setHeader("Content-Length", ParseUtils::itoa(_body.size()));
-}
+    // setHeader("Content-Length", ParseUtils::itoa(_body.size()));
+	// }
