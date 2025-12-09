@@ -73,7 +73,7 @@ void ServerConfig::setHost(const std::vector<std::string>&values)
 void ServerConfig::setServerName(const std::vector<std::string>&values)
 {
 	if (_server_name != "")
-		throw std::runtime_error("Duplicate 'server_name' directive");
+		throw std::runtime_error("Duplicate 'server_name' directive.");
 	if (values.size() != 1)
 		throw std::invalid_argument("server_name must have exactly one value.");
 	_server_name = values[0];
