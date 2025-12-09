@@ -25,6 +25,7 @@ class BaseConfig {
 		std::string							_upload;
 
 		bool	isValidDirectoryPath(const std::string& path);
+		bool	isValidFilePath(const std::string& path);
 
 		void	setRoot(const std::vector<std::string>& values);
 		void	setAutoIndex(const std::vector<std::string>& values);
