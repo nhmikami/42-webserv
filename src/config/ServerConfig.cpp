@@ -16,7 +16,7 @@ ServerConfig::~ServerConfig(void) {};
 void ServerConfig::addLocation(const std::vector<std::string>&values, std::string *location_path)
 {
 	if (values.size() != 2 || (values[0][0] != '/' || values[1] != "{"))
-		throw std::invalid_argument("location must have a path and an open bracket at the same line.");
+		throw std::invalid_argument("location must have a valid path and an open bracket at the same line.");
 	_locations.insert(std::pair<std::string, LocationConfig>(values[0], LocationConfig(values[0])));
 	*location_path = values[0];
 };
@@ -74,7 +74,7 @@ bool ServerConfig::isValidIP(const std::string &ip)
 		if (num < 0 || num > 255)
 			return false;
 	}
-	std::cout << "valid ip" << std::endl;
+
 	return true;
 }
 
@@ -83,10 +83,8 @@ bool ServerConfig::isValidDomain(const std::string &domain)
 	if (domain.empty() || 
 		domain.length() > 255 || 
 		domain.find('.') == std::string::npos || 
-		domain.find("..") != std::string::npos)
-		return false;
-
-	if (ParseUtils::isnumber(domain))
+		domain.find("..") != std::string::npos ||
+		ParseUtils::isnumber(domain))
 		return false;
 
 	for (size_t i = 0; i < domain.length(); i++)
@@ -101,7 +99,7 @@ bool ServerConfig::isValidDomain(const std::string &domain)
         domain[domain.length() - 1] == '.' || 
 		domain[domain.length() - 1] == '-')
         return false;
-    std::cout << "valid domain" << std::endl;
+
     return true;
 }
 

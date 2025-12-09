@@ -1,11 +1,11 @@
 #include "config/BaseConfig.hpp"
 
 BaseConfig::BaseConfig(void) : 
-    _autoindex(false), 
-    _autoindex_set(false), 
-    _client_max_body_size(DEFAULT_CLIENT_MAX_BODY_SIZE),
+	_autoindex(false), 
+	_autoindex_set(false), 
+	_client_max_body_size(DEFAULT_CLIENT_MAX_BODY_SIZE),
 	_client_max_body_size_set(false),
-    _is_cgi(false)
+	_is_cgi(false)
 {};
 
 BaseConfig::BaseConfig(size_t client_body_size) :
@@ -17,24 +17,25 @@ BaseConfig::BaseConfig(size_t client_body_size) :
 {};
 
 BaseConfig::BaseConfig(const BaseConfig &other) :
-    _root(other._root),
-    _autoindex(other._autoindex),
+	_root(other._root),
+	_autoindex(other._autoindex),
 	_autoindex_set(other._autoindex_set), 
-    _client_max_body_size(other._client_max_body_size),
+	_client_max_body_size(other._client_max_body_size),
 	_client_max_body_size_set(other._client_max_body_size_set),
-    _index_files(other._index_files),
-    _error_pages(other._error_pages),
-    _is_cgi(other._is_cgi),
-    _cgi(other._cgi),
+	_index_files(other._index_files),
+	_error_pages(other._error_pages),
+	_is_cgi(other._is_cgi),
+	_cgi(other._cgi),
 	_upload(other._upload)
 {};
 
 BaseConfig::~BaseConfig(void) {};
 
-void BaseConfig::validateDirectoryPath(const std::string& path, const std::string& directive_name) {
-    struct stat st;
-    if (stat(path.c_str(), &st) != 0 || !S_ISDIR(st.st_mode))
-        throw std::invalid_argument(directive_name + " directory does not exist or is not a directory: " + path);
+bool BaseConfig::isValidDirectoryPath(const std::string& path) {
+	struct stat st;
+	if (stat(path.c_str(), &st) != 0 || !S_ISDIR(st.st_mode))
+		return false;
+	return true;
 }
 
 void BaseConfig::setRoot(const std::vector<std::string>& values)
@@ -43,8 +44,9 @@ void BaseConfig::setRoot(const std::vector<std::string>& values)
 		throw std::invalid_argument("Duplicate 'root' directive.");
 	if (values.size() != 1)
 		throw std::invalid_argument("root must have exactly one value.");
-	validateDirectoryPath(values[0], "root");
-    _root = values[0];
+	if (!isValidDirectoryPath(values[0]))
+		throw std::invalid_argument("root directory does not exist or is not a directory: " + values[0]);
+	_root = values[0];
 };
 
 void BaseConfig::setAutoIndex(const std::vector<std::string>& values)
@@ -80,6 +82,7 @@ void BaseConfig::setIndexFiles(const std::vector<std::string>& values)
 {
 	if (values.empty())
 		throw std::invalid_argument("index must have at least one value.");
+	
 	_index_files = values;
 };
 
@@ -113,8 +116,9 @@ void BaseConfig::setUpload(const std::vector<std::string>& values)
 		throw std::invalid_argument("Duplicate 'upload' directive.");
 	if (values.size() != 1)
 		throw std::invalid_argument("upload must have exactly one value.");
-	validateDirectoryPath(values[0], "upload");
-    _upload = values[0];
+	if (!isValidDirectoryPath(values[0]))
+		throw std::invalid_argument("upload directory does not exist or is not a directory: " + values[0]);
+	_upload = values[0];
 };
 
 

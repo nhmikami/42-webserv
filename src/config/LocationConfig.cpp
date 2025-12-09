@@ -46,8 +46,11 @@ void LocationConfig::setMethods(const std::vector<std::string>& values)
 {
 	if (values.empty())
 		throw std::invalid_argument("methods must have at least one value.");
-	for (size_t i = 0; i < values.size(); i++)
+	for (size_t i = 0; i < values.size(); i++) {
+		if (values[i] != "GET" && values[i] != "POST" && values[i] != "DELETE")
+			throw std::invalid_argument(values[i] + " is not a valid method; use GET, POST or DELETE.");
 		_methods.insert(values[i]);
+	}
 };
 
 void LocationConfig::setReturn(const std::vector<std::string>&values)
