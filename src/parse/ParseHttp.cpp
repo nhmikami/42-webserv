@@ -10,8 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Response.hpp"
-#include "Request.hpp"
+#include "http/Response.hpp"
+#include "http/Request.hpp"
 #include "parse/ParseHttp.hpp"
 #include "parse/ParseHttpValidator.hpp"
 #include "parse/ParseHttpReader.hpp"

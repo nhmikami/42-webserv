@@ -1,4 +1,4 @@
-#include "AMethod.hpp"
+#include "http/AMethod.hpp"
 
 AMethod::AMethod(const Request &req, const ServerConfig &config, const LocationConfig* location)
 	: _req(req), _config(config), _location(location), _cgiHandler(NULL) {

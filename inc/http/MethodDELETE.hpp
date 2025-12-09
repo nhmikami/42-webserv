@@ -1,7 +1,7 @@
 #ifndef METHOD_DELETE_HPP
 #define METHOD_DELETE_HPP
 
-#include "AMethod.hpp"
+#include "http/AMethod.hpp"
 #include <cstring>
 #include <dirent.h>
 #include <unistd.h>

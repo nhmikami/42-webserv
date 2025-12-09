@@ -1,7 +1,7 @@
 #ifndef METHOD_GET_HPP
 #define METHOD_GET_HPP
 
-#include "AMethod.hpp"
+#include "http/AMethod.hpp"
 #include <algorithm>
 #include <dirent.h>
 #include <fstream>

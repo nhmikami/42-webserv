@@ -6,11 +6,11 @@
 #include "utils/ParseUtils.hpp"
 #include "config/ServerConfig.hpp"
 #include "parse/ParseHttp.hpp"
-#include "Request.hpp"
-#include "Response.hpp"
-#include "MethodGET.hpp"
-#include "MethodPOST.hpp"
-#include "MethodDELETE.hpp"
+#include "http/Request.hpp"
+#include "http/Response.hpp"
+#include "http/MethodGET.hpp"
+#include "http/MethodPOST.hpp"
+#include "http/MethodDELETE.hpp"
 
 #include <poll.h>
 #include <string>

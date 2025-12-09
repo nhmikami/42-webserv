@@ -8,16 +8,17 @@ CFLAGS		=	-Wall -Wextra -Werror -std=c++98
 # directories
 SRC_DIR		=	src/
 CONF_DIR	=	src/config/
-PARSE_DIR	=	src/parse/
+HTTP_DIR	=	src/http/
+PARS_DIR	=	src/parse/
 SERV_DIR	=	src/server/
 UTIL_DIR	= 	src/utils/
 INC_DIR		=	inc/
 OBJ_DIR		=	obj/
 
 # source files
-SRC			=	$(addprefix $(SRC_DIR), main.cpp Request.cpp \
-					Response.cpp AMethod.cpp MethodGET.cpp MethodPOST.cpp MethodDELETE.cpp CgiHandler.cpp) \
-				$(addprefix $(PARSE_DIR), ParseHttp.cpp ParseHttpReader.cpp ParseHttpValidator.cpp ParseUri.cpp ParseCookie.cpp) \
+SRC			=	$(addprefix $(SRC_DIR), main.cpp) \
+				$(addprefix $(HTTP_DIR), Request.cpp Response.cpp AMethod.cpp MethodGET.cpp MethodPOST.cpp MethodDELETE.cpp CgiHandler.cpp) \
+				$(addprefix $(PARS_DIR), ParseHttp.cpp ParseHttpReader.cpp ParseHttpValidator.cpp ParseUri.cpp ParseCookie.cpp) \
 				$(addprefix $(CONF_DIR), ParseConfig.cpp BaseConfig.cpp ServerConfig.cpp LocationConfig.cpp) \
 				$(addprefix $(SERV_DIR), Server.cpp Client.cpp) \
 				$(addprefix $(UTIL_DIR), Logger.cpp ParseUtils.cpp FileUtils.cpp)

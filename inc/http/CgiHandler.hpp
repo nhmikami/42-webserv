@@ -16,8 +16,8 @@
 #include <algorithm>
 #include <cerrno>
 
-#include "Request.hpp"
-#include "Response.hpp"
+#include "http/Request.hpp"
+#include "http/Response.hpp"
 #include "config/LocationConfig.hpp"
 
 static const size_t CGI_BUF_SIZE = 4096;

@@ -1,9 +1,9 @@
 #ifndef AMETHOD_HPP
 #define AMETHOD_HPP
 
-#include "CgiHandler.hpp"
-#include "Response.hpp"
-#include "Request.hpp"
+#include "http/CgiHandler.hpp"
+#include "http/Response.hpp"
+#include "http/Request.hpp"
 #include "config/ServerConfig.hpp"
 #include "utils/Logger.hpp"
 #include <fstream>

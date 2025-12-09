@@ -1,7 +1,7 @@
 #ifndef METHOD_POST_HPP
 #define METHOD_POST_HPP
 
-#include "AMethod.hpp"
+#include "http/AMethod.hpp"
 #include <fcntl.h>
 #include <iostream>
 #include <unistd.h>

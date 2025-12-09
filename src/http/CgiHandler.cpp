@@ -1,4 +1,4 @@
-#include "CgiHandler.hpp"
+#include "http/CgiHandler.hpp"
 #include "utils/ParseUtils.hpp"
 
 CgiHandler::CgiHandler(const Request& req, const std::string& scriptPath, const std::string& executor)

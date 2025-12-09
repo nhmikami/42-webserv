@@ -1,4 +1,4 @@
-#include "MethodPOST.hpp"
+#include "http/MethodPOST.hpp"
 
 MethodPOST::MethodPOST(const Request &req, const ServerConfig &config, const LocationConfig* location)
 	: AMethod(req, config, location) {}

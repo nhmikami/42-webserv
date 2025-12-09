@@ -24,8 +24,8 @@
 #include <vector>
 #include <sys/socket.h>
 #include <poll.h>
-#include "../Response.hpp"
-#include "../Request.hpp"
+#include "http/Response.hpp"
+#include "http/Request.hpp"
 #include "ParseUri.hpp"
 #include "ParseHttpValidator.hpp"
 #include "ParseHttpReader.hpp"
