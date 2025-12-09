@@ -130,13 +130,13 @@ void printConfig(const std::vector<ServerConfig> &servers_config)
 
 			std::cout << "  return: ";
 			const std::pair<int, std::string>& returnDirective = it->second.getReturn();
-            if (returnDirective.first != 0) {
-                std::cout << returnDirective.first;
-                if (!returnDirective.second.empty())
-                    std::cout << " " << returnDirective.second;
-            } else {
-                std::cout << "none";
-            }
+			if (returnDirective.first != 0) {
+				std::cout << returnDirective.first;
+				if (!returnDirective.second.empty())
+					std::cout << " " << returnDirective.second;
+			} else {
+				std::cout << "none";
+			}
 			std::cout << std::endl;
 
 		}
