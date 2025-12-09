@@ -11,7 +11,9 @@
 class ServerConfig : public BaseConfig {
 	private:
 		std::string								_host;
+		bool									_host_set;
 		int										_port;
+		bool									_port_set;
 		std::string								_server_name;
 		std::map<std::string, LocationConfig>	_locations;
 
