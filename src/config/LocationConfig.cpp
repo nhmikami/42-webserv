@@ -63,7 +63,7 @@ void LocationConfig::setReturn(const std::vector<std::string>&values)
 		throw std::invalid_argument("return code " + values[0] + " is not a number.");
 	int return_code = std::atoi(values[0].c_str());
 	if (return_code < 100 || return_code > 599)
-			throw std::invalid_argument("invalid return code number (must be between 100 and 599).");
+		throw std::invalid_argument("invalid return code number (must be between 100 and 599).");
 	
 	std::string path = (values.size() == 2) ? values[1] : "";
 
