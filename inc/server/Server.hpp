@@ -48,7 +48,13 @@ class Server {
 		bool			handleClient(int i);
 		void			unhandleClient(int i);
 		void			closeClient(int i, int j, Client *client);
-		bool			_isMethodAllowed(const std::string& method, const LocationConfig* location);
+
+		bool	_isMethodAllowed(const std::string& method, const LocationConfig* location);
+		bool	_parseRequest(const std::string& raw_request, Request& request, ServerConfig* config, Client* client, int i, size_t j);
+		bool 	_processRequest(Request& request, ServerConfig* config, const LocationConfig* location, Client* client, int i, size_t j);
+		bool	_processError(HttpStatus status, ServerConfig* config, const LocationConfig* location, Client* client, int i, size_t j);
+		bool	_processCgi(AMethod* method, Client* client, int client_fd);
+		bool	_sendResponse(AMethod* method, HttpStatus status, Client* client);
 
 		bool	_handleCgiEvent(size_t i);
 		void	_registerCgiHandler(int client_fd, CgiHandler *cgi, Client *client);

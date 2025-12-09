@@ -13,6 +13,18 @@ const Response& AMethod::getResponse(void) const {
 	return _res;
 }
 
+const Request& AMethod::getRequest(void) const {
+	return _req;
+}
+
+const ServerConfig& AMethod::getServerConfig(void) const {
+	return _config;
+}
+
+const LocationConfig* AMethod::getLocationConfig(void) const {
+	return _location;
+}
+
 CgiHandler* AMethod::getCgiHandler(void) const {
 	return _cgiHandler;
 }
@@ -67,70 +79,17 @@ std::string AMethod::_getUploadLocation(void) {
 	return _resolvePath(_getRootPath(), uploadPath);
 }
 
-
-// std::string AMethod::_getErrorPage(int status) const {
-// 	std::string	error_path;
-// 	std::map<int, std::string>	error_pages;
-// 	if (_location) {
-// 		error_pages = _location->getErrorPages();
-// 		if (error_pages.count(status))
-// 			error_path = error_pages[status];
-// 	}
-// 	if (error_path.empty()) {
-// 		error_pages = _config.getErrorPages();
-// 		if (error_pages.count(status))
-// 			error_path = error_pages[status];
-// 	}
-// 	return error_path;
-// }
-
-// HttpStatus AMethod::_processError(HttpStatus status) {
-// 	_res.setStatus(status);
-// 	int status_int = static_cast<int>(status);
-// 	std::string error_page = _getErrorPage(status_int);
-	
-// 	if (!error_page.empty()) {
-// 		std::string path = _resolvePath(_config.getRoot(), error_page);
-// 		if (_exists(path) && _isFile(path) && _isReadable(path)) {
-// 			struct stat file_stat;
-// 			if (stat(path.c_str(), &file_stat) == 0 && file_stat.st_size > 0) {
-// 				size_t file_size = static_cast<size_t>(file_stat.st_size);
-// 				std::ifstream file(path.c_str(), std::ios::binary);
-// 				if (file) {
-// 					std::vector<char> buffer(file_size);
-// 					file.read(buffer.data(), file_size);
-// 					if (file) {
-// 						_res.setBody(std::string(buffer.begin(), buffer.end()));
-// 						_res.addHeader("Content-Type", _guessMimeType(path));
-// 						return status;
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// 	std::stringstream html;
-// 	html << "<html><head><title>" << static_cast<int>(status) << " " << _res.getStatusMessage() 
-// 		 << "</title></head><body><h1>" << static_cast<int>(status) << " " << _res.getStatusMessage()
-// 		 << "</h1></body></html>";
-
-// 	std::string body = html.str();
-// 	_res.setBody(body);
-// 	_res.addHeader("Content-Type", "text/html");
-// 	return status;
-// }
-
 bool AMethod::_isCGI(const std::string& path) const {
 	size_t dotPos = path.find_last_of('.');
 	if (dotPos == std::string::npos || dotPos == path.length() - 1)
 		return false;
+
 	std::string extension = path.substr(dotPos);
-	
 	if (_location) {
 		const std::map<std::string, std::string>& locCgi = _location->getCgi();
 		if (locCgi.count(extension) > 0)
 			return true;
 	}
-
 	const std::map<std::string, std::string>& srvCgi = _config.getCgi();
 	if (srvCgi.count(extension) > 0)
 		return true;
@@ -153,6 +112,9 @@ std::map<std::string, std::string> AMethod::_getCgiExecutors(void) const {
 }
 
 HttpStatus AMethod::_runCGI(const std::string &path) {
+	if (!_isReadable(path) || !_isExecutable(path))
+		return FORBIDDEN;
+
 	std::map<std::string, std::string> executors = _getCgiExecutors();
 	std::string	ext = path.substr(path.find_last_of('.'));
 	std::string	executor = executors[ext];
@@ -271,60 +233,3 @@ const LocationConfig* AMethod::_findLocation(const std::string& path) {
 	}
 	return bestMatch;
 }
-
-// void Client::processRequest() {
-	
-// 	// ... parse request ...
-
-// 	LocationConfig* loc = _server->findLocationForRequest(_request);
-// 	// check if method is allowed in this location
-// 	if (loc && !loc->isMethodAllowed(req.getMethodStr()))
-// 		return makeErrorResponse(NOT_ALLOWED);
-
-// 	// Cria o método (GET/POST)
-// 	AMethod* method = NULL;
-// 	if (req.getMethodStr() == "GET")
-// 		method = new MethodGET(req, config, loc);
-// 	else if (req.getMethodStr() == "POST")
-// 		method = new MethodPOST(req, config, loc);
-// 	else if (req.getMethodStr() == "DELETE")
-// 		method = new MethodDELETE(req, config, loc);
-// 	else
-// 		return makeErrorResponse(NOT_ALLOWED);
-
-// 	HttpStatus status = method->handleMethod();
-
-// 	if (status == CGI_PENDING) {
-// 		// CASO ESPECIAL: CGI Assíncrono
-// 		// Não deletamos o handler ainda, pois precisamos dele para o Pipe
-// 		_cgiHandler = method->getCgiHandler(); // Salva ponteiro
-// 		_methodToCheckCgi = method;            // Salva para deletar depois
-
-// 		// Configura o poller para ouvir o Pipe do CGI
-// 		_server->addToPoller(method->getCgiOutputFd(), POLLIN, this);
-// 		_state = CLIENT_WAITING_CGI;
-// 	} 
-// 	else {
-// 		// CASO NORMAL (Arquivos estáticos, erros, etc)
-// 		// Pega a resposta gerada pelo método
-// 		_res = methodHandler->getResponse();
-		
-// 		// Se o método retornou um código de erro (ex: 404, 500) que não gerou body,
-// 		// aqui seria o lugar de gerar a página de erro padrão (Error Pages).
-// 		if (_res.getBody().empty() && status >= 400) {
-// 			_generateErrorPage(status);
-// 		} else {
-// 			// Se o método retornou status diferente do que está no _res
-// 			_res.setStatus(status); 
-// 		}
-
-// 		// Finaliza
-// 		_res.buildResponse(); // Serializa headers+body
-// 		_state = CLIENT_SENDING;
-		
-// 		// Limpeza
-// 		delete method;
-// 	}
-	
-// 	// Se não for CGI, finaliza resposta normal...
-// }

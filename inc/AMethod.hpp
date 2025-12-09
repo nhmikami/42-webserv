@@ -25,19 +25,21 @@ class AMethod {
 		virtual ~AMethod(void);
 		virtual HttpStatus	handleMethod(void) = 0;
 
-		const Response&		getResponse(void) const;
-		CgiHandler*			getCgiHandler(void) const;
-		CgiHandler*			releaseCgiHandler(void);
+		const Response&			getResponse(void) const;
+		const Request&			getRequest(void) const;
+		const ServerConfig&		getServerConfig(void) const;
+		const LocationConfig*	getLocationConfig(void) const;
+		CgiHandler*				getCgiHandler(void) const;
+		CgiHandler*				releaseCgiHandler(void);
 
 	protected:
 		bool	_exists(const std::string& path) const;
-		bool	_isCGI(const std::string& path) const;
 		bool	_isFile(const std::string& path) const;
 		bool	_isDirectory(const std::string& path) const;
 		bool	_isReadable(const std::string& path) const;
 		bool	_isWritable(const std::string& path) const;
 		bool	_isExecutable(const std::string& path) const;
-
+		
 		std::string			_resolvePath(const std::string &root, const std::string &reqPath);
 		const std::string	_guessMimeType(const std::string &path) const;
 		
@@ -47,8 +49,8 @@ class AMethod {
 		size_t						_getMaxBodySize(void) const;
 		std::vector<std::string>	_getIndexFiles(void) const;
 		std::string					_getUploadLocation(void);
-		std::string					_getErrorPage(int status) const;
-
+		
+		bool	_isCGI(const std::string& path) const;
 		std::map<std::string, std::string>	_getCgiExecutors(void) const;
 		HttpStatus							_runCGI(const std::string &path);
 

@@ -147,20 +147,21 @@ std::string Response::buildResponse(void) const {
 	return response.str();
 }
 
+
 void Response::parseCgiOutput(const std::string& rawOutput) {
     if (rawOutput.empty()) {
         _body.clear();
-        return ;
+        return;
     }
 
-    // Encontra separador de headers/body (prefere CRLF CRLF)
+    // encontra separador de headers/body (prefere CRLFCRLF)
     size_t headerEnd = rawOutput.find("\r\n\r\n");
     size_t sepLen = 4;
     if (headerEnd == std::string::npos) {
         headerEnd = rawOutput.find("\n\n");
         sepLen = 2;
     }
-    // Se não encontrou separador, trata tudo como body
+    // sem separador: trata tudo como body
     if (headerEnd == std::string::npos) {
         setBody(rawOutput);
         return;
@@ -169,7 +170,7 @@ void Response::parseCgiOutput(const std::string& rawOutput) {
     std::string headersPart = rawOutput.substr(0, headerEnd);
     std::string bodyPart = rawOutput.substr(headerEnd + sepLen);
 
-    // Split linhas (suporta CRLF ou LF)
+    // split linhas (suporta CRLF ou LF)
     std::vector<std::string> lines;
     size_t pos = 0;
     while (pos < headersPart.size()) {
@@ -188,29 +189,26 @@ void Response::parseCgiOutput(const std::string& rawOutput) {
         }
     }
 
-    // utilitários simples de trim
-    auto ltrim = [](std::string &s) {
-        size_t i = 0;
-        while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i]))) ++i;
-        if (i) s.erase(0, i);
-    };
-    auto rtrim = [](std::string &s) {
-        size_t i = s.size();
-        while (i > 0 && std::isspace(static_cast<unsigned char>(s[i - 1]))) --i;
-        if (i != s.size()) s.erase(i);
-    };
-    auto trim = [&ltrim, &rtrim](std::string &s) { ltrim(s); rtrim(s); };
-
-    // Processa linhas de headers
+    std::string::size_type start, end;
     for (size_t i = 0; i < lines.size(); ++i) {
         std::string line = lines[i];
-        trim(line);
+
+        // trim left
+        start = 0;
+        while (start < line.size() && std::isspace(static_cast<unsigned char>(line[start]))) ++start;
+        if (start)
+            line.erase(0, start);
+        // trim right
+        end = line.size();
+        while (end > 0 && std::isspace(static_cast<unsigned char>(line[end - 1]))) --end;
+        if (end != line.size())
+            line.erase(end);
+
         if (line.empty())
             continue;
 
-        // Caso: primeira linha pode ser "HTTP/1.1 200 OK"
+        // primeira linha pode ser "HTTP/1.1 200 OK"
         if (i == 0 && line.size() > 5 && line.substr(0, 5) == "HTTP/") {
-            // tenta extrair o código de status
             std::istringstream ss(line);
             std::string proto;
             int code = 0;
@@ -220,22 +218,33 @@ void Response::parseCgiOutput(const std::string& rawOutput) {
             continue;
         }
 
-        // Header normal "Name: value"
+        // header "Name: value"
         size_t colon = line.find(':');
-        if (colon == std::string::npos) {
-            // linha inválida, ignora
+        if (colon == std::string::npos)
             continue;
-        }
+
         std::string name = line.substr(0, colon);
         std::string value = line.substr(colon + 1);
-        trim(name);
-        trim(value);
 
-        // Header especial "Status: 200 OK" -> define status
+        // trim name and value
+        // left trim value
+        start = 0;
+        while (start < value.size() && std::isspace(static_cast<unsigned char>(value[start]))) ++start;
+        if (start)
+            value.erase(0, start);
+        // right trim value
+        end = value.size();
+        while (end > 0 && std::isspace(static_cast<unsigned char>(value[end - 1]))) --end;
+        if (end != value.size())
+            value.erase(end);
+
+        // lower-case do nome para detecção especial
         std::string nameLower = name;
-        for (size_t k = 0; k < nameLower.size(); ++k) nameLower[k] = std::tolower(static_cast<unsigned char>(nameLower[k]));
+        for (size_t k = 0; k < nameLower.size(); ++k)
+            nameLower[k] = static_cast<char>(std::tolower(static_cast<unsigned char>(nameLower[k])));
+
+        // header especial "Status"
         if (nameLower == "status") {
-            // extrai número do início do value
             std::istringstream ss(value);
             int code = 0;
             ss >> code;
@@ -244,15 +253,19 @@ void Response::parseCgiOutput(const std::string& rawOutput) {
             continue;
         }
 
-        // Adiciona header ao response (sobrescreve se já existir)
+        // adiciona header (sobrescreve se existir)
         addHeader(name, value);
     }
 
-    // Define body e garante Content-Length correto
+    // seta body
     setBody(bodyPart);
-    addHeader("Content-Length", std::to_string(_body.size()));
 
-    // Se CGI não forneceu Content-Type, mantém o que já estava ou adiciona "text/plain"
+    // garante Content-Length usando stringstream (C++98)
+    std::ostringstream oss;
+    oss << _body.size();
+    addHeader("Content-Length", oss.str());
+
+    // se CGI não forneceu Content-Type, adiciona text/plain
     if (getHeader("Content-Type").empty())
         addHeader("Content-Type", "text/plain");
 }

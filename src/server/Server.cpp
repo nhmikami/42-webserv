@@ -223,14 +223,14 @@ ServerConfig *Server::findServerConfig(int client_fd)
 	return it->second;
 }
 
-bool	Server::handleClient(int i) {
+bool Server::handleClient(int i) {
 	size_t	j = 0;
 	int		client_fd = _fds[i].fd;
 	Client*	client = findClient(&j, client_fd);
 	if (!client)
 		return true;
 
-	ServerConfig*	config = findServerConfig(client_fd);
+	ServerConfig* config = findServerConfig(client_fd);
 	if (!config) {
 		closeClient(i, j, client);
 		return false;
@@ -244,22 +244,43 @@ bool	Server::handleClient(int i) {
 	}
 	Logger::log(Logger::SERVER, "Received from fd=" + ParseUtils::itoa(client_fd) + ":\n" + raw_request);
 
-	ParseHttp	parser;
-	HttpStatus	status = parser.initParse(raw_request);
-	if (status != OK) {
-		// tratar erro
-		Logger::log(Logger::ERROR, "HTTP parsing failed with status: " + ParseUtils::itoa(status));
+	Request	request;
+	if (!_parseRequest(raw_request, request, config, client, i, j))
 		return false;
-	}
-	Request	request = parser.buildRequest();
-	printRequest(parser); // for debugging
-
+	
 	const LocationConfig* location = config->findLocation(FileUtils::normalizePath(request.getPath()));
-	if (!_isMethodAllowed(request.getMethodStr(), location)) {
-		Logger::log(Logger::ERROR, "Method is not allowed: " + request.getMethodStr());
-		return false;
-	}
+	if (!_isMethodAllowed(request.getMethodStr(), location))
+		return _processError(NOT_ALLOWED, config, location, client, i, j);
 
+	return _processRequest(request, config, location, client, i, j);
+}
+
+bool Server::_isMethodAllowed(const std::string& method, const LocationConfig* location) {
+	if (!location)
+		return true;
+	
+	const std::set<std::string>& allowed_methods = location->getMethods();
+	if (allowed_methods.empty())
+		return true;
+	if (allowed_methods.find(method) == allowed_methods.end())
+		return false;
+
+	return true;
+}
+
+bool Server::_parseRequest(const std::string& raw_request, Request& request, ServerConfig* config, Client* client, int i, size_t j) {
+	ParseHttp	parser;
+	std::string	req = raw_request;
+	HttpStatus	status = parser.initParse(req);
+	if (status != OK)
+		return _processError(status, config, NULL, client, i, j);
+
+	request = parser.buildRequest();
+	printRequest(parser); // for debugging
+	return true;
+}
+
+bool Server::_processRequest(Request& request, ServerConfig* config, const LocationConfig* location, Client* client, int i, size_t j) {
 	AMethod* method = NULL;
 	if (request.getMethodStr() == "GET")
 		method = new MethodGET(request, *config, location);
@@ -268,28 +289,53 @@ bool	Server::handleClient(int i) {
 	else if (request.getMethodStr() == "DELETE")
 		method = new MethodDELETE(request, *config, location);
 	else {
-		Logger::log(Logger::ERROR, "Method is not allowed: " + request.getMethodStr());
-		return false;
+		return _processError(NOT_ALLOWED, config, location, client, i, j);
 	}
-	status = method->handleMethod();
-	if (status == CGI_PENDING) {
-		CgiHandler* cgi = method->releaseCgiHandler();
-		_registerCgiHandler(client_fd, cgi, client);
-		Logger::log(Logger::SERVER, "CGI started for client fd=" + ParseUtils::itoa(client_fd));
-		delete method;
-		return true;
-	}
+	
+	HttpStatus status = method->handleMethod();
+	if (status == CGI_PENDING)
+		return _processCgi(method, client, client->getFd());
 
+	return _sendResponse(method, status, client);
+}
+
+bool Server::_processCgi(AMethod* method, Client* client, int client_fd) {
+	CgiHandler* cgi = method->releaseCgiHandler();
+	_registerCgiHandler(client_fd, cgi, client);
+
+	Logger::log(Logger::SERVER, "CGI started for client fd=" + ParseUtils::itoa(client_fd));
+
+	delete method;
+	return true; // keep connection open
+}
+
+bool Server::_processError(HttpStatus status, ServerConfig* config, const LocationConfig* location, Client* client, int i, size_t j) {
+	std::string statusLine = ParseUtils::itoa(static_cast<int>(status)) + " " + Response(status).getStatusMessage();
+	Logger::log(Logger::ERROR, "Error status: " + statusLine);
+	Response errRes;
+	errRes.processError(status, *config, location);
+	client->sendResponse(errRes.buildResponse());
+	closeClient(i, j, client);
+	return false;
+}
+
+bool Server::_sendResponse(AMethod* method, HttpStatus status, Client* client) {
 	Response res = method->getResponse();
+	if (status != OK)
+		res.processError(status, method->getServerConfig(), method->getLocationConfig());
+	else
+		res.setStatus(status);
+	if (status != NO_CONTENT && res.getHeader("Content-Length").empty()) {
+		res.addHeader("Content-Length", ParseUtils::itoa(static_cast<int>(res.getBody().size())));
+	}
 	std::string response = res.buildResponse();
+	client->sendResponse(response);
 
 	Logger::log(Logger::SERVER, "RESPONSE:\n" + response);
-
-	client->sendResponse(response);
 	
 	delete method;
 	return true;
-};
+}
 
 void Server::unhandleClient(int i) {
 	size_t	j = 0;
@@ -403,25 +449,13 @@ void Server::_finalizeCgiResponse(size_t index, int cgi_fd) {
 	std::string httpResponse = res.buildResponse();
 	client->sendResponse(httpResponse);
 
-	close(cgi_fd);
-	_fds.erase(_fds.begin() + index);
+	if (cgi_fd >= 0)
+		close(cgi_fd);
+	if (index < _fds.size())
+		_fds.erase(_fds.begin() + index);
 	_cgiHandlers.erase(cgi_fd);
 	_cgiClient.erase(cgi_fd);
-
 	delete cgi;
-}
-
-bool Server::_isMethodAllowed(const std::string& method, const LocationConfig* location) {
-	if (!location)
-		return true;
-	
-	const std::set<std::string>& allowed_methods = location->getMethods();
-	if (allowed_methods.empty())
-		return true;
-	if (allowed_methods.find(method) == allowed_methods.end())
-		return false;
-
-	return true;
 }
 
 void printRequest(ParseHttp parser) {  // for debugging

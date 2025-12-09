@@ -7,7 +7,7 @@ MethodGET::~MethodGET(void) {}
 
 HttpStatus MethodGET::handleMethod(void) {
 	std::string full_path = _resolvePath(_getRootPath(), _req.getPath());
-	std::cout << "DEBUG: full path = " << full_path << std::endl;
+	std::cout << "DEBUG: full path = " << full_path << std::endl; // for debugging
 
 	if (!_exists(full_path))
 		return NOT_FOUND;
