@@ -63,7 +63,7 @@ void ServerConfig::setListen(const std::vector<std::string>&values)
 void ServerConfig::setHost(const std::vector<std::string>&values)
 {
 	if (_host_set)
-		throw std::runtime_error("Duplicate 'host' directive");
+		throw std::runtime_error("Duplicate 'host' directive.");
 	if (values.size() != 1)
 		throw std::invalid_argument("host must have exactly one value.");
 	_host = values[0];
