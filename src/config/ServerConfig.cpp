@@ -48,11 +48,11 @@ void ServerConfig::parseServer(const std::string key, const std::vector<std::str
 void ServerConfig::setListen(const std::vector<std::string>&values)
 {
 	if (_port_set)
-		throw std::runtime_error("Duplicate 'listen' directive on server.");
+		throw std::invalid_argument("Duplicate 'listen' directive on server.");
 	if (values.size() != 1)
 		throw std::invalid_argument("listen must have exactly one value.");
 	if (!ParseUtils::isnumber(values[0]))
-		throw std::invalid_argument("listen must be a number.");
+		throw std::invalid_argument("listen must be a valid port number.");
 	int port = std::atoi(values[0].c_str());
 	if (port < 1 || port > 65535)
 		throw std::invalid_argument("port number must be between 1 and 65535.");
@@ -60,12 +60,60 @@ void ServerConfig::setListen(const std::vector<std::string>&values)
 	_port_set = true;
 }
 
+bool ServerConfig::isValidIP(const std::string &ip)
+{
+	std::vector<std::string> octets = ParseUtils::split(ip, '.');
+	if (octets.size() != 4)
+		return false;
+
+	for (size_t i = 0; i < octets.size(); i++)
+	{
+		if (octets[i].empty() || !ParseUtils::isnumber(octets[i]))
+			return false;
+		int num = std::atoi(octets[i].c_str());
+		if (num < 0 || num > 255)
+			return false;
+	}
+	std::cout << "valid ip" << std::endl;
+	return true;
+}
+
+bool ServerConfig::isValidDomain(const std::string &domain)
+{
+	if (domain.empty() || 
+		domain.length() > 255 || 
+		domain.find('.') == std::string::npos || 
+		domain.find("..") != std::string::npos)
+		return false;
+
+	if (ParseUtils::isnumber(domain))
+		return false;
+
+	for (size_t i = 0; i < domain.length(); i++)
+    {
+        char c = domain[i];
+        if (!std::isalnum(c) && c != '.' && c != '-' && c != '_')
+            return false;
+    }
+
+	if (domain[0] == '.' || 
+		domain[0] == '-' || 
+        domain[domain.length() - 1] == '.' || 
+		domain[domain.length() - 1] == '-')
+        return false;
+    std::cout << "valid domain" << std::endl;
+    return true;
+}
+
 void ServerConfig::setHost(const std::vector<std::string>&values)
 {
 	if (_host_set)
-		throw std::runtime_error("Duplicate 'host' directive.");
+		throw std::invalid_argument("Duplicate 'host' directive on server.");
 	if (values.size() != 1)
 		throw std::invalid_argument("host must have exactly one value.");
+	if (!isValidIP(values[0]) && !isValidDomain(values[0]))
+        throw std::invalid_argument("host must be a valid IP address or domain name.");
+
 	_host = values[0];
 	_host_set = true;
 }
@@ -73,9 +121,11 @@ void ServerConfig::setHost(const std::vector<std::string>&values)
 void ServerConfig::setServerName(const std::vector<std::string>&values)
 {
 	if (_server_name != "")
-		throw std::runtime_error("Duplicate 'server_name' directive.");
+		throw std::invalid_argument("Duplicate 'server_name' directive on server.");
 	if (values.size() != 1)
 		throw std::invalid_argument("server_name must have exactly one value.");
+	if (ParseUtils::hasSpecialChar(values[0]))
+		throw std::invalid_argument("server_name cannot have a special character.");
 	_server_name = values[0];
 }
 

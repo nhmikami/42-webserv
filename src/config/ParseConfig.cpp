@@ -20,6 +20,9 @@ std::vector<ServerConfig> ParseConfig::parse(void) {
 	if (!file.is_open())
 		throw std::invalid_argument("Unable to open file: " + _filename);
 
+	if (file.peek() == std::ifstream::traits_type::eof())
+		throw std::invalid_argument("Empty configuration file: " + _filename);
+
 	std::string line;
 	
 	while(std::getline(file, line)) {

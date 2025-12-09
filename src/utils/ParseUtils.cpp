@@ -36,7 +36,10 @@ bool		ParseUtils::isnumber(const std::string &s)
 	if (s.empty())
     	return false;
 
-    for (size_t i = 0; i < s.size(); ++i)
+    size_t i = 0;
+    if (s[0] == '-' || s[0] == '+')
+        i++;
+    for (; i < s.size(); ++i)
     {
         if (!std::isdigit(s[i]))
             return false;
@@ -57,4 +60,26 @@ std::string ParseUtils::replaceChar(std::string str, char find, char replace) {
             str[i] = replace;
     }
     return str;
+}
+
+std::vector<std::string> ParseUtils::split(const std::string &str, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::stringstream ss(str);
+
+    while (std::getline(ss, token, delimiter))
+        tokens.push_back(token);
+
+    return tokens;
+}
+
+bool ParseUtils::hasSpecialChar(const std::string &str)
+{
+    for (size_t i = 0; i < str.length(); i++)
+    {
+        char c = str[i];
+        if (!std::isalnum(c) && c != '.' && c != '-' && c != '_')
+            return true;
+    }
+    return false;
 }
