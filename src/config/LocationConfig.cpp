@@ -53,7 +53,7 @@ void LocationConfig::setMethods(const std::vector<std::string>& values)
 void LocationConfig::setReturn(const std::vector<std::string>&values)
 {
 	if (_return.first != 0)
-		throw std::runtime_error("Duplicate 'return' directive in location");
+		throw std::runtime_error("Duplicate 'return' directive in location.");
 	if (values.empty())
 		throw std::invalid_argument("return must have at least one value.");
 	if (values.size() > 2)
