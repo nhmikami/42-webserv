@@ -16,8 +16,8 @@
 # include <string>
 # include <map>
 # include <sstream>
-# include "ParseUri.hpp"
-#include "../utils/ParseUtils.hpp"
+# include "parse/ParseUri.hpp"
+# include "utils/ParseUtils.hpp"
 
 class ParseCookie {
 	private:

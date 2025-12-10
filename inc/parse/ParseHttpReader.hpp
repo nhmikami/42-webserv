@@ -18,7 +18,7 @@
 #include <poll.h>
 #include <cerrno>
 #include <cstdlib>
-#include "../Response.hpp"
+#include "http/Response.hpp"
 
 class ParseHttpReader {
 	private:

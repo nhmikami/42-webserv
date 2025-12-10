@@ -6,11 +6,11 @@
 #include "utils/ParseUtils.hpp"
 #include "config/ServerConfig.hpp"
 #include "parse/ParseHttp.hpp"
-#include "Request.hpp"
-#include "Response.hpp"
-#include "MethodGET.hpp"
-#include "MethodPOST.hpp"
-#include "MethodDELETE.hpp"
+#include "http/Request.hpp"
+#include "http/Response.hpp"
+#include "http/MethodGET.hpp"
+#include "http/MethodPOST.hpp"
+#include "http/MethodDELETE.hpp"
 
 #include <poll.h>
 #include <string>
@@ -31,6 +31,9 @@ class Server {
 		std::vector<struct pollfd>		_fds;
 		std::vector<Client*>			_clients;
 
+		std::map<int, CgiHandler*>		_cgiHandlers;
+		std::map<int, Client*>			_cgiClient;
+
 		Server(const Server &other); //del?
 		
 		Server &operator=(const Server &other);
@@ -45,6 +48,17 @@ class Server {
 		bool			handleClient(int i);
 		void			unhandleClient(int i);
 		void			closeClient(int i, int j, Client *client);
+
+		bool	_isMethodAllowed(const std::string& method, const LocationConfig* location);
+		bool	_parseRequest(const std::string& raw_request, Request& request, ServerConfig* config, Client* client, int i, size_t j);
+		bool 	_processRequest(Request& request, ServerConfig* config, const LocationConfig* location, Client* client, int i, size_t j);
+		bool	_processError(HttpStatus status, ServerConfig* config, const LocationConfig* location, Client* client, int i, size_t j);
+		bool	_processCgi(AMethod* method, Client* client, int client_fd);
+		bool	_sendResponse(AMethod* method, HttpStatus status, Client* client);
+
+		bool	_handleCgiEvent(size_t i);
+		void	_registerCgiHandler(int client_fd, CgiHandler *cgi, Client *client);
+		void	_finalizeCgiResponse(size_t index, int cgi_fd);
 
 	public:
 		Server(void); //private del?

@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../inc/Request.hpp"
+#include "http/Request.hpp"
 
 Request::Request() : _method(UNKNOWN), _uri(""), _path(""),
 					 _path_info(""), _query(""), _http_version(""), _body("") { }

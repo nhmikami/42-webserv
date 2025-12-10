@@ -79,20 +79,40 @@ void ServerConfig::setServerName(const std::vector<std::string>&values)
 	_server_name = values[0];
 }
 
-const std::string							ServerConfig::getHost(void) const { return _host; };
+const std::string								ServerConfig::getHost(void) const { return _host; };
 
-int											ServerConfig::getPort(void) const { return _port; };
+int												ServerConfig::getPort(void) const { return _port; };
 
-const std::string							ServerConfig::getServerName(void) const { return _server_name; };
+const std::string								ServerConfig::getServerName(void) const { return _server_name; };
 
-const std::map<std::string, LocationConfig>	ServerConfig::getLocations(void) const { return _locations; };
+const std::map<std::string, LocationConfig>&	ServerConfig::getLocations(void) const { return _locations; };
 
-LocationConfig*								ServerConfig::getLocation(const std::string path) 
-{
+LocationConfig*									ServerConfig::getLocation(const std::string path) {
 	std::map<std::string, LocationConfig>::iterator it = _locations.find(path);
     if (it != _locations.end())
         return &it->second;
     return NULL;
 };
 
+const LocationConfig* ServerConfig::findLocation(const std::string& path) {
+	const std::map<std::string, LocationConfig> &locations = getLocations();
+	const LocationConfig* bestMatch = NULL;
+	std::string bestKey = "";
 
+	for (std::map<std::string, LocationConfig>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
+		const std::string &key = it->first;
+
+		if (key.size() > path.size())
+			continue;
+
+		if (path.compare(0, key.size(), key) == 0) {
+			if (key.size() == path.size() || path[key.size()] == '/' || key == "/") {
+				if (key.size() > bestKey.size()) {
+					bestMatch = &(it->second);
+					bestKey = key;
+				}
+			}
+		}
+	}
+	return bestMatch;
+}

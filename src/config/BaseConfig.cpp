@@ -118,7 +118,7 @@ void BaseConfig::setUpload(const std::vector<std::string>& values)
 };
 
 
-const std::string 							BaseConfig::getRoot(void) const { return _root; };
+const std::string& 							BaseConfig::getRoot(void) const { return _root; };
 
 const std::vector<std::string>				BaseConfig::getIndexFiles(void) const { return _index_files; };
 

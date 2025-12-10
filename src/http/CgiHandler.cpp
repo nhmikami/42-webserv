@@ -1,6 +1,5 @@
-#include "CgiHandler.hpp"
+#include "http/CgiHandler.hpp"
 #include "utils/ParseUtils.hpp"
-
 
 CgiHandler::CgiHandler(const Request& req, const std::string& scriptPath, const std::string& executor)
 	: _scriptPath(scriptPath), _executorPath(executor), _pid(-1), _socketFd(-1), _state(CGI_NOT_STARTED), _bytesSent(0), _requestBody(req.getBody()) {
@@ -79,8 +78,16 @@ void CgiHandler::_freeEnvArray(char** envp) const {
 	delete[] envp;
 }
 
-int CgiHandler::getFd(void) const {
+int CgiHandler::getSocketFd(void) const {
 	return _socketFd;
+}
+
+std::string CgiHandler::getOutput(void) const {
+	return _responseBuffer;
+}
+
+CgiState CgiHandler::getState(void) const {
+	return _state;
 }
 
 void CgiHandler::start(void) {
@@ -216,8 +223,8 @@ void CgiHandler::_handleCgiRead(void) {
 	}
 }
 
-void CgiHandler::buildResponse(Response& res) {
-	(void)res;
+	// void CgiHandler::buildResponse(Response& res) {
+	// (void)res;
 	// if (_state == CGI_ERROR) {
 	// 	res.setStatus(500);
 	// 	res.setBody("Internal Server Error: CGI process failed.");
@@ -268,4 +275,4 @@ void CgiHandler::buildResponse(Response& res) {
 
 	// res.setBody(body);
 	// if (res.getStatus() == 0) res.setStatus(200);
-}
+	// }
