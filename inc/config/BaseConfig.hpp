@@ -40,7 +40,7 @@ class BaseConfig {
 		BaseConfig(const BaseConfig &other);
 		virtual ~BaseConfig(void);
 
-		const std::string 							getRoot(void) const;
+		const std::string& 							getRoot(void) const;
 		bool										getAutoIndex(void) const;
 		size_t										getClientMaxBodySize(void) const;
 		const std::vector<std::string>				getIndexFiles(void) const;

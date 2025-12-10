@@ -1,36 +1,31 @@
 #include "http/MethodDELETE.hpp"
+#include "utils/FileUtils.hpp"
+#include "utils/Logger.hpp"
 
-MethodDELETE::MethodDELETE(const Request &req, const ServerConfig &config, const LocationConfig* location)
+MethodDELETE::MethodDELETE(const Request& req, const ServerConfig& config, const LocationConfig* location)
 	: AMethod(req, config, location) {}
 
 MethodDELETE::~MethodDELETE(void) {}
 
 HttpStatus MethodDELETE::handleMethod(void) {
-	if (_location) {
-		std::set<std::string> allowed = _location->getMethods();
-		if (!allowed.empty() && allowed.find("DELETE") == allowed.end()) {
-			return NOT_ALLOWED;
-		}
-	}
+	std::string full_path = FileUtils::resolvePath(_getRootPath(), _stripLocationPrefix(_req.getPath()));
 
-	std::string full_path = _resolvePath(_getRootPath(), _req.getPath());
-
-	if (!_exists(full_path))
+	if (!FileUtils::exists(full_path))
 		return NOT_FOUND;
 
-	if (_isCGI(full_path) && _isFile(full_path))
+	if (_isCGI(full_path) && FileUtils::isFile(full_path))
 		return _runCGI(full_path);
 
 	if (!_canDelete(full_path))
 		return FORBIDDEN;
 
-	if (_isFile(full_path)) {
+	if (FileUtils::isFile(full_path)) {
 		if (_deleteFile(full_path))
 			return NO_CONTENT;
 		return SERVER_ERR;
 	}
 
-	if (_isDirectory(full_path)) {
+	if (FileUtils::isDirectory(full_path)) {
 		if (!_isEmptyDirectory(full_path))
 			return CONFLICT;
 
@@ -54,7 +49,7 @@ bool MethodDELETE::_canDelete(const std::string &path) {
 	if (access(parentDir.c_str(), W_OK | X_OK) != 0)
 		return false;
 
-	if (_isDirectory(path)) {
+	if (FileUtils::isDirectory(path)) {
 		if (access(path.c_str(), W_OK | X_OK) != 0)
 			return false;
 	}

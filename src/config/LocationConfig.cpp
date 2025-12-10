@@ -71,9 +71,9 @@ void LocationConfig::setReturn(const std::vector<std::string>&values)
 }
 
 
-const std::string 					LocationConfig::getPath(void) const { return _path; };
+const std::string& 					LocationConfig::getPath(void) const { return _path; };
 
-const std::set<std::string>			LocationConfig::getMethods(void) const { return _methods; };
+const std::set<std::string>&		LocationConfig::getMethods(void) const { return _methods; };
 
 const std::pair<int, std::string>&	LocationConfig::getReturn(void) const { return _return; };
 

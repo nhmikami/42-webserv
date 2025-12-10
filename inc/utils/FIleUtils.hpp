@@ -23,6 +23,7 @@ class FileUtils {
         static std::string	resolvePath(const std::string &root, const std::string &reqPath);
         static std::string	normalizePath(const std::string &path);
 		static std::string	guessMimeType(const std::string &path);
+        static std::string  htmlEscape(const std::string &s);
 
 };
 

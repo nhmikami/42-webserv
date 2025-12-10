@@ -248,7 +248,10 @@ bool Server::handleClient(int i) {
 	if (!_parseRequest(raw_request, request, config, client, i, j))
 		return false;
 	
+	std::cout << "PATH ORIGINAL = [" << request.getPath() << "]\n";
+	std::cout << "PATH NORMALIZED = [" << FileUtils::normalizePath(request.getPath()) << "]\n";
 	const LocationConfig* location = config->findLocation(FileUtils::normalizePath(request.getPath()));
+	std::cout << "LOCATION ROOT = [" << location->getRoot() << "]" << std::endl;
 	if (!_isMethodAllowed(request.getMethodStr(), location))
 		return _processError(NOT_ALLOWED, config, location, client, i, j);
 
@@ -306,7 +309,7 @@ bool Server::_processCgi(AMethod* method, Client* client, int client_fd) {
 	Logger::log(Logger::SERVER, "CGI started for client fd=" + ParseUtils::itoa(client_fd));
 
 	delete method;
-	return true; // keep connection open
+	return true;
 }
 
 bool Server::_processError(HttpStatus status, ServerConfig* config, const LocationConfig* location, Client* client, int i, size_t j) {
@@ -355,38 +358,35 @@ void Server::unhandleClient(int i) {
 void	Server::closeClient(int i, int j, Client *client) {
 	int client_fd = client->getFd();
 
-	std::vector<int> cgisToRemove;
-	for (std::map<int, Client*>::iterator it = _cgiClient.begin(); it != _cgiClient.end(); ++it) {
+	std::map<int, Client*>::iterator it = _cgiClient.begin();
+	while (it != _cgiClient.end()) {
 		if (it->second == client) {
 			int cgi_fd = it->first;
-			cgisToRemove.push_back(cgi_fd);
-		}
-	}
-
-	for (size_t k = 0; k < cgisToRemove.size(); k++) {
-		int cgi_fd = cgisToRemove[k];
-		CgiHandler* handler = _cgiHandlers[cgi_fd];
-		
-		for (size_t f = 0; f < _fds.size(); f++) {
-			if (_fds[f].fd == cgi_fd) {
-				close(cgi_fd);
-				_fds.erase(_fds.begin() + f);
-				if (f < (size_t)i)
-					i--;
-				break ;
+			
+			for (size_t f = 0; f < _fds.size(); ++f) {
+				if (_fds[f].fd == cgi_fd) {
+					close(cgi_fd);
+					_fds.erase(_fds.begin() + f);
+					if (f < (size_t)i)
+						--i;
+					break ;
+				}
 			}
+			if (_cgiHandlers.count(cgi_fd))
+				delete _cgiHandlers[cgi_fd];
+			_cgiHandlers.erase(cgi_fd);
+			std::map<int, Client*>::iterator next = it;
+            ++next;
+            _cgiClient.erase(it);
+            it = next;
+		} else {
+			++it;
 		}
-		delete handler;
-		_cgiHandlers.erase(cgi_fd);
-		_cgiClient.erase(cgi_fd);
-		Logger::log(Logger::ERROR, "Killed orphan CGI for client fd=" + ParseUtils::itoa(client_fd));
 	}
-
 	close(client_fd);
 	_fds.erase(_fds.begin() + i);
 	_clients.erase(_clients.begin() + j);
 	_client_to_config.erase(client_fd);
-
 	delete client;
 }
 

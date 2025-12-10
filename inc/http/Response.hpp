@@ -37,6 +37,8 @@ class Response {
 		std::string							_body;
 		std::map<std::string, std::string>	_headers;
 
+		std::string			_getErrorPage(int status, const ServerConfig& server, const LocationConfig* location) const;
+	
 	public:
 		Response(void);
 		Response(HttpStatus status);
@@ -54,7 +56,6 @@ class Response {
 
 		std::string			buildResponse(void) const;
 		HttpStatus			processError(HttpStatus status, const ServerConfig& server, const LocationConfig* location);
-		std::string			_getErrorPage(int status, const ServerConfig& server, const LocationConfig* location) const;
 		void				parseCgiOutput(const std::string& cgiOutput);
 };
 

@@ -27,8 +27,8 @@ class LocationConfig : public BaseConfig {
 
 		void	parseLocation(const std::string key, const std::vector<std::string> values);
 
-		const std::string 					getPath(void) const;
-		const std::set<std::string>			getMethods(void) const;
+		const std::string& 					getPath(void) const;
+		const std::set<std::string>&		getMethods(void) const;
 		const std::pair<int, std::string>&	getReturn(void) const;
 };
 

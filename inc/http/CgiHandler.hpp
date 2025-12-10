@@ -48,15 +48,13 @@ class CgiHandler {
 		CgiHandler(const Request& req, const std::string& scriptPath, const std::string& executor);
 		~CgiHandler(void);
 
+		int			getSocketFd(void) const;
+		CgiState	getState(void) const;
+		std::string	getOutput(void) const;
+
 		void	start(void);
-		int		getSocketFd(void) const;
 		void	handleEvent(uint32_t events);
 		bool	isFinished(void) const;
-		void	buildResponse(Response& res);
-		std::string	getOutput(void) const;
-		CgiState	getState(void) const {
-			return _state;
-		}
 
 	private:
 		void	_initEnv(const Request& req);

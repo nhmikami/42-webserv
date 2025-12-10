@@ -15,7 +15,7 @@ class MethodPOST : public AMethod {
 		std::string	_extractFilename(const std::string &filename);
 
 	public:
-		MethodPOST(const Request &req, const ServerConfig &config, const LocationConfig* location);
+		MethodPOST(const Request& req, const ServerConfig& config, const LocationConfig* location);
 		~MethodPOST(void);
 
 		HttpStatus	handleMethod(void);

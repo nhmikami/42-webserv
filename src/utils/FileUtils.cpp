@@ -108,3 +108,29 @@ std::string FileUtils::guessMimeType(const std::string &path) {
 
 	return "application/octet-stream";
 }
+
+std::string FileUtils::htmlEscape(const std::string &s) {
+	std::string escaped;
+	for (size_t i = 0; i < s.length(); ++i) {
+		switch (s[i]) {
+			case '&':
+				escaped += "&amp;";
+				break ;
+			case '<':
+				escaped += "&lt;";
+				break ;
+			case '>':
+				escaped += "&gt;";
+				break ;
+			case '"':
+				escaped += "&quot;";
+				break ;
+			case '\'':
+				escaped += "&#39;";
+				break ;
+			default:
+				escaped += s[i];
+		}
+	}
+	return escaped;
+}

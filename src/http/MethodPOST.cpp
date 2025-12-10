@@ -1,41 +1,36 @@
 #include "http/MethodPOST.hpp"
+#include "utils/FileUtils.hpp"
+#include "utils/Logger.hpp"
 
-MethodPOST::MethodPOST(const Request &req, const ServerConfig &config, const LocationConfig* location)
+MethodPOST::MethodPOST(const Request& req, const ServerConfig& config, const LocationConfig* location)
 	: AMethod(req, config, location) {}
 
 MethodPOST::~MethodPOST(void) {}
 
 HttpStatus MethodPOST::handleMethod(void) {
-	if (_location) {
-		std::set<std::string> allowed = _location->getMethods();
-		if (!allowed.empty() && allowed.find("POST") == allowed.end()) {
-			return NOT_ALLOWED;
-		}
-	}
-
 	if (_req.getBody().size() > _getMaxBodySize())
 		return PAYLOAD_TOO_LARGE;
 
-	std::string full_path = _resolvePath(_getRootPath(), _req.getPath());
+	std::string full_path = FileUtils::resolvePath(_getRootPath(), _stripLocationPrefix(_req.getPath()));
 
 	if (_req.getHeader("Content-Type").find("multipart/form-data") != std::string::npos)
 		return _handleMultipart();
 
-	if (_exists(full_path) && _isCGI(full_path) && _isFile(full_path))
+	if (FileUtils::exists(full_path) && _isCGI(full_path) && FileUtils::isFile(full_path))
 		return _runCGI(full_path);
 
-	if (_isDirectory(full_path))
+	if (FileUtils::isDirectory(full_path))
 		return BAD_REQUEST;
 
-	bool fileExisted = _exists(full_path);
+	bool fileExisted = FileUtils::exists(full_path);
 	if (!fileExisted) {
 		std::string parent = full_path.substr(0, full_path.find_last_of('/'));
-		if (!_exists(parent) || !_isDirectory(parent))
+		if (!FileUtils::exists(parent) || !FileUtils::isDirectory(parent))
 			return NOT_FOUND;
-		if (!_isWritable(parent))
+		if (!FileUtils::isWritable(parent))
 			return FORBIDDEN;
 	}
-	else if (!_isWritable(full_path))
+	else if (!FileUtils::isWritable(full_path))
 		return FORBIDDEN;
 
 	if (_writeToFile(full_path, _req.getBody())) {
@@ -85,7 +80,7 @@ std::string MethodPOST::_buildAbsoluteUrl(const std::string &targetPath) {
 
 HttpStatus MethodPOST::_handleMultipart(void) {
 	std::string uploadLoc = _getUploadLocation(); 
-	if (!_exists(uploadLoc) || !_isDirectory(uploadLoc) || !_isWritable(uploadLoc))
+	if (!FileUtils::exists(uploadLoc) || !FileUtils::isDirectory(uploadLoc) || !FileUtils::isWritable(uploadLoc))
 		return FORBIDDEN;
 
 	std::string contentType = _req.getHeader("Content-Type");
@@ -153,7 +148,7 @@ HttpStatus MethodPOST::_handleMultipart(void) {
 			fileEnd -= 2;
 
 		filename = _extractFilename(filename);
-		std::string outPath = _resolvePath(uploadLoc, filename);
+		std::string outPath = FileUtils::resolvePath(uploadLoc, filename);
 
 		size_t dataSize = (fileEnd > fileStart) ? fileEnd - fileStart : 0;
 		if (!_writeToFile(outPath, body.c_str() + fileStart, dataSize))

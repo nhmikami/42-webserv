@@ -13,10 +13,9 @@ class MethodGET : public AMethod {
 		HttpStatus	_serveFile(const std::string &path);
 		HttpStatus	_serveDirectory(const std::string &path);
 		HttpStatus	_generateAutoindex(const std::string &path);
-		std::string	_htmlEscape(const std::string &s);
 
 	public:
-		MethodGET(const Request &req, const ServerConfig &config, const LocationConfig* location);
+		MethodGET(const Request& req, const ServerConfig& config, const LocationConfig* location);
 		~MethodGET(void);
 		
 		HttpStatus	handleMethod(void);

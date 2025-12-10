@@ -86,6 +86,10 @@ std::string CgiHandler::getOutput(void) const {
 	return _responseBuffer;
 }
 
+CgiState CgiHandler::getState(void) const {
+	return _state;
+}
+
 void CgiHandler::start(void) {
 	int socks[2];
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, socks) < 0) {
@@ -219,8 +223,8 @@ void CgiHandler::_handleCgiRead(void) {
 	}
 }
 
-void CgiHandler::buildResponse(Response& res) {
-	(void)res;
+	// void CgiHandler::buildResponse(Response& res) {
+	// (void)res;
 	// if (_state == CGI_ERROR) {
 	// 	res.setStatus(500);
 	// 	res.setBody("Internal Server Error: CGI process failed.");
@@ -271,4 +275,4 @@ void CgiHandler::buildResponse(Response& res) {
 
 	// res.setBody(body);
 	// if (res.getStatus() == 0) res.setStatus(200);
-}
+	// }

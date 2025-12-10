@@ -79,16 +79,15 @@ void ServerConfig::setServerName(const std::vector<std::string>&values)
 	_server_name = values[0];
 }
 
-const std::string							ServerConfig::getHost(void) const { return _host; };
+const std::string								ServerConfig::getHost(void) const { return _host; };
 
-int											ServerConfig::getPort(void) const { return _port; };
+int												ServerConfig::getPort(void) const { return _port; };
 
-const std::string							ServerConfig::getServerName(void) const { return _server_name; };
+const std::string								ServerConfig::getServerName(void) const { return _server_name; };
 
-const std::map<std::string, LocationConfig>	ServerConfig::getLocations(void) const { return _locations; };
+const std::map<std::string, LocationConfig>&	ServerConfig::getLocations(void) const { return _locations; };
 
-LocationConfig*								ServerConfig::getLocation(const std::string path) 
-{
+LocationConfig*									ServerConfig::getLocation(const std::string path) {
 	std::map<std::string, LocationConfig>::iterator it = _locations.find(path);
     if (it != _locations.end())
         return &it->second;
