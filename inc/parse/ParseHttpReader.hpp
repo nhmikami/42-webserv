@@ -1,24 +1,13 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   ParseHttpReader.hpp                                :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/24 17:30:00 by marvin            #+#    #+#             */
-/*   Updated: 2025/11/24 17:30:00 by marvin           ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef PARSEHTTPREADER_HPP
-#define PARSEHTTPREADER_HPP
+# define PARSEHTTPREADER_HPP
 
-#include <string>
-#include <sys/socket.h>
-#include <poll.h>
-#include <cerrno>
-#include <cstdlib>
-#include "http/Response.hpp"
+# include <string>
+# include <cstdlib>
+# include <limits>
+
+# include "http/Response.hpp"
+# include "utils/ParseUtils.hpp"
+# include "ParseHttpValidator.hpp"
 
 class ParseHttpReader {
 	private:
@@ -26,10 +15,17 @@ class ParseHttpReader {
 		~ParseHttpReader(void);
 
 	public:
-		// static bool readUntilCrlf(int client_fd, std::string &buffer, std::string &out_line);
-		// static bool hexToInt(const std::string &hex_line, size_t &out_size);
-		// static HttpStatus readBody(size_t content_length, std::string &request_body);
-		// static HttpStatus readChunked(std::string &buffer, std::string &request_body);
+		static HttpStatus validateBodyContentLength(
+			const std::string &content_length_header,
+			size_t max_body_size,
+			std::string &buffer,
+			std::string &out_body);
+		static bool hexToSize(const std::string &hex_str, size_t &out_size);
+		static bool isLastTokenChunked(const std::string &transfer_encoding);
+		static HttpStatus validateBodyChunked(
+			size_t max_body_size,
+			std::string &buffer,
+			std::string &out_body);
 };
 
 #endif

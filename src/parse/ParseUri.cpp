@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   ParseUri.cpp                                       :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/24 17:30:00 by marvin            #+#    #+#             */
-/*   Updated: 2025/11/24 17:30:00 by marvin           ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "parse/ParseUri.hpp"
 
 ParseUri::ParseUri(void) {}
@@ -42,19 +30,16 @@ bool ParseUri::isValidUTF8(const std::string &s) {
 
 	while (i < n) {
 		unsigned char c = bytes[i];
-		// ASCII de 1 byte (0x00-0x7F)
 		if (c <= 0x7F) {
 			++i;
 			continue;
 		}
-		// 2 bytes (0xC2-0xDF)
 		if (c >= 0xC2 && c <= 0xDF) {
 			if (i + 1 >= n || (bytes[i + 1] & 0xC0) != 0x80)
 				return false;
 			i += 2;
 			continue;
 		}
-		// 3 bytes (0xE0-0xEF)
 		if (c >= 0xE0 && c <= 0xEF) {
 			if (i + 2 >= n)
 				return false;
@@ -78,14 +63,12 @@ bool ParseUri::isValidUTF8(const std::string &s) {
 			i += 3;
 			continue;
 		}
-		// 4 bytes (0xF0-0xF4)
 		if (c >= 0xF0 && c <= 0xF4) {
 			if (i + 3 >= n)
 				return false;
 			unsigned char c1 = bytes[i + 1];
 			unsigned char c2 = bytes[i + 2];
 			unsigned char c3 = bytes[i + 3];
-			// checking bits format
 			if (((c2 | c3) & 0xC0) != 0x80)
 				return false;
 			if (c == 0xF0) {
@@ -108,12 +91,10 @@ bool ParseUri::isValidUTF8(const std::string &s) {
 	return true;
 }
 
-// Decodifica URL encoded PATH (percent-encoding)
 bool ParseUri::urlDecodePath(const std::string &str, std::string &result) {
 	result.clear();
 	for (size_t i = 0; i < str.length(); ++i) {
 		if (str[i] == '%') {
-			// Valida formato %XX
 			if (i + 2 >= str.length())
 				return false;
 			
@@ -121,15 +102,12 @@ bool ParseUri::urlDecodePath(const std::string &str, std::string &result) {
 			if (value < 0)
 				return false;
 			
-			// Rejeita %00 (null byte)
 			if (value == 0)
 				return false;
 			
-			// Rejeita caracteres não printáveis
 			if (value < 0x20)
 				return false;
 			
-			// Não decodifica %2F (/) no path
 			if (value == 0x2F) {
 				result.push_back('%');
 				result.push_back(str[i + 1]);
@@ -142,7 +120,6 @@ bool ParseUri::urlDecodePath(const std::string &str, std::string &result) {
 		}
 		else {
 			unsigned char uc = static_cast<unsigned char>(str[i]);
-			// Rejeita caracteres de controle não codificados
 			if (uc < ' ')
 				return false;
 			result.push_back(str[i]);
@@ -153,12 +130,10 @@ bool ParseUri::urlDecodePath(const std::string &str, std::string &result) {
 	return true;
 }
 
-// Decodifica URL encoded QUERY (percent-encoding)
 bool ParseUri::urlDecodeQuery(const std::string &str, std::string &result) {
 	result.clear();
 	for (size_t i = 0; i < str.length(); ++i) {
 		if (str[i] == '%') {
-			// Valida formato %XX
 			if (i + 2 >= str.length())
 				return false;
 			
@@ -166,21 +141,17 @@ bool ParseUri::urlDecodeQuery(const std::string &str, std::string &result) {
 			if (value < 0) 
 				return false;
 			
-			// Rejeita %00 (null byte)
 			if (value == 0)
 				return false;
 			
-			// Rejeita caracteres não printáveis
 			if (value < 0x20)
 				return false;
 			
-			// Decodifica tudo na query (incluindo %2F)
 			result.push_back(static_cast<char>(value));
 			i += 2;
 		}
 		else {
 			unsigned char uc = static_cast<unsigned char>(str[i]);
-			// Rejeita caracteres de controle não codificados
 			if (uc < ' ')
 				return false;
 			result.push_back(str[i]);
@@ -191,7 +162,6 @@ bool ParseUri::urlDecodeQuery(const std::string &str, std::string &result) {
 	return true;
 }
 
-// valida regras básicas do URI
 bool ParseUri::validateUri(const std::string &uri, std::string &path, std::string &path_info, std::string &query) {
 	static const size_t MAX_URI_LEN = 16 * 1024;
 
@@ -212,7 +182,6 @@ bool ParseUri::validateUri(const std::string &uri, std::string &path, std::strin
 		if (c < ' ' && c != '\t')
 			return false;
 	}
-	// separa query após '?'
 	size_t query_pos = uri.find('?');
 	std::string path_full;
 	if (query_pos == std::string::npos) {
@@ -253,7 +222,6 @@ bool ParseUri::validateUri(const std::string &uri, std::string &path, std::strin
 	return true;
 }
 
-// verifica e normaliza os paths 
 bool ParseUri::normalizePath(const std::string &raw_path, std::string &normalized_path) {
 	if (raw_path.empty() || raw_path[0] != '/')
 		return false;

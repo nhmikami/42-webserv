@@ -1,26 +1,16 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   ParseHttpValidator.hpp                             :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/24 17:30:00 by marvin            #+#    #+#             */
-/*   Updated: 2025/11/24 17:30:00 by marvin           ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef PARSEHTTPVALIDATOR_HPP
-#define PARSEHTTPVALIDATOR_HPP
+# define PARSEHTTPVALIDATOR_HPP
 
-#include <string>
-#include <map>
-#include <cerrno>
-#include <cstdlib>
-#include <cctype>
-#include "http/Response.hpp"
-#include "ParseCookie.hpp"
-#include "utils/ParseUtils.hpp"
+# include <string>
+# include <map>
+# include <vector>
+# include <cerrno>
+# include <cstdlib>
+# include <cctype>
+
+# include "http/Response.hpp"
+# include "ParseCookie.hpp"
+# include "utils/ParseUtils.hpp"
 
 class ParseHttpValidator {
 	private:

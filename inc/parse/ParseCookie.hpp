@@ -1,23 +1,12 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   ParseCookie.hpp                                    :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 15:17:47 by marvin            #+#    #+#             */
-/*   Updated: 2025/11/25 15:17:47 by marvin           ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef PARSECOOKIE_HPP
 # define PARSECOOKIE_HPP
 
 # include <string>
 # include <map>
 # include <sstream>
-# include "parse/ParseUri.hpp"
+
 # include "utils/ParseUtils.hpp"
+# include "ParseUri.hpp"
 
 class ParseCookie {
 	private:

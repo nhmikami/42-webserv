@@ -1,51 +1,36 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   ParseHttp.cpp                                      :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: naharumi <naharumi@student.42.fr>          +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/06 15:02:25 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/12/06 18:25:35 by naharumi         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
-#include "http/Response.hpp"
-#include "http/Request.hpp"
 #include "parse/ParseHttp.hpp"
-#include "parse/ParseHttpValidator.hpp"
-#include "parse/ParseHttpReader.hpp"
-#include "parse/ParseUri.hpp"
-#include "parse/ParseCookie.hpp"
-#include "utils/ParseUtils.hpp"
 
-ParseHttp::ParseHttp() {};
+ParseHttp::ParseHttp() : _max_body_size(DEFAULT_CLIENT_MAX_BODY_SIZE) {};
 
-// ParseHttp::ParseHttp(const ParseHttp &other) {
-// 	*this = other;
-// }
+ParseHttp::ParseHttp(const ParseHttp &other) {
+	*this = other;
+}
 
-// ParseHttp &ParseHttp::operator=(const ParseHttp &other) {
-// 	if (this != &other) {
-// 		this->_request_method = other._request_method;
-// 		this->_request_uri = other._request_uri;
-// 		this->_request_path = other._request_path;
-// 		this->_query = other._query;
-// 		this->_http_version = other._http_version;
-// 		this->_host_header = other._host_header;
-// 		this->_user_agent_header = other._user_agent_header;
-// 		this->_request_body = other._request_body;
-// 		this->_content_length = other._content_length;
-// 		this->_content_type = other._content_type;
-// 		this->_transfer_encoding = other._transfer_encoding;
-// 		this->_connection = other._connection;
-// 		this->_accept = other._accept;
-// 		this->_all_headers = other._all_headers;
-// 	}
-// 	return *this;
-// }
+ParseHttp &ParseHttp::operator=(const ParseHttp &other) {
+	if (this != &other) {
+		this->_request_method = other._request_method;
+		this->_request_uri = other._request_uri;
+		this->_request_path = other._request_path;
+		this->_query = other._query;
+		this->_http_version = other._http_version;
+		this->_host_header = other._host_header;
+		this->_user_agent_header = other._user_agent_header;
+		this->_request_body = other._request_body;
+		this->_content_length = other._content_length;
+		this->_content_type = other._content_type;
+		this->_transfer_encoding = other._transfer_encoding;
+		this->_connection = other._connection;
+		this->_accept = other._accept;
+		this->_all_headers = other._all_headers;
+	}
+	return *this;
+}
 
 ParseHttp::~ParseHttp() { }
+
+void ParseHttp::setMaxBodySize(size_t max_body_size) {
+	_max_body_size = max_body_size;
+}
 
 Request ParseHttp::buildRequest() const {
 	Request	req;
@@ -94,7 +79,6 @@ const std::map<std::string, std::string>& ParseHttp::getCookies() const {
 	return _cookies;
 }
 
-// faz o split da request line
 bool	ParseHttp::parseRequestLine(const std::string &line,
 						std::string &out_method,
 						std::string &out_path,
@@ -102,13 +86,11 @@ bool	ParseHttp::parseRequestLine(const std::string &line,
 	size_t method_end = line.find(" ");
 	if (method_end == std::string::npos)
 		return false;
-	// valida o método
 	std::string method = line.substr(0, method_end);
 	if (method == "GET" || method == "POST" || method == "DELETE")
 		out_method = method;
 	else
 		return false;
-	// extrai o path
 	size_t path_start = method_end + 1;
 	size_t path_end = line.find(" ", path_start);
 	if (path_end == std::string::npos)
@@ -117,7 +99,6 @@ bool	ParseHttp::parseRequestLine(const std::string &line,
 	out_path = line.substr(path_start, path_end - path_start);
 	if (out_path.empty())
 		return false;
-	// verifica versão
 	size_t version_start = path_end + 1;
 	out_version = line.substr(version_start);
 	
@@ -162,7 +143,6 @@ void ParseHttp::toLowerStr(std::string &str) {
 		str[i] = std::tolower(static_cast<unsigned char>(str[i]));
 }
 
-// lê os headers e separa em chave e valor
 std::map<std::string,std::string> ParseHttp::parseHeaders(const std::string &headers_block) {
 	std::map<std::string,std::string> headers;
 	std::istringstream stream(headers_block);
@@ -187,7 +167,6 @@ std::map<std::string,std::string> ParseHttp::parseHeaders(const std::string &hea
 		
 		toLowerStr(key);
 
-		// Normaliza valores de headers que são case-insensitive
 		if (key == "transfer-encoding" || key == "connection")
 			toLowerStr(value);
 
@@ -197,12 +176,6 @@ std::map<std::string,std::string> ParseHttp::parseHeaders(const std::string &hea
 }
 
 HttpStatus	ParseHttp::initParse(std::string &request) {
-	// size_t	total_header_size = 0;
-	// size_t	headers_end_pos;
-
-	// if (total_header_size > MAX_HEADER_SIZE)
-	// 	return PAYLOAD_TOO_LARGE;
-	
 	size_t headers_end_pos = request.find("\r\n\r\n");
 	if (headers_end_pos == std::string::npos)
 		return BAD_REQUEST;
@@ -267,36 +240,45 @@ HttpStatus	ParseHttp::initParse(std::string &request) {
 		this->_cookies = ParseCookie::parseCookie(headers_map["cookie"]);
 
 	if (this->_request_method == POST) {
-		if (headers_map.find("transfer-encoding") != headers_map.end() && 
-			headers_map["transfer-encoding"] == "chunked") {
-			this->_request_body = request;
-			request.clear();
-			// return ParseHttpReader::readChunked(request, this->_request_body);
-			return OK;
-		}
+		std::map<std::string, std::string>::const_iterator cl_it = headers_map.find("content-length");
+		std::map<std::string, std::string>::const_iterator te_it = headers_map.find("transfer-encoding");
+		bool has_content_length = (cl_it != headers_map.end());
+		bool has_transfer_encoding = (te_it != headers_map.end());
+		
+		if (!has_content_length && !has_transfer_encoding)
+			return LENGTH_REQUIRED;
 
-		if (headers_map.find("content-length") != headers_map.end()) {
-			size_t content_length;
-			if (!ParseHttpValidator::validateContentLength(headers_map["content-length"], content_length))
+		if (has_transfer_encoding) {
+			const std::string &te_value = te_it->second;
+			bool is_chunked = ParseHttpReader::isLastTokenChunked(te_value);
+			if (is_chunked) {
+				HttpStatus status = ParseHttpReader::validateBodyChunked(
+					_max_body_size,
+					body_buffer,
+					this->_request_body
+				);
+				if (status != OK)
+					return status;
+				request = body_buffer;
+				return OK;
+			}
+			else if (has_content_length)
 				return BAD_REQUEST;
-			// this->_request_body = request;
-			// size_t bytes_already_read = request.size();
-			this->_request_body = request.substr(0, content_length);
-			
-			// if (bytes_already_read >= content_length) {
-			// 	this->_request_body = this->_request_body.substr(0, content_length);
-			// 	request = request.substr(content_length);
-			// 	return OK;
-			// }
-			// size_t bytes_remaining = content_length - bytes_already_read;
-			// HttpStatus body_status = ParseHttpReader::readBody(bytes_remaining, this->_request_body);
-			// HttpStatus body_status = OK;
-			// if (body_status != OK)
-			// 	return body_status;
-			if (request.size() > content_length)
-				request = request.substr(content_length);
 			else
-				request.clear();
+				return NOT_IMPLEMENTED;
+		}
+		
+		if (has_content_length) {
+			const std::string &cl_value = cl_it->second;
+			HttpStatus status = ParseHttpReader::validateBodyContentLength(
+				cl_value,
+				_max_body_size,
+				body_buffer,
+				this->_request_body
+			);
+			if (status != OK)
+				return status;
+			request = body_buffer;
 			return OK;
 		}
 	}
