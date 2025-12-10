@@ -2,20 +2,26 @@
 
 BaseConfig::BaseConfig(void) : 
     _autoindex(false), 
-    _client_max_body_size(DEFAULT_CLIENT_MAX_BODY_SIZE), 
+    _autoindex_set(false), 
+    _client_max_body_size(DEFAULT_CLIENT_MAX_BODY_SIZE),
+	_client_max_body_size_set(false),
     _is_cgi(false)
 {};
 
 BaseConfig::BaseConfig(size_t client_body_size) :
 	_autoindex(false),
+	_autoindex_set(false), 
 	_client_max_body_size(client_body_size),
+	_client_max_body_size_set(false),
 	_is_cgi(false)
 {};
 
 BaseConfig::BaseConfig(const BaseConfig &other) :
     _root(other._root),
     _autoindex(other._autoindex),
+	_autoindex_set(other._autoindex_set), 
     _client_max_body_size(other._client_max_body_size),
+	_client_max_body_size_set(other._client_max_body_size_set),
     _index_files(other._index_files),
     _error_pages(other._error_pages),
     _is_cgi(other._is_cgi),
@@ -33,6 +39,8 @@ void BaseConfig::validateDirectoryPath(const std::string& path, const std::strin
 
 void BaseConfig::setRoot(const std::vector<std::string>& values)
 {
+	if (!_root.empty())
+		throw std::runtime_error("Duplicate 'root' directive.");
 	if (values.size() != 1)
 		throw std::invalid_argument("root must have exactly one value.");
 	validateDirectoryPath(values[0], "root");
@@ -41,6 +49,8 @@ void BaseConfig::setRoot(const std::vector<std::string>& values)
 
 void BaseConfig::setAutoIndex(const std::vector<std::string>& values)
 {
+	if (_autoindex_set)
+		throw std::runtime_error("Duplicate 'autoindex' directive.");
 	if (values.size() != 1)
 		throw std::invalid_argument("autoindex must have exactly one value.");
 	_autoindex = values[0] == "on" 
@@ -48,10 +58,13 @@ void BaseConfig::setAutoIndex(const std::vector<std::string>& values)
 		: values[0] == "off"
 		? false
 		: throw std::invalid_argument("autoindex invalid value.");
+	_autoindex_set = true;
 };
 
 void BaseConfig::setClientMaxBodySize(const std::vector<std::string>& values)
 {
+	if (_client_max_body_size_set)
+		throw std::runtime_error("Duplicate 'client_max_body_size' directive.");
 	if (values.size() != 1)
 		throw std::invalid_argument("client_max_body_size must have exactly one value.");
 	if (!ParseUtils::isnumber(values[0]))
@@ -60,6 +73,7 @@ void BaseConfig::setClientMaxBodySize(const std::vector<std::string>& values)
 	if (client_max_body_size < 1)
 		throw std::invalid_argument("client_max_body_size must be a positive number.");
 	_client_max_body_size = client_max_body_size;
+	_client_max_body_size_set = true;
 };
 
 void BaseConfig::setIndexFiles(const std::vector<std::string>& values)
@@ -95,14 +109,16 @@ void BaseConfig::setCgi(const std::vector<std::string>& values)
 
 void BaseConfig::setUpload(const std::vector<std::string>& values)
 {
+	if (!_upload.empty())
+		throw std::runtime_error("Duplicate 'upload' directive.");
 	if (values.size() != 1)
 		throw std::invalid_argument("upload must have exactly one value.");
 	validateDirectoryPath(values[0], "upload");
-    _root = values[0];
+    _upload = values[0];
 };
 
 
-const std::string 							BaseConfig::getRoot(void) const { return _root; };
+const std::string& 							BaseConfig::getRoot(void) const { return _root; };
 
 const std::vector<std::string>				BaseConfig::getIndexFiles(void) const { return _index_files; };
 

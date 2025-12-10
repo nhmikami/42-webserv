@@ -8,9 +8,9 @@
 # include <cstdlib>
 # include <cctype>
 
-# include "../Response.hpp"
+# include "http/Response.hpp"
 # include "ParseCookie.hpp"
-# include "../utils/ParseUtils.hpp"
+# include "utils/ParseUtils.hpp"
 
 class ParseHttpValidator {
 	private:

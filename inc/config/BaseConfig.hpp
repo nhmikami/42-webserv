@@ -13,9 +13,11 @@ static const size_t DEFAULT_CLIENT_MAX_BODY_SIZE = 1024 * 1024; // 1MB
 
 class BaseConfig {
 	protected:
-		std::string     					_root;
-		bool            					_autoindex;
-		size_t          					_client_max_body_size;
+		std::string							_root;
+		bool								_autoindex;
+		bool								_autoindex_set;
+		size_t								_client_max_body_size;
+		bool								_client_max_body_size_set;
 		std::vector<std::string>			_index_files;
 		std::map<int, std::string>			_error_pages;
 		bool								_is_cgi;
@@ -38,7 +40,7 @@ class BaseConfig {
 		BaseConfig(const BaseConfig &other);
 		virtual ~BaseConfig(void);
 
-		const std::string 							getRoot(void) const;
+		const std::string& 							getRoot(void) const;
 		bool										getAutoIndex(void) const;
 		size_t										getClientMaxBodySize(void) const;
 		const std::vector<std::string>				getIndexFiles(void) const;

@@ -70,7 +70,8 @@ void printConfig(const std::vector<ServerConfig> &servers_config)
 		// Print locations
 		std::map<std::string, LocationConfig> locations = servers_config[i].getLocations();
 		std::cout << "\n  Locations (" << locations.size() << "):" << std::endl;
-		for (std::map<std::string, LocationConfig>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
+		for (std::map<std::string, LocationConfig>::const_iterator it = locations.begin(); it != locations.end(); ++it)
+		{
 			std::cout << "  ----------------------------------------" << std::endl;
 			std::cout << "  Location " << it->first << ":" << std::endl;
 			std::cout << "  path: " << it->second.getPath() << std::endl;
@@ -126,6 +127,18 @@ void printConfig(const std::vector<ServerConfig> &servers_config)
 				}
 			}
 			std::cout << std::endl;
+
+			std::cout << "  return: ";
+			const std::pair<int, std::string>& returnDirective = it->second.getReturn();
+			if (returnDirective.first != 0) {
+				std::cout << returnDirective.first;
+				if (!returnDirective.second.empty())
+					std::cout << " " << returnDirective.second;
+			} else {
+				std::cout << "none";
+			}
+			std::cout << std::endl;
+
 		}
 
 		std::cout << std::endl;

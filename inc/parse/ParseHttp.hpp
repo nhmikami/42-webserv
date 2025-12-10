@@ -11,9 +11,9 @@
 # include <map>
 # include <vector>
 
-# include "../Response.hpp"
-# include "../Request.hpp"
-# include "../config/BaseConfig.hpp"
+# include "http/Response.hpp"
+# include "http/Request.hpp"
+# include "config/BaseConfig.hpp"
 # include "ParseUri.hpp"
 # include "ParseHttpValidator.hpp"
 # include "ParseHttpReader.hpp"

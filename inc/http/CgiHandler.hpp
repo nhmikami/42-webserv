@@ -16,8 +16,8 @@
 #include <algorithm>
 #include <cerrno>
 
-#include "Request.hpp"
-#include "Response.hpp"
+#include "http/Request.hpp"
+#include "http/Response.hpp"
 #include "config/LocationConfig.hpp"
 
 static const size_t CGI_BUF_SIZE = 4096;
@@ -48,11 +48,13 @@ class CgiHandler {
 		CgiHandler(const Request& req, const std::string& scriptPath, const std::string& executor);
 		~CgiHandler(void);
 
-		int		getFd(void) const;
+		int			getSocketFd(void) const;
+		CgiState	getState(void) const;
+		std::string	getOutput(void) const;
+
 		void	start(void);
 		void	handleEvent(uint32_t events);
 		bool	isFinished(void) const;
-		void	buildResponse(Response& res);
 
 	private:
 		void	_initEnv(const Request& req);

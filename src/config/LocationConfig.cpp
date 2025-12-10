@@ -2,7 +2,8 @@
 
 LocationConfig::LocationConfig(std::string path) :
 	BaseConfig(0),
-	_path(path)
+	_path(path),
+	_return(0, "")
 {
 	initDirectiveMap();
 };
@@ -10,7 +11,8 @@ LocationConfig::LocationConfig(std::string path) :
 LocationConfig::LocationConfig(const LocationConfig& other) : 
 	BaseConfig(other),
 	_path(other._path),
-	_methods(other._methods)
+	_methods(other._methods),
+	_return(other._return)
 {
 	initDirectiveMap();
 }
@@ -27,6 +29,7 @@ void	LocationConfig::initDirectiveMap()
 	_directiveSetters["error_page"] = &LocationConfig::setErrorPages;
 	_directiveSetters["cgi"] = &LocationConfig::setCgi;
 	_directiveSetters["upload"] = &LocationConfig::setUpload;
+	_directiveSetters["return"] = &LocationConfig::setReturn;
 }
 
 void	LocationConfig::parseLocation(const std::string key, const std::vector<std::string> values)
@@ -47,7 +50,30 @@ void LocationConfig::setMethods(const std::vector<std::string>& values)
 		_methods.insert(values[i]);
 };
 
+void LocationConfig::setReturn(const std::vector<std::string>&values)
+{
+	if (_return.first != 0)
+		throw std::runtime_error("Duplicate 'return' directive in location.");
+	if (values.empty())
+		throw std::invalid_argument("return must have at least one value.");
+	if (values.size() > 2)
+		throw std::invalid_argument("return can't have more than 2 arguments.");
 
-const std::string 				LocationConfig::getPath(void) const { return _path; };
+	if (!ParseUtils::isnumber(values[0]))
+		throw std::invalid_argument("return code " + values[0] + " is not a number.");
+	int return_code = std::atoi(values[0].c_str());
+	if (return_code < 100 || return_code > 599)
+		throw std::invalid_argument("invalid return code number (must be between 100 and 599).");
+	
+	std::string path = (values.size() == 2) ? values[1] : "";
 
-const std::set<std::string>		LocationConfig::getMethods(void) const { return _methods; };
+	_return = std::make_pair(return_code, path);
+}
+
+
+const std::string& 					LocationConfig::getPath(void) const { return _path; };
+
+const std::set<std::string>&		LocationConfig::getMethods(void) const { return _methods; };
+
+const std::pair<int, std::string>&	LocationConfig::getReturn(void) const { return _return; };
+

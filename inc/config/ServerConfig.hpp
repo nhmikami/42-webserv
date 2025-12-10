@@ -11,7 +11,9 @@
 class ServerConfig : public BaseConfig {
 	private:
 		std::string								_host;
+		bool									_host_set;
 		int										_port;
+		bool									_port_set;
 		std::string								_server_name;
 		std::map<std::string, LocationConfig>	_locations;
 
@@ -32,11 +34,12 @@ class ServerConfig : public BaseConfig {
 		void	parseServer(const std::string key, const std::vector<std::string> values);
 		void	addLocation(const std::vector<std::string>&values, std::string *location_path);
 
-		const std::string							getHost(void) const;
-		int											getPort(void) const;
-		const std::string 							getServerName(void) const;
-		const std::map<std::string, LocationConfig>	getLocations(void) const;
-		LocationConfig*								getLocation(const std::string path);
+		const std::string								getHost(void) const;
+		int												getPort(void) const;
+		const std::string 								getServerName(void) const;
+		const std::map<std::string, LocationConfig>&	getLocations(void) const;
+		const LocationConfig*							findLocation(const std::string& path);
+		LocationConfig*									getLocation(const std::string path);
 };
 
 #endif
