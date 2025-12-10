@@ -3,6 +3,7 @@
 
 # include <string>
 # include <map>
+# include <vector>
 # include <cerrno>
 # include <cstdlib>
 # include <cctype>

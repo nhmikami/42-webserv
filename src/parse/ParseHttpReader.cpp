@@ -53,13 +53,34 @@ bool ParseHttpReader::hexToSize(const std::string &hex_str, size_t &out_size) {
 			digit = c - 'A' + 10;
 		else
 			return false;
-		
-		if (out_size > (SIZE_MAX - digit) / 16)
+
+		size_t sdigit = static_cast<size_t>(digit);
+		if (out_size > (std::numeric_limits<size_t>::max() - sdigit) / 16)
 			return false;
 		
-		out_size = (out_size * 16) + digit;
+		out_size = (out_size * 16) + sdigit;
 	}
 	return true;
+}
+
+bool ParseHttpReader::isLastTokenChunked(const std::string &transfer_encoding) {
+	if (transfer_encoding.empty())
+		return false;
+	
+	std::string te_trim = ParseUtils::trim(transfer_encoding);
+	if (te_trim.empty())
+		return false;
+	
+	size_t last_comma = te_trim.rfind(',');
+	std::string last_token;
+	
+	if (last_comma == std::string::npos)
+		last_token = te_trim;
+	else
+		last_token = te_trim.substr(last_comma + 1);
+	
+	last_token = ParseUtils::trim(last_token);
+	return (last_token == "chunked");
 }
 
 HttpStatus ParseHttpReader::validateBodyChunked(
@@ -82,18 +103,19 @@ HttpStatus ParseHttpReader::validateBodyChunked(
 		buffer = buffer.substr(crlf_pos + 2);
 		
 		if (chunk_size == 0) {
-			if (buffer.size() < 2)
-				return INCOMPLETE;
-			
-			size_t final_crlf = buffer.find("\r\n");
-			if (final_crlf == std::string::npos)
-				return INCOMPLETE;
-			
-			buffer = buffer.substr(final_crlf + 2);
-			return OK;
+			while (true) {
+				size_t crlf_pos = buffer.find("\r\n");
+				if (crlf_pos == std::string::npos)
+					return INCOMPLETE;
+				if (crlf_pos == 0) {
+					buffer = buffer.substr(2);
+					return OK;
+				}
+				buffer = buffer.substr(crlf_pos + 2);
+			}
 		}
-		
-		if (total_body_size + chunk_size > max_body_size)
+
+		if (chunk_size > max_body_size - total_body_size)
 			return PAYLOAD_TOO_LARGE;
 		
 		if (buffer.size() < chunk_size + 2)

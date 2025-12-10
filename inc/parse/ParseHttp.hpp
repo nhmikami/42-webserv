@@ -10,8 +10,6 @@
 # include <sstream>
 # include <map>
 # include <vector>
-# include <sys/socket.h>
-# include <poll.h>
 
 # include "../Response.hpp"
 # include "../Request.hpp"

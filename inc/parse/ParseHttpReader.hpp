@@ -2,10 +2,8 @@
 # define PARSEHTTPREADER_HPP
 
 # include <string>
-# include <sys/socket.h>
 # include <cstdlib>
-# include <cstdint>
-# include <climits>
+# include <limits>
 
 # include "../Response.hpp"
 # include "utils/ParseUtils.hpp"
@@ -22,12 +20,12 @@ class ParseHttpReader {
 			size_t max_body_size,
 			std::string &buffer,
 			std::string &out_body);
-		
+		static bool hexToSize(const std::string &hex_str, size_t &out_size);
+		static bool isLastTokenChunked(const std::string &transfer_encoding);
 		static HttpStatus validateBodyChunked(
 			size_t max_body_size,
 			std::string &buffer,
 			std::string &out_body);
-		static bool hexToSize(const std::string &hex_str, size_t &out_size);
 };
 
 #endif

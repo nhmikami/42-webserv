@@ -4,7 +4,6 @@ ParseHttpValidator::ParseHttpValidator(void) {}
 
 ParseHttpValidator::~ParseHttpValidator(void) {}
 
-// valida o header host
 bool ParseHttpValidator::validateHostHeader(const std::string &host) {
 	if (host.empty())
 		return false;
@@ -61,7 +60,6 @@ bool ParseHttpValidator::validateUserAgent(const std::string &user_agent) {
 	return true;
 }
 
-// valida o content_length e se é numérico
 bool ParseHttpValidator::validateContentLength(const std::string &content_length_str, size_t &out_length) {
 	if (content_length_str.empty())
 		return false;
@@ -85,17 +83,55 @@ bool ParseHttpValidator::validateContentLength(const std::string &content_length
 	return true;
 }
 
-// normaliza o transfer encoding
 bool ParseHttpValidator::validateTransferEncoding(const std::string &transfer_encoding) {
 	if (transfer_encoding.empty())
 		return false;
 
 	std::string transf_encod_trim = ParseUtils::trim(transfer_encoding);
+	if (transf_encod_trim.empty())
+		return false;
 	
-	if (transf_encod_trim == "chunked" || transf_encod_trim == "identity")
-		return true;
+	if (transf_encod_trim.find(',') == std::string::npos) {
+		if (transf_encod_trim == "chunked" || transf_encod_trim == "identity")
+			return true;
+		return false;
+	}
 	
-	return false;
+	std::vector<std::string> tokens;
+	size_t start = 0;
+	while (start < transf_encod_trim.size()) {
+		size_t comma_pos = transf_encod_trim.find(',', start);
+		std::string token;
+		
+		if (comma_pos == std::string::npos)
+			token = transf_encod_trim.substr(start);
+		else
+			token = transf_encod_trim.substr(start, comma_pos - start);
+		
+		token = ParseUtils::trim(token);
+		if (!token.empty())
+			tokens.push_back(token);
+		
+		if (comma_pos == std::string::npos)
+			break;
+		start = comma_pos + 1;
+	}
+	
+	if (tokens.empty())
+		return false;
+	
+	for (size_t i = 0; i < tokens.size(); ++i) {
+		if (tokens[i] != "chunked" && tokens[i] != "identity" && 
+			tokens[i] != "gzip" && tokens[i] != "compress" && 
+			tokens[i] != "deflate")
+			return false;
+	}
+	
+	for (size_t i = 0; i < tokens.size() - 1; ++i) {
+		if (tokens[i] == "chunked")
+			return false;
+	}
+	return true;
 }
 
 bool ParseHttpValidator::validateContentType(const std::string &content_type) {
@@ -359,7 +395,6 @@ bool ParseHttpValidator::validateParamsQ(const std::string &params_str) {
 	return true;
 }
 
-// Valida regras HTTP mínimas e coerência entre headers antes de aceitar/processar o corpo ou rotear a requisição
 HttpStatus ParseHttpValidator::validateHeaders(const std::map<std::string, std::string> &headers) {
 	std::map<std::string, std::string>::const_iterator host_it = headers.find("host");
 	if (host_it == headers.end())
@@ -378,10 +413,7 @@ HttpStatus ParseHttpValidator::validateHeaders(const std::map<std::string, std::
 	std::map<std::string, std::string>::const_iterator transfer_encoding_it = headers.find("transfer-encoding");
 	bool has_content_length = (content_length_it != headers.end());
 	bool has_transfer_encoding = (transfer_encoding_it != headers.end());
-	
-	if (has_content_length && has_transfer_encoding)
-		return BAD_REQUEST;
-	
+
 	if (has_content_length) {
 		size_t content_length;
 		if (!validateContentLength(content_length_it->second, content_length))

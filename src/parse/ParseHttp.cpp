@@ -79,7 +79,6 @@ const std::map<std::string, std::string>& ParseHttp::getCookies() const {
 	return _cookies;
 }
 
-// faz o split da request line
 bool	ParseHttp::parseRequestLine(const std::string &line,
 						std::string &out_method,
 						std::string &out_path,
@@ -87,13 +86,11 @@ bool	ParseHttp::parseRequestLine(const std::string &line,
 	size_t method_end = line.find(" ");
 	if (method_end == std::string::npos)
 		return false;
-	// valida o método
 	std::string method = line.substr(0, method_end);
 	if (method == "GET" || method == "POST" || method == "DELETE")
 		out_method = method;
 	else
 		return false;
-	// extrai o path
 	size_t path_start = method_end + 1;
 	size_t path_end = line.find(" ", path_start);
 	if (path_end == std::string::npos)
@@ -102,7 +99,6 @@ bool	ParseHttp::parseRequestLine(const std::string &line,
 	out_path = line.substr(path_start, path_end - path_start);
 	if (out_path.empty())
 		return false;
-	// verifica versão
 	size_t version_start = path_end + 1;
 	out_version = line.substr(version_start);
 	
@@ -147,7 +143,6 @@ void ParseHttp::toLowerStr(std::string &str) {
 		str[i] = std::tolower(static_cast<unsigned char>(str[i]));
 }
 
-// lê os headers e separa em chave e valor
 std::map<std::string,std::string> ParseHttp::parseHeaders(const std::string &headers_block) {
 	std::map<std::string,std::string> headers;
 	std::istringstream stream(headers_block);
@@ -172,7 +167,6 @@ std::map<std::string,std::string> ParseHttp::parseHeaders(const std::string &hea
 		
 		toLowerStr(key);
 
-		// Normaliza valores de headers que são case-insensitive
 		if (key == "transfer-encoding" || key == "connection")
 			toLowerStr(value);
 
@@ -246,28 +240,36 @@ HttpStatus	ParseHttp::initParse(std::string &request) {
 		this->_cookies = ParseCookie::parseCookie(headers_map["cookie"]);
 
 	if (this->_request_method == POST) {
-		bool has_content_length = headers_map.find("content-length") != headers_map.end();
-		bool has_chunked = headers_map.find("transfer-encoding") != headers_map.end() 
-							&& headers_map["transfer-encoding"] == "chunked";
+		std::map<std::string, std::string>::const_iterator cl_it = headers_map.find("content-length");
+		std::map<std::string, std::string>::const_iterator te_it = headers_map.find("transfer-encoding");
+		bool has_content_length = (cl_it != headers_map.end());
+		bool has_transfer_encoding = (te_it != headers_map.end());
 		
-		if (!has_content_length && !has_chunked)
+		if (!has_content_length && !has_transfer_encoding)
 			return LENGTH_REQUIRED;
-		
-		if (has_chunked) {
-			HttpStatus status = ParseHttpReader::validateBodyChunked(
-				_max_body_size,
-				body_buffer,
-				this->_request_body
-			);
-			if (status != OK)
-				return status;
-			request = body_buffer;
-			return OK;
+
+		if (has_transfer_encoding) {
+			const std::string &te_value = te_it->second;
+			bool is_chunked = ParseHttpReader::isLastTokenChunked(te_value);
+			if (is_chunked) {
+				HttpStatus status = ParseHttpReader::validateBodyChunked(
+					_max_body_size,
+					body_buffer,
+					this->_request_body
+				);
+				if (status != OK)
+					return status;
+				request = body_buffer;
+				return OK;
+			}
+			else
+				return NOT_IMPLEMENTED;
 		}
 		
 		if (has_content_length) {
+			const std::string &cl_value = cl_it->second;
 			HttpStatus status = ParseHttpReader::validateBodyContentLength(
-				headers_map["content-length"],
+				cl_value,
 				_max_body_size,
 				body_buffer,
 				this->_request_body
@@ -277,6 +279,7 @@ HttpStatus	ParseHttp::initParse(std::string &request) {
 			request = body_buffer;
 			return OK;
 		}
+		return LENGTH_REQUIRED;
 	}
 	return OK;
 }
