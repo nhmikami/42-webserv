@@ -20,8 +20,6 @@
 # include "parse/ParseCookie.hpp"
 # include "utils/ParseUtils.hpp"
 
-// #define RECV_BUFFER_SIZE 4096
-
 # define MAX_HEADER_SIZE 8192
 
 class ParseHttp {
@@ -52,8 +50,8 @@ class ParseHttp {
 
 	public:
 		ParseHttp();
-		// ParseHttp(const ParseHttp &other);
-		// ParseHttp &operator=(const ParseHttp &other);
+		ParseHttp(const ParseHttp &other);
+		ParseHttp &operator=(const ParseHttp &other);
 		~ParseHttp();
 
 		void toLowerStr(std::string &str);

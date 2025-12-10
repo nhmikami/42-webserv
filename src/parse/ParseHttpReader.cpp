@@ -18,7 +18,7 @@ HttpStatus ParseHttpReader::validateBodyContentLength(
 		return PAYLOAD_TOO_LARGE;
 	
 	if (buffer.size() < content_length)
-		return INCOMPLETE;
+		return CONTINUE;
 	
 	out_body = buffer.substr(0, content_length);
 	buffer = buffer.substr(content_length);
@@ -93,7 +93,7 @@ HttpStatus ParseHttpReader::validateBodyChunked(
 	while (true) {
 		size_t crlf_pos = buffer.find("\r\n");
 		if (crlf_pos == std::string::npos)
-			return INCOMPLETE;
+			return CONTINUE;
 		
 		std::string size_line = buffer.substr(0, crlf_pos);
 		size_t chunk_size;
@@ -103,15 +103,20 @@ HttpStatus ParseHttpReader::validateBodyChunked(
 		buffer = buffer.substr(crlf_pos + 2);
 		
 		if (chunk_size == 0) {
+			size_t max_trailers = 100;
+			size_t trailer_count = 0;
 			while (true) {
 				size_t crlf_pos = buffer.find("\r\n");
 				if (crlf_pos == std::string::npos)
-					return INCOMPLETE;
+					return CONTINUE;
 				if (crlf_pos == 0) {
 					buffer = buffer.substr(2);
 					return OK;
 				}
 				buffer = buffer.substr(crlf_pos + 2);
+				
+				if (++trailer_count > max_trailers)
+					return BAD_REQUEST;
 			}
 		}
 
@@ -119,9 +124,9 @@ HttpStatus ParseHttpReader::validateBodyChunked(
 			return PAYLOAD_TOO_LARGE;
 		
 		if (buffer.size() < chunk_size + 2)
-			return INCOMPLETE;
+			return CONTINUE;
+			if (buffer[chunk_size] != '\r' || buffer[chunk_size + 1] != '\n')
 		
-		if (buffer[chunk_size] != '\r' || buffer[chunk_size + 1] != '\n')
 			return BAD_REQUEST;
 		
 		out_body.append(buffer.substr(0, chunk_size));

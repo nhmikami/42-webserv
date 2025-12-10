@@ -413,7 +413,7 @@ HttpStatus ParseHttpValidator::validateHeaders(const std::map<std::string, std::
 	std::map<std::string, std::string>::const_iterator transfer_encoding_it = headers.find("transfer-encoding");
 	bool has_content_length = (content_length_it != headers.end());
 	bool has_transfer_encoding = (transfer_encoding_it != headers.end());
-
+		
 	if (has_content_length) {
 		size_t content_length;
 		if (!validateContentLength(content_length_it->second, content_length))

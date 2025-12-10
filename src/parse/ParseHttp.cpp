@@ -2,29 +2,29 @@
 
 ParseHttp::ParseHttp() : _max_body_size(DEFAULT_CLIENT_MAX_BODY_SIZE) {};
 
-// ParseHttp::ParseHttp(const ParseHttp &other) {
-// 	*this = other;
-// }
+ParseHttp::ParseHttp(const ParseHttp &other) {
+	*this = other;
+}
 
-// ParseHttp &ParseHttp::operator=(const ParseHttp &other) {
-// 	if (this != &other) {
-// 		this->_request_method = other._request_method;
-// 		this->_request_uri = other._request_uri;
-// 		this->_request_path = other._request_path;
-// 		this->_query = other._query;
-// 		this->_http_version = other._http_version;
-// 		this->_host_header = other._host_header;
-// 		this->_user_agent_header = other._user_agent_header;
-// 		this->_request_body = other._request_body;
-// 		this->_content_length = other._content_length;
-// 		this->_content_type = other._content_type;
-// 		this->_transfer_encoding = other._transfer_encoding;
-// 		this->_connection = other._connection;
-// 		this->_accept = other._accept;
-// 		this->_all_headers = other._all_headers;
-// 	}
-// 	return *this;
-// }
+ParseHttp &ParseHttp::operator=(const ParseHttp &other) {
+	if (this != &other) {
+		this->_request_method = other._request_method;
+		this->_request_uri = other._request_uri;
+		this->_request_path = other._request_path;
+		this->_query = other._query;
+		this->_http_version = other._http_version;
+		this->_host_header = other._host_header;
+		this->_user_agent_header = other._user_agent_header;
+		this->_request_body = other._request_body;
+		this->_content_length = other._content_length;
+		this->_content_type = other._content_type;
+		this->_transfer_encoding = other._transfer_encoding;
+		this->_connection = other._connection;
+		this->_accept = other._accept;
+		this->_all_headers = other._all_headers;
+	}
+	return *this;
+}
 
 ParseHttp::~ParseHttp() { }
 
@@ -262,6 +262,8 @@ HttpStatus	ParseHttp::initParse(std::string &request) {
 				request = body_buffer;
 				return OK;
 			}
+			else if (has_content_length)
+				return BAD_REQUEST;
 			else
 				return NOT_IMPLEMENTED;
 		}
@@ -279,7 +281,6 @@ HttpStatus	ParseHttp::initParse(std::string &request) {
 			request = body_buffer;
 			return OK;
 		}
-		return LENGTH_REQUIRED;
 	}
 	return OK;
 }
