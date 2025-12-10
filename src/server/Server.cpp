@@ -356,36 +356,43 @@ void Server::unhandleClient(int i) {
 }
 
 void	Server::closeClient(int i, int j, Client *client) {
+	(void)i;
+	if (!client)
+		return ;
 	int client_fd = client->getFd();
 
-	std::map<int, Client*>::iterator it = _cgiClient.begin();
-	while (it != _cgiClient.end()) {
-		if (it->second == client) {
-			int cgi_fd = it->first;
-			
-			for (size_t f = 0; f < _fds.size(); ++f) {
-				if (_fds[f].fd == cgi_fd) {
-					close(cgi_fd);
-					_fds.erase(_fds.begin() + f);
-					if (f < (size_t)i)
-						--i;
-					break ;
-				}
-			}
-			if (_cgiHandlers.count(cgi_fd))
-				delete _cgiHandlers[cgi_fd];
-			_cgiHandlers.erase(cgi_fd);
-			std::map<int, Client*>::iterator next = it;
-            ++next;
-            _cgiClient.erase(it);
-            it = next;
+	std::vector<int> cgi_fds;
+	for (std::map<int, Client*>::iterator it = _cgiClient.begin(); it != _cgiClient.end(); ++it) {
+		if (it->second == client)
+			cgi_fds.push_back(it->first);
+	}
+
+	for (size_t k = 0; k < cgi_fds.size(); ++k) {
+		int cgi_fd = cgi_fds[k];
+		close(cgi_fd);
+		std::map<int, CgiHandler*>::iterator hit = _cgiHandlers.find(cgi_fd);
+		if (hit != _cgiHandlers.end()) {
+			delete hit->second;
+			_cgiHandlers.erase(hit);
+		}
+		_cgiClient.erase(cgi_fd);
+	}
+
+	std::set<int> remove_set;
+	for (size_t k = 0; k < cgi_fds.size(); ++k)
+		remove_set.insert(cgi_fds[k]);
+	remove_set.insert(client_fd);
+
+	for (size_t f = 0; f < _fds.size(); ) {
+		if (remove_set.find(_fds[f].fd) != remove_set.end()) {
+			_fds.erase(_fds.begin() + f);
 		} else {
-			++it;
+			++f;
 		}
 	}
-	close(client_fd);
-	_fds.erase(_fds.begin() + i);
-	_clients.erase(_clients.begin() + j);
+	if (j < (int)_clients.size())
+		_clients.erase(_clients.begin() + j);
+
 	_client_to_config.erase(client_fd);
 	delete client;
 }
