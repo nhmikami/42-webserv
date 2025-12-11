@@ -326,18 +326,17 @@ bool Server::_processCgi(AMethod* method, Client* client, int client_fd) {
 bool Server::_processRedirect(int code, ServerConfig* config, const LocationConfig* location, Client* client, size_t j) {
 	Response res;
 	res.setStatus(static_cast<HttpStatus>(code));
-	std::string return_path = location->getReturnPath();
+	std::string content = location->getReturnPath();
 	if (code >= 300 && code < 400) {
-		res.addHeader("Location", return_path);
+		res.addHeader("Location", content);
 		client->sendResponse(res.buildResponse());
 		return true;
-	} else if (code == 200) {
-		res.setBody(return_path);
+	} else if ((code >= 200 && code < 300) || (code >= 400 && code < 600)) {
+		res.setBody(content);
 		res.addHeader("Content-Type", "text/plain");
 		client->sendResponse(res.buildResponse());
 		return true;
 	}
-
 	return _processError(SERVER_ERR, config, location, client, j);
 }
 
