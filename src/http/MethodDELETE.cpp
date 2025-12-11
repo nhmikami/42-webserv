@@ -36,7 +36,7 @@ HttpStatus MethodDELETE::handleMethod(void) {
 	return SERVER_ERR;
 }
 
-bool MethodDELETE::_canDelete(const std::string &path) {
+bool MethodDELETE::_canDelete(const std::string& path) {
 	size_t pos = path.find_last_of('/');
 	std::string parentDir;
 	if (pos == std::string::npos)
@@ -56,7 +56,7 @@ bool MethodDELETE::_canDelete(const std::string &path) {
 	return true;
 }
 
-bool MethodDELETE::_isEmptyDirectory(const std::string &path) {
+bool MethodDELETE::_isEmptyDirectory(const std::string& path) {
 	DIR *dir = opendir(path.c_str());
 	if (!dir)
 		return false;
@@ -72,10 +72,10 @@ bool MethodDELETE::_isEmptyDirectory(const std::string &path) {
 	return true;
 }
 
-bool MethodDELETE::_deleteFile(const std::string &path) {
+bool MethodDELETE::_deleteFile(const std::string& path) {
 	return (unlink(path.c_str()) == 0);
 }
 
-bool MethodDELETE::_deleteDirectory(const std::string &path) {
+bool MethodDELETE::_deleteDirectory(const std::string& path) {
 	return (rmdir(path.c_str()) == 0);
 }

@@ -33,12 +33,12 @@ bool FileUtils::isExecutable(const std::string &path) {
 	return (access(path.c_str(), X_OK) == 0);
 }
 
-std::string FileUtils::resolvePath(const std::string &root, const std::string &reqPath) {
+std::string FileUtils::resolvePath(const std::string &root, const std::string &path) {
 	std::string cleanRoot = root;
 	if (!cleanRoot.empty() && cleanRoot[cleanRoot.size() - 1] == '/')
 		cleanRoot.erase(cleanRoot.size() - 1);
 
-	std::stringstream ss(reqPath);
+	std::stringstream ss(path);
 	std::vector<std::string> tokens;
 	std::string segment;
 	while (std::getline(ss, segment, '/')) {
@@ -109,28 +109,4 @@ std::string FileUtils::guessMimeType(const std::string &path) {
 	return "application/octet-stream";
 }
 
-std::string FileUtils::htmlEscape(const std::string &s) {
-	std::string escaped;
-	for (size_t i = 0; i < s.length(); ++i) {
-		switch (s[i]) {
-			case '&':
-				escaped += "&amp;";
-				break ;
-			case '<':
-				escaped += "&lt;";
-				break ;
-			case '>':
-				escaped += "&gt;";
-				break ;
-			case '"':
-				escaped += "&quot;";
-				break ;
-			case '\'':
-				escaped += "&#39;";
-				break ;
-			default:
-				escaped += s[i];
-		}
-	}
-	return escaped;
-}
+

@@ -8,11 +8,11 @@
 
 class MethodPOST : public AMethod {
 	private:
-		bool		_writeToFile(const std::string &path, const std::string &body);
-		bool		_writeToFile(const std::string &path, const char* buffer, size_t size);
-		std::string	_buildAbsoluteUrl(const std::string &targetPath);
+		bool		_writeToFile(const std::string& path, const std::string& body);
+		bool		_writeToFile(const std::string& path, const char* buffer, size_t size);
+		std::string	_buildAbsoluteUrl(const std::string& targetPath);
+		std::string	_extractFilename(const std::string& filename);
 		HttpStatus	_handleMultipart(void);
-		std::string	_extractFilename(const std::string &filename);
 
 	public:
 		MethodPOST(const Request& req, const ServerConfig& config, const LocationConfig* location);

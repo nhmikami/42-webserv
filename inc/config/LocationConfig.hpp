@@ -30,6 +30,12 @@ class LocationConfig : public BaseConfig {
 		const std::string& 					getPath(void) const;
 		const std::set<std::string>&		getMethods(void) const;
 		const std::pair<int, std::string>&	getReturn(void) const;
+
+		bool				hasReturn(void) const;
+		bool				isRedirectReturn(void) const;
+		bool				isErrorReturn(void) const;
+		int					getReturnCode(void) const;
+		const std::string&	getReturnPath(void) const;
 };
 
 #endif

@@ -43,10 +43,10 @@ class BaseConfig {
 		const std::string& 							getRoot(void) const;
 		bool										getAutoIndex(void) const;
 		size_t										getClientMaxBodySize(void) const;
-		const std::vector<std::string>				getIndexFiles(void) const;
-		const std::map<int, std::string>			getErrorPages(void) const;
-		const std::map<std::string, std::string>	getCgi(void) const;
-		const std::string							getUpload(void) const;
+		const std::vector<std::string>&				getIndexFiles(void) const;
+		const std::map<int, std::string>&			getErrorPages(void) const;
+		const std::map<std::string, std::string>&	getCgi(void) const;
+		const std::string&							getUpload(void) const;
 };
 
 #endif

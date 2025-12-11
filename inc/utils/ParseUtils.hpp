@@ -16,11 +16,12 @@ class ParseUtils {
 		ParseUtils(void);
 		~ParseUtils(void);
 
+		static bool			isnumber(const std::string &s);
 		static std::string  itoa(int n);
 		static std::string  trim(const std::string &s);
-		static bool			isnumber(const std::string &s);
 		static std::string  toUpper(std::string str);
 		static std::string  replaceChar(std::string str, char find, char replace);
+		static std::string  htmlEscape(const std::string &s);
 };
 
 #endif
