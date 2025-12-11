@@ -38,15 +38,6 @@ bool BaseConfig::isValidDirectoryPath(const std::string& path) {
 	return true;
 }
 
-bool BaseConfig::isValidFilePath(const std::string& path)
-{
-	struct stat st;
-	if (stat(path.c_str(), &st) != 0 || !S_ISREG(st.st_mode))
-		return false;
-	return true;
-}
-
-
 void BaseConfig::setRoot(const std::vector<std::string>& values)
 {
 	if (!_root.empty())
@@ -91,15 +82,6 @@ void BaseConfig::setIndexFiles(const std::vector<std::string>& values)
 {
 	if (values.empty())
 		throw std::invalid_argument("index must have at least one value.");
-	// for (size_t i = 0; i < values.size(); i++)
-	// {
-	// 	if (values[i].empty())
-	// 		throw std::invalid_argument("index filename cannot be empty.");
-	// 	if (values[i].find('.') == std::string::npos)
-	// 		throw std::invalid_argument("invalid index filename");
-	// 	if (!_root.empty() && !isValidFilePath(_root + "/" + values[i]))
-	// 		throw std::invalid_argument("index file does not exist or is not a file: " + values[i]);
-	// }
 	_index_files = values;
 };
 
