@@ -334,7 +334,7 @@ bool Server::_sendResponse(AMethod* method, HttpStatus status, Client* client) {
 	std::string response = res.buildResponse();
 	client->sendResponse(response);
 
-	Logger::log(Logger::SERVER, "RESPONSE:\n" + response);
+	// Logger::log(Logger::SERVER, "RESPONSE:\n" + response);
 	
 	delete method;
 	return true;
