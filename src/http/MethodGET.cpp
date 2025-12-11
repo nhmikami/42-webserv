@@ -1,5 +1,6 @@
 #include "http/MethodGET.hpp"
 #include "utils/FileUtils.hpp"
+#include "utils/ParseUtils.hpp"
 #include "utils/Logger.hpp"
 
 MethodGET::MethodGET(const Request& req, const ServerConfig& config, const LocationConfig* location)
@@ -47,12 +48,6 @@ HttpStatus MethodGET::_serveFile(const std::string& path) {
 }
 
 HttpStatus MethodGET::_serveDirectory(const std::string& path) {
-	// if (_req.getPath()[_req.getPath().size() - 1] != '/') {
-	// 	std::string new_path = _req.getPath() + "/";
-	// 	_res.addHeader("Location", new_path);
-	// 	return MOVED_PERMANENTLY;
-	// }
-
 	std::vector<std::string> index_files = _getIndexFiles();
 	for (size_t i = 0; i < index_files.size(); i++) {
 		std::string index_path;
@@ -70,7 +65,7 @@ HttpStatus MethodGET::_serveDirectory(const std::string& path) {
 	return FORBIDDEN;
 }
 
-HttpStatus MethodGET::_generateAutoindex(const std::string &path) {
+HttpStatus MethodGET::_generateAutoindex(const std::string& path) {
 	DIR *dir;
 	struct dirent *ent;
 	std::vector<std::string> entries;
@@ -88,8 +83,8 @@ HttpStatus MethodGET::_generateAutoindex(const std::string &path) {
 	closedir(dir);
 	
 	std::stringstream html;
-	html << "<html>\n<head><title>Index of " << FileUtils::htmlEscape(_req.getPath()) << "</title></head>\n";
-	html << "<body>\n<h1>Index of " << FileUtils::htmlEscape(_req.getPath()) << "</h1>\n";
+	html << "<html>\n<head><title>Index of " << ParseUtils::htmlEscape(_req.getPath()) << "</title></head>\n";
+	html << "<body>\n<h1>Index of " << ParseUtils::htmlEscape(_req.getPath()) << "</h1>\n";
 	html << "<ul>\n";
 	
 	std::sort(entries.begin(), entries.end());
@@ -103,7 +98,7 @@ HttpStatus MethodGET::_generateAutoindex(const std::string &path) {
 				entry += "/";
 				href += "/";
 			}
-			html << "<li><a href=\"" << FileUtils::htmlEscape(href) << "\">" << FileUtils::htmlEscape(entry) << "</a></li>\n";
+			html << "<li><a href=\"" << ParseUtils::htmlEscape(href) << "\">" << ParseUtils::htmlEscape(entry) << "</a></li>\n";
 		}
 	}
 	html << "</ul>\n</body>\n</html>\n";

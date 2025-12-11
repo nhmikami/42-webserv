@@ -111,6 +111,41 @@ HttpStatus Response::processError(HttpStatus status, const ServerConfig& server,
 	return status;
 }
 
+std::string Response::buildResponse(const ServerConfig& server, const Request& request) const {
+	std::ostringstream response;
+
+	response << "HTTP/" << request.getHttpVersion() << " " << _status << " " << getStatusMessage() << "\r\n";
+
+	if (_headers.find("Date") == _headers.end()) {
+		char date[100];
+		time_t now = time(0);
+		struct tm tm;
+		gmtime_r(&now, &tm);
+		strftime(date, sizeof(date), "%a, %d %b %Y %H:%M:%S GMT", &tm);
+		response << "Date: " << date << "\r\n";
+	}
+
+	response << "Server: " << server.getServerName() << "\r\n";
+
+	if (_status == NO_CONTENT) {
+		for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
+			if (it->first != "Content-Type" && it->first != "Content-Length")
+				response << it->first << ": " << it->second << "\r\n";
+		}
+		response << "\r\n";
+		return response.str();
+	}
+
+	if (_headers.find("Content-Length") == _headers.end())
+		response << "Content-Length: " << _body.size() << "\r\n";
+
+	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
+		response << it->first << ": " << it->second << "\r\n";
+
+	response << "\r\n" << _body;
+	return response.str();
+}
+
 std::string Response::buildResponse(void) const {
 	std::ostringstream response;
 

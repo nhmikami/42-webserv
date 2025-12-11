@@ -46,11 +46,11 @@ HttpStatus MethodPOST::handleMethod(void) {
 	return SERVER_ERR;
 }
 
-bool MethodPOST::_writeToFile(const std::string &path, const std::string &body) {
+bool MethodPOST::_writeToFile(const std::string& path, const std::string& body) {
 	return _writeToFile(path, body.c_str(), body.size());
 }
 
-bool MethodPOST::_writeToFile(const std::string &path, const char* buffer, size_t size) {
+bool MethodPOST::_writeToFile(const std::string& path, const char* buffer, size_t size) {
 	int flags = O_WRONLY | O_CREAT | O_TRUNC;
 	int fd = open(path.c_str(), flags, 0644);
 	if (fd < 0)
@@ -71,11 +71,19 @@ bool MethodPOST::_writeToFile(const std::string &path, const char* buffer, size_
 	return true;
 }
 
-std::string MethodPOST::_buildAbsoluteUrl(const std::string &targetPath) {
+std::string MethodPOST::_buildAbsoluteUrl(const std::string& targetPath) {
 	std::string host = _req.getHost();
 	if (host.empty())
 		host = "localhost";
 	return "http://" + host + targetPath;
+}
+
+std::string MethodPOST::_extractFilename(const std::string& filename) {
+	std::string base = filename;
+	size_t lastSlash = base.find_last_of("/\\");
+	if (lastSlash != std::string::npos)
+		base = base.substr(lastSlash + 1);
+	return base;
 }
 
 HttpStatus MethodPOST::_handleMultipart(void) {
@@ -159,12 +167,4 @@ HttpStatus MethodPOST::_handleMultipart(void) {
 
 	_res.setBody("Files uploaded successfully\n");
 	return CREATED;
-}
-
-std::string MethodPOST::_extractFilename(const std::string& filename) {
-	std::string base = filename;
-	size_t lastSlash = base.find_last_of("/\\");
-	if (lastSlash != std::string::npos)
-		base = base.substr(lastSlash + 1);
-	return base;
 }
