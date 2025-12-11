@@ -69,7 +69,7 @@ void BaseConfig::setClientMaxBodySize(const std::vector<std::string>& values)
 		throw std::invalid_argument("Duplicate 'client_max_body_size' directive.");
 	if (values.size() != 1)
 		throw std::invalid_argument("client_max_body_size must have exactly one value.");
-	if (!ParseUtils::isnumber(values[0]))
+	if (!ParseUtils::isNumber(values[0]))
 		throw std::invalid_argument("client_max_body_size must be a number.");
 	int client_max_body_size = std::atoi(values[0].c_str());
 	if (client_max_body_size < 1)
@@ -92,7 +92,7 @@ void BaseConfig::setErrorPages(const std::vector<std::string>& values)
 
 	std::string path = values[values.size() - 1];
 	for (size_t i = 0; i < values.size() - 1; i++) {
-		if (!ParseUtils::isnumber(values[i]))
+		if (!ParseUtils::isNumber(values[i]))
 			throw std::invalid_argument("error code " + values[i] + " is not a number.");
 		int error_code = std::atoi(values[i].c_str());
 		if (error_code < 100 || error_code > 599)

@@ -23,14 +23,14 @@ void ServerConfig::addLocation(const std::vector<std::string>&values, std::strin
 
 void ServerConfig::initDirectiveMap()
 {
-    _directiveSetters["listen"] = &ServerConfig::setListen;
-    _directiveSetters["host"] = &ServerConfig::setHost;
-    _directiveSetters["root"] = &ServerConfig::setRoot;
-    _directiveSetters["server_name"] = &ServerConfig::setServerName;
-    _directiveSetters["autoindex"] = &ServerConfig::setAutoIndex;
-    _directiveSetters["client_max_body_size"] = &ServerConfig::setClientMaxBodySize;
-    _directiveSetters["index"] = &ServerConfig::setIndexFiles;
-    _directiveSetters["error_page"] = &ServerConfig::setErrorPages;
+	_directiveSetters["listen"] = &ServerConfig::setListen;
+	_directiveSetters["host"] = &ServerConfig::setHost;
+	_directiveSetters["root"] = &ServerConfig::setRoot;
+	_directiveSetters["server_name"] = &ServerConfig::setServerName;
+	_directiveSetters["autoindex"] = &ServerConfig::setAutoIndex;
+	_directiveSetters["client_max_body_size"] = &ServerConfig::setClientMaxBodySize;
+	_directiveSetters["index"] = &ServerConfig::setIndexFiles;
+	_directiveSetters["error_page"] = &ServerConfig::setErrorPages;
 	_directiveSetters["cgi"] = &ServerConfig::setCgi;
 	_directiveSetters["upload"] = &ServerConfig::setUpload;
 }
@@ -51,7 +51,7 @@ void ServerConfig::setListen(const std::vector<std::string>&values)
 		throw std::invalid_argument("Duplicate 'listen' directive on server.");
 	if (values.size() != 1)
 		throw std::invalid_argument("listen must have exactly one value.");
-	if (!ParseUtils::isnumber(values[0]))
+	if (!ParseUtils::isUnsigNumber(values[0]))
 		throw std::invalid_argument("listen must be a valid port number.");
 	int port = std::atoi(values[0].c_str());
 	if (port < 1 || port > 65535)
@@ -68,7 +68,7 @@ bool ServerConfig::isValidIP(const std::string &ip)
 
 	for (size_t i = 0; i < octets.size(); i++)
 	{
-		if (octets[i].empty() || !ParseUtils::isnumber(octets[i]))
+		if (octets[i].empty() || !ParseUtils::isUnsigNumber(octets[i]))
 			return false;
 		int num = std::atoi(octets[i].c_str());
 		if (num < 0 || num > 255)
@@ -84,23 +84,19 @@ bool ServerConfig::isValidDomain(const std::string &domain)
 		domain.length() > 255 || 
 		domain.find('.') == std::string::npos || 
 		domain.find("..") != std::string::npos ||
-		ParseUtils::isnumber(domain))
+		ParseUtils::isNumber(domain))
 		return false;
 
-	for (size_t i = 0; i < domain.length(); i++)
-    {
-        char c = domain[i];
-        if (!std::isalnum(c) && c != '.' && c != '-' && c != '_')
-            return false;
-    }
+	if (ParseUtils::hasSpecialChar(domain))
+		return false;
 
 	if (domain[0] == '.' || 
 		domain[0] == '-' || 
-        domain[domain.length() - 1] == '.' || 
+		domain[domain.length() - 1] == '.' || 
 		domain[domain.length() - 1] == '-')
-        return false;
+		return false;
 
-    return true;
+	return true;
 }
 
 void ServerConfig::setHost(const std::vector<std::string>&values)
@@ -110,7 +106,7 @@ void ServerConfig::setHost(const std::vector<std::string>&values)
 	if (values.size() != 1)
 		throw std::invalid_argument("host must have exactly one value.");
 	if (!isValidIP(values[0]) && !isValidDomain(values[0]))
-        throw std::invalid_argument("host must be a valid IP address or domain name.");
+		throw std::invalid_argument("host must be a valid IP address or domain name.");
 
 	_host = values[0];
 	_host_set = true;
@@ -138,9 +134,9 @@ const std::map<std::string, LocationConfig>	ServerConfig::getLocations(void) con
 LocationConfig*								ServerConfig::getLocation(const std::string path) 
 {
 	std::map<std::string, LocationConfig>::iterator it = _locations.find(path);
-    if (it != _locations.end())
-        return &it->second;
-    return NULL;
+	if (it != _locations.end())
+		return &it->second;
+	return NULL;
 };
 
 
