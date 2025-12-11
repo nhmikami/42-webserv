@@ -22,6 +22,9 @@ class ServerConfig : public BaseConfig {
 
 		void	initDirectiveMap();
 
+		bool	isValidIP(const std::string &ip);
+		bool	isValidDomain(const std::string &domain);
+
 		void	setListen(const std::vector<std::string>& values);
 		void	setHost(const std::vector<std::string>& values);
 		void	setServerName(const std::vector<std::string>& values);

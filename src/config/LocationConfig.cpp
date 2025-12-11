@@ -46,20 +46,24 @@ void LocationConfig::setMethods(const std::vector<std::string>& values)
 {
 	if (values.empty())
 		throw std::invalid_argument("methods must have at least one value.");
-	for (size_t i = 0; i < values.size(); i++)
-		_methods.insert(values[i]);
+	for (size_t i = 0; i < values.size(); i++) {
+		std::string method = ParseUtils::toUpper(values[i]);
+		if (method != "GET" && method != "POST" && method != "DELETE")
+			throw std::invalid_argument(values[i] + " is not a valid method; use GET, POST or DELETE.");
+		_methods.insert(method);
+	}
 };
 
 void LocationConfig::setReturn(const std::vector<std::string>&values)
 {
 	if (_return.first != 0)
-		throw std::runtime_error("Duplicate 'return' directive in location.");
+		throw std::invalid_argument("Duplicate 'return' directive in location.");
 	if (values.empty())
 		throw std::invalid_argument("return must have at least one value.");
 	if (values.size() > 2)
 		throw std::invalid_argument("return can't have more than 2 arguments.");
 
-	if (!ParseUtils::isnumber(values[0]))
+	if (!ParseUtils::isNumber(values[0]))
 		throw std::invalid_argument("return code " + values[0] + " is not a number.");
 	int return_code = std::atoi(values[0].c_str());
 	if (return_code < 100 || return_code > 599)

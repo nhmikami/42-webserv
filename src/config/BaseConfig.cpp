@@ -1,11 +1,11 @@
 #include "config/BaseConfig.hpp"
 
 BaseConfig::BaseConfig(void) : 
-    _autoindex(false), 
-    _autoindex_set(false), 
-    _client_max_body_size(DEFAULT_CLIENT_MAX_BODY_SIZE),
+	_autoindex(false), 
+	_autoindex_set(false), 
+	_client_max_body_size(DEFAULT_CLIENT_MAX_BODY_SIZE),
 	_client_max_body_size_set(false),
-    _is_cgi(false)
+	_is_cgi(false)
 {};
 
 BaseConfig::BaseConfig(size_t client_body_size) :
@@ -17,40 +17,42 @@ BaseConfig::BaseConfig(size_t client_body_size) :
 {};
 
 BaseConfig::BaseConfig(const BaseConfig &other) :
-    _root(other._root),
-    _autoindex(other._autoindex),
+	_root(other._root),
+	_autoindex(other._autoindex),
 	_autoindex_set(other._autoindex_set), 
-    _client_max_body_size(other._client_max_body_size),
+	_client_max_body_size(other._client_max_body_size),
 	_client_max_body_size_set(other._client_max_body_size_set),
-    _index_files(other._index_files),
-    _error_pages(other._error_pages),
-    _is_cgi(other._is_cgi),
-    _cgi(other._cgi),
+	_index_files(other._index_files),
+	_error_pages(other._error_pages),
+	_is_cgi(other._is_cgi),
+	_cgi(other._cgi),
 	_upload(other._upload)
 {};
 
 BaseConfig::~BaseConfig(void) {};
 
-void BaseConfig::validateDirectoryPath(const std::string& path, const std::string& directive_name) {
-    struct stat st;
-    if (stat(path.c_str(), &st) != 0 || !S_ISDIR(st.st_mode))
-        throw std::invalid_argument(directive_name + " directory does not exist or is not a directory: " + path);
+bool BaseConfig::isValidDirectoryPath(const std::string& path) {
+	struct stat st;
+	if (stat(path.c_str(), &st) != 0 || !S_ISDIR(st.st_mode))
+		return false;
+	return true;
 }
 
 void BaseConfig::setRoot(const std::vector<std::string>& values)
 {
 	if (!_root.empty())
-		throw std::runtime_error("Duplicate 'root' directive.");
+		throw std::invalid_argument("Duplicate 'root' directive.");
 	if (values.size() != 1)
 		throw std::invalid_argument("root must have exactly one value.");
-	validateDirectoryPath(values[0], "root");
-    _root = values[0];
+	if (!isValidDirectoryPath(values[0]))
+		throw std::invalid_argument("root directory does not exist or is not a directory: " + values[0]);
+	_root = values[0];
 };
 
 void BaseConfig::setAutoIndex(const std::vector<std::string>& values)
 {
 	if (_autoindex_set)
-		throw std::runtime_error("Duplicate 'autoindex' directive.");
+		throw std::invalid_argument("Duplicate 'autoindex' directive.");
 	if (values.size() != 1)
 		throw std::invalid_argument("autoindex must have exactly one value.");
 	_autoindex = values[0] == "on" 
@@ -64,10 +66,10 @@ void BaseConfig::setAutoIndex(const std::vector<std::string>& values)
 void BaseConfig::setClientMaxBodySize(const std::vector<std::string>& values)
 {
 	if (_client_max_body_size_set)
-		throw std::runtime_error("Duplicate 'client_max_body_size' directive.");
+		throw std::invalid_argument("Duplicate 'client_max_body_size' directive.");
 	if (values.size() != 1)
 		throw std::invalid_argument("client_max_body_size must have exactly one value.");
-	if (!ParseUtils::isnumber(values[0]))
+	if (!ParseUtils::isNumber(values[0]))
 		throw std::invalid_argument("client_max_body_size must be a number.");
 	int client_max_body_size = std::atoi(values[0].c_str());
 	if (client_max_body_size < 1)
@@ -90,7 +92,7 @@ void BaseConfig::setErrorPages(const std::vector<std::string>& values)
 
 	std::string path = values[values.size() - 1];
 	for (size_t i = 0; i < values.size() - 1; i++) {
-		if (!ParseUtils::isnumber(values[i]))
+		if (!ParseUtils::isNumber(values[i]))
 			throw std::invalid_argument("error code " + values[i] + " is not a number.");
 		int error_code = std::atoi(values[i].c_str());
 		if (error_code < 100 || error_code > 599)
@@ -110,11 +112,12 @@ void BaseConfig::setCgi(const std::vector<std::string>& values)
 void BaseConfig::setUpload(const std::vector<std::string>& values)
 {
 	if (!_upload.empty())
-		throw std::runtime_error("Duplicate 'upload' directive.");
+		throw std::invalid_argument("Duplicate 'upload' directive.");
 	if (values.size() != 1)
 		throw std::invalid_argument("upload must have exactly one value.");
-	validateDirectoryPath(values[0], "upload");
-    _upload = values[0];
+	if (!isValidDirectoryPath(values[0]))
+		throw std::invalid_argument("upload directory does not exist or is not a directory: " + values[0]);
+	_upload = values[0];
 };
 
 
