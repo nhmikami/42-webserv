@@ -61,7 +61,7 @@ const std::map<std::string, std::string>& Response::getHeaders() const {
 	return _headers;
 }
 
-std::string Response::buildResponse(std::string server_name, std::string http_version) const {
+std::string Response::buildResponse(const std::string& server_name, const std::string& http_version) const {
 	std::ostringstream response;
 
 	response << http_version << " " << _status << " " << getStatusMessage() << "\r\n";

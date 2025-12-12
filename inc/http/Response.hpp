@@ -58,7 +58,7 @@ class Response {
 		const std::string&	getHeader(const std::string &key) const;
 		const std::map<std::string, std::string>&	getHeaders(void) const;
 
-		std::string			buildResponse(std::string server_name, std::string http_version) const;
+		std::string			buildResponse(const std::string& server_name, const std::string& http_version) const;
 		HttpStatus			processError(HttpStatus status, const ServerConfig& server, const LocationConfig* location);
 		void				parseCgiOutput(const std::string& raw);
 };

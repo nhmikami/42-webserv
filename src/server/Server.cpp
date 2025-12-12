@@ -257,7 +257,7 @@ bool Server::handleClient(int i) {
 
 	Request	request;
 	if (!_parseRequest(raw_request, request, config, client, j)) {
-		// std::cout << "Failed to parse request" << std::endl;
+		std::cout << "Failed to parse request" << std::endl;
 		return false;
 	}
 
@@ -269,7 +269,7 @@ bool Server::_parseRequest(const std::string& raw_request, Request& request, Ser
 	ParseHttp	parser;
 	std::string	req = raw_request;
 	HttpStatus	status = parser.initParse(req);
-	if (status != OK)
+	if (status >= BAD_REQUEST)
 		return _processError(status, config, NULL, client, j);
 
 	request = parser.buildRequest();

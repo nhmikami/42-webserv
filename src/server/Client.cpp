@@ -10,7 +10,7 @@
 Client::Client(int client_fd) : _client_fd(client_fd) 
 {
 	_server_name = "WebServ";
-	_http_version = "1.1";
+	_http_version = "HTTP/1.1";
 	Logger::log(Logger::SERVER, "Client connected!");
 }
 

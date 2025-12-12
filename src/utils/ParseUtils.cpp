@@ -51,8 +51,9 @@ std::string ParseUtils::itoa(int n)
 
 std::string ParseUtils::trim(const std::string &s)
 {
-	size_t start = s.find_first_not_of(" \t");
-	size_t end = s.find_last_not_of(" \t");
+	const std::string whitespace = " \t\r\n";
+	size_t start = s.find_first_not_of(whitespace);
+	size_t end = s.find_last_not_of(whitespace);
 	if (start == std::string::npos || end == std::string::npos)
 		return "";
 	return s.substr(start, end - start + 1);
@@ -151,17 +152,24 @@ std::pair<std::string, std::string> ParseUtils::splitPair(const std::string &s, 
 }
 
 std::string ParseUtils::extractAttribute(const std::string &header, const std::string &key) {
-	size_t pos = header.find(key + "=");
-	if (pos == std::string::npos)
-		return "";
-
-	pos += key.length() + 1;
+	std::string target = key + "=";
+	size_t pos = 0;
+	
+	while (true) {
+		pos = header.find(target, pos);
+		if (pos == std::string::npos)
+			return "";
+		if (pos == 0 || header[pos - 1] == ';' || header[pos - 1] == ' ' || header[pos - 1] == '\t') {
+			break ;
+		}
+		pos++; 
+	}
+	pos += target.length();
 	if (pos < header.length() && header[pos] == '"') {
 		size_t end = header.find('"', pos + 1);
 		if (end != std::string::npos)
 			return header.substr(pos + 1, end - pos - 1);
-	} 
-	else {
+	} else {
 		size_t end = header.find_first_of("; \r\n", pos);
 		if (end == std::string::npos)
 			end = header.length();
