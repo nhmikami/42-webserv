@@ -21,6 +21,7 @@ const std::string Response::getStatusMessage(void) const {
 		case CREATED: return "Created";
 		case NO_CONTENT: return "No Content";
 		case MOVED_PERMANENTLY: return "Moved Permanently";
+		case FOUND: return "Found";
 		case BAD_REQUEST: return "Bad Request";
 		case FORBIDDEN: return "Forbidden";
 		case NOT_FOUND: return "Not Found";
@@ -60,20 +61,33 @@ const std::map<std::string, std::string>& Response::getHeaders() const {
 	return _headers;
 }
 
-std::string Response::_getErrorPage(int status, const ServerConfig& server, const LocationConfig* location) const {
-	std::string	error_path;
-	std::map<int, std::string>	error_pages;
-	if (location) {
-		error_pages = location->getErrorPages();
-		if (error_pages.count(status))
-			error_path = error_pages[status];
+std::string Response::buildResponse(std::string server_name, std::string http_version) const {
+	std::ostringstream response;
+
+	response << http_version << " " << _status << " " << getStatusMessage() << "\r\n";
+
+	if (_headers.find("Date") == _headers.end())
+		response << "Date: " << _generateDate() << "\r\n";
+
+	response << "Server: " << server_name << "\r\n";
+
+	if (_status == NO_CONTENT) {
+		for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
+			if (it->first != "Content-Type" && it->first != "Content-Length")
+				response << it->first << ": " << it->second << "\r\n";
+		}
+		response << "\r\n";
+		return response.str();
 	}
-	if (error_path.empty()) {
-		error_pages = server.getErrorPages();
-		if (error_pages.count(status))
-			error_path = error_pages[status];
-	}
-	return error_path;
+
+	if (_headers.find("Content-Length") == _headers.end())
+		response << "Content-Length: " << ParseUtils::itoa(_body.size()) << "\r\n";
+
+	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
+		response << it->first << ": " << it->second << "\r\n";
+	
+	response << "\r\n" << _body;
+	return response.str();
 }
 
 HttpStatus Response::processError(HttpStatus status, const ServerConfig& server, const LocationConfig* location) {
@@ -111,250 +125,80 @@ HttpStatus Response::processError(HttpStatus status, const ServerConfig& server,
 	return status;
 }
 
-std::string Response::buildResponse(const ServerConfig& server, const Request& request) const {
-	std::ostringstream response;
-
-	response << "HTTP/" << request.getHttpVersion() << " " << _status << " " << getStatusMessage() << "\r\n";
-
-	if (_headers.find("Date") == _headers.end()) {
-		char date[100];
-		time_t now = time(0);
-		struct tm tm;
-		gmtime_r(&now, &tm);
-		strftime(date, sizeof(date), "%a, %d %b %Y %H:%M:%S GMT", &tm);
-		response << "Date: " << date << "\r\n";
+std::string Response::_getErrorPage(int status, const ServerConfig& server, const LocationConfig* location) const {
+	std::string	error_path;
+	std::map<int, std::string>	error_pages;
+	if (location) {
+		error_pages = location->getErrorPages();
+		if (error_pages.count(status))
+			error_path = error_pages[status];
 	}
-
-	response << "Server: " << server.getServerName() << "\r\n";
-
-	if (_status == NO_CONTENT) {
-		for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
-			if (it->first != "Content-Type" && it->first != "Content-Length")
-				response << it->first << ": " << it->second << "\r\n";
-		}
-		response << "\r\n";
-		return response.str();
+	if (error_path.empty()) {
+		error_pages = server.getErrorPages();
+		if (error_pages.count(status))
+			error_path = error_pages[status];
 	}
-
-	if (_headers.find("Content-Length") == _headers.end())
-		response << "Content-Length: " << _body.size() << "\r\n";
-
-	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
-		response << it->first << ": " << it->second << "\r\n";
-
-	response << "\r\n" << _body;
-	return response.str();
+	return error_path;
 }
 
-std::string Response::buildResponse(void) const {
-	std::ostringstream response;
+std::string Response::_generateDate(void) const {
+	char date[100];
+	time_t now = time(0);
+	struct tm tm;
 
-	response << "HTTP/1.1 " << _status << " " << getStatusMessage() << "\r\n";
+	gmtime_r(&now, &tm);
+	strftime(date, sizeof(date), "%a, %d %b %Y %H:%M:%S GMT", &tm);
 
-	if (_headers.find("Date") == _headers.end()) {
-		char date[100];
-		time_t now = time(0);
-		struct tm tm;
-		gmtime_r(&now, &tm);
-		strftime(date, sizeof(date), "%a, %d %b %Y %H:%M:%S GMT", &tm);
-		response << "Date: " << date << "\r\n";
-	}
-
-	if (_headers.find("Server") == _headers.end())
-		response << "Server: Webserv/42\r\n";
-
-	if (_status == NO_CONTENT) {
-		for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
-			if (it->first != "Content-Type" && it->first != "Content-Length")
-				response << it->first << ": " << it->second << "\r\n";
-		}
-		response << "\r\n";
-		return response.str();
-	}
-
-	if (_headers.find("Content-Length") == _headers.end())
-		response << "Content-Length: " << _body.size() << "\r\n";
-
-	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
-		response << it->first << ": " << it->second << "\r\n";
-
-	response << "\r\n" << _body;
-	return response.str();
+	return std::string(date);
 }
 
-
-void Response::parseCgiOutput(const std::string& rawOutput) {
-	if (rawOutput.empty()) {
+void Response::parseCgiOutput(const std::string& raw) {
+	if (raw.empty()) {
 		_body.clear();
 		return ;
 	}
 
-	// encontra separador de headers/body (prefere CRLFCRLF)
-	size_t headerEnd = rawOutput.find("\r\n\r\n");
-	size_t sepLen = 4;
-	if (headerEnd == std::string::npos) {
-		headerEnd = rawOutput.find("\n\n");
-		sepLen = 2;
-	}
-	// sem separador: trata tudo como body
-	if (headerEnd == std::string::npos) {
-		setBody(rawOutput);
-		return;
+	std::pair<std::string, std::string> parts = ParseUtils::splitHeadersAndBody(raw);
+	if (parts.first.empty() && parts.second == raw) {
+		setBody(raw);
+		addHeader("Content-Type", "text/plain");
+		addHeader("Content-Length", ParseUtils::itoa(_body.size()));
+		return ;
 	}
 
-	std::string headersPart = rawOutput.substr(0, headerEnd);
-	std::string bodyPart = rawOutput.substr(headerEnd + sepLen);
+	setBody(parts.second);
+	std::string headersPart = parts.first;
+	std::vector<std::string> lines = ParseUtils::split(headersPart, '\n');
 
-	// split linhas (suporta CRLF ou LF)
-	std::vector<std::string> lines;
-	size_t pos = 0;
-	while (pos < headersPart.size()) {
-		size_t next = headersPart.find("\r\n", pos);
-		if (next == std::string::npos) {
-			next = headersPart.find('\n', pos);
-			if (next == std::string::npos) {
-				lines.push_back(headersPart.substr(pos));
-				break;
-			}
-			lines.push_back(headersPart.substr(pos, next - pos));
-			pos = next + 1;
-		} else {
-			lines.push_back(headersPart.substr(pos, next - pos));
-			pos = next + 2;
-		}
-	}
-
-	std::string::size_type start, end;
 	for (size_t i = 0; i < lines.size(); ++i) {
-		std::string line = lines[i];
-
-		// trim left
-		start = 0;
-		while (start < line.size() && std::isspace(static_cast<unsigned char>(line[start]))) ++start;
-		if (start)
-			line.erase(0, start);
-		// trim right
-		end = line.size();
-		while (end > 0 && std::isspace(static_cast<unsigned char>(line[end - 1]))) --end;
-		if (end != line.size())
-			line.erase(end);
-
+		std::string line = ParseUtils::trim(lines[i]);
 		if (line.empty())
-			continue;
+			continue ;
 
-		// primeira linha pode ser "HTTP/1.1 200 OK"
-		if (i == 0 && line.size() > 5 && line.substr(0, 5) == "HTTP/") {
-			std::istringstream ss(line);
-			std::string proto;
-			int code = 0;
-			ss >> proto >> code;
-			if (code > 0)
-				_status = static_cast<HttpStatus>(code);
-			continue;
+		if (i == 0 && line.find("HTTP/") == 0) {
+			std::vector<std::string> tokens = ParseUtils::split(line, ' ');
+			if (tokens.size() >= 2 && ParseUtils::isNumber(tokens[1]))
+				_status = static_cast<HttpStatus>(std::atoi(tokens[1].c_str()));
+			continue ;
 		}
 
-		// header "Name: value"
-		size_t colon = line.find(':');
-		if (colon == std::string::npos)
-			continue;
+		std::pair<std::string, std::string> header = ParseUtils::splitPair(line, ":");
+		if (header.second.empty())
+			continue ;
 
-		std::string name = line.substr(0, colon);
-		std::string value = line.substr(colon + 1);
+		std::string key = ParseUtils::trim(header.first);
+		std::string value = ParseUtils::trim(header.second);
 
-		// trim name and value
-		// left trim value
-		start = 0;
-		while (start < value.size() && std::isspace(static_cast<unsigned char>(value[start]))) ++start;
-		if (start)
-			value.erase(0, start);
-		// right trim value
-		end = value.size();
-		while (end > 0 && std::isspace(static_cast<unsigned char>(value[end - 1]))) --end;
-		if (end != value.size())
-			value.erase(end);
-
-		// lower-case do nome para detecção especial
-		std::string nameLower = name;
-		for (size_t k = 0; k < nameLower.size(); ++k)
-			nameLower[k] = static_cast<char>(std::tolower(static_cast<unsigned char>(nameLower[k])));
-
-		// header especial "Status"
-		if (nameLower == "status") {
-			std::istringstream ss(value);
-			int code = 0;
-			ss >> code;
-			if (code > 0)
-				_status = static_cast<HttpStatus>(code);
-			continue;
+		if (ParseUtils::toLower(key) == "status") {
+			std::vector<std::string> statusParts = ParseUtils::split(value, ' ');
+			if (!statusParts.empty() && ParseUtils::isNumber(statusParts[0]))
+				_status = static_cast<HttpStatus>(std::atoi(statusParts[0].c_str()));
+		} else {
+			addHeader(key, value);
 		}
-
-		// adiciona header (sobrescreve se existir)
-		addHeader(name, value);
 	}
 
-	// seta body
-	setBody(bodyPart);
-
-	// garante Content-Length usando stringstream (C++98)
-	std::ostringstream oss;
-	oss << _body.size();
-	addHeader("Content-Length", oss.str());
-
-	// se CGI não forneceu Content-Type, adiciona text/plain
+	addHeader("Content-Length", ParseUtils::itoa(_body.size()));
 	if (getHeader("Content-Type").empty())
 		addHeader("Content-Type", "text/plain");
 }
-
-	// void Response::parseCgiOutput(const std::string& rawOutput) {
-	// 	(void)rawOutput;
-	// // 1. Separar cabeçalho do corpo
-	// size_t headerEnd = rawOutput.find("\r\n\r\n");
-	// if (headerEnd == std::string::npos) {
-	//     // Fallback: Se não achar separador, trata tudo como corpo (comportamento de script mal comportado)
-	//     _body = rawOutput;
-	//     return;
-	// }
-
-	// std::string headersPart = rawOutput.substr(0, headerEnd);
-	// _body = rawOutput.substr(headerEnd + 4); // Pula o \r\n\r\n
-
-	// // 2. Processar cabeçalhos linha a linha
-	// std::stringstream ss(headersPart);
-	// std::string line;
-	
-	// while (std::getline(ss, line)) {
-	//     if (!line.empty() && line[line.size() - 1] == '\r') {
-	//         line.erase(line.size() - 1); // Remove \r
-	//     }
-	//     if (line.empty()) continue;
-
-	//     size_t colonPos = line.find(':');
-	//     if (colonPos != std::string::npos) {
-	//         std::string key = line.substr(0, colonPos);
-	//         std::string value = line.substr(colonPos + 1);
-			
-	//         // Trim espaços
-	//         size_t first = value.find_first_not_of(' ');
-	//         if (first != std::string::npos)
-	//             value = value.substr(first);
-
-	//         // Tratamento especial para "Status"
-	//         if (key == "Status") {
-	//             // Exemplo: "Status: 404 Not Found"
-	//             // O servidor deve usar esse status na linha de resposta HTTP
-	//             size_t spacePos = value.find(' ');
-	//             if (spacePos != std::string::npos) {
-	//                 int statusCode = std::atoi(value.substr(0, spacePos).c_str());
-	//                 setStatusCode(statusCode); // Método da sua classe Response
-	//             }
-	//         }
-	//         else {
-	//             // Adiciona aos headers da resposta
-	//             setHeader(key, value);
-	//         }
-	//     }
-	// }
-	
-	// Ajusta o Content-Length baseado no corpo real extraído
-	// setHeader("Content-Length", ParseUtils::itoa(_body.size()));
-	// }

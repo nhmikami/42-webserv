@@ -9,6 +9,8 @@
 
 Client::Client(int client_fd) : _client_fd(client_fd) 
 {
+	_server_name = "WebServ";
+	_http_version = "1.1";
 	Logger::log(Logger::SERVER, "Client connected!");
 }
 
@@ -73,3 +75,18 @@ int			Client::getFd(){
 	return _client_fd;
 }
 
+std::string	Client::getServerName() const {
+	return _server_name;
+}
+
+std::string	Client::getHttpVersion() const {
+	return _http_version;
+}
+
+void Client::setServerName(const std::string &name) {
+	_server_name = name;
+}
+
+void Client::setHttpVersion(const std::string &version) {
+	_http_version = version;
+}

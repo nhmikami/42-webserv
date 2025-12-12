@@ -256,9 +256,11 @@ bool Server::handleClient(int i) {
 	Logger::log(Logger::SERVER, "Received from fd=" + ParseUtils::itoa(client_fd) + ":\n" + raw_request);
 
 	Request	request;
-	if (!_parseRequest(raw_request, request, config, client, j))
+	if (!_parseRequest(raw_request, request, config, client, j)) {
+		// std::cout << "Failed to parse request" << std::endl;
 		return false;
-	
+	}
+
 	const LocationConfig* location = config->findLocation(FileUtils::normalizePath(request.getPath()));
 	return _processRequest(request, config, location, client, j);
 }
@@ -271,6 +273,8 @@ bool Server::_parseRequest(const std::string& raw_request, Request& request, Ser
 		return _processError(status, config, NULL, client, j);
 
 	request = parser.buildRequest();
+	client->setHttpVersion(request.getHttpVersion());
+	client->setServerName(config->getServerName());
 	printRequest(parser); // for debugging
 	return true;
 }
@@ -329,12 +333,12 @@ bool Server::_processRedirect(int code, ServerConfig* config, const LocationConf
 	std::string content = location->getReturnPath();
 	if (code >= 300 && code < 400) {
 		res.addHeader("Location", content);
-		client->sendResponse(res.buildResponse());
+		client->sendResponse(res.buildResponse(client->getServerName(), client->getHttpVersion()));
 		return true;
 	} else if ((code >= 200 && code < 300) || (code >= 400 && code < 600)) {
 		res.setBody(content);
 		res.addHeader("Content-Type", "text/plain");
-		client->sendResponse(res.buildResponse());
+		client->sendResponse(res.buildResponse(client->getServerName(), client->getHttpVersion()));
 		return true;
 	}
 	return _processError(SERVER_ERR, config, location, client, j);
@@ -352,7 +356,7 @@ bool Server::_processError(HttpStatus status, ServerConfig* config, const Locati
 		res.setBody("Fatal error");
 		res.addHeader("Content-Type", "text/plain");
 	}
-	client->sendResponse(res.buildResponse());
+	client->sendResponse(res.buildResponse(client->getServerName(), client->getHttpVersion()));
 	closeClient(j, client);
 	return false;
 }
@@ -367,10 +371,8 @@ bool Server::_sendResponse(AMethod* method, HttpStatus status, Client* client) {
 	if (status != NO_CONTENT && res.getHeader("Content-Length").empty()) {
 		res.addHeader("Content-Length", ParseUtils::itoa(static_cast<int>(res.getBody().size())));
 	}
-	std::string response = res.buildResponse();
+	std::string response = res.buildResponse(client->getServerName(), client->getHttpVersion());
 	client->sendResponse(response);
-
-	// Logger::log(Logger::SERVER, "RESPONSE:\n" + response);
 	
 	delete method;
 	return true;
@@ -494,7 +496,7 @@ void Server::_finalizeCgiResponse(size_t index, int cgi_fd) {
 		std::string rawCgi = cgi->getOutput();
 		Response res;
 		res.parseCgiOutput(rawCgi);
-		std::string httpResponse = res.buildResponse();
+		std::string httpResponse = res.buildResponse(client->getServerName(), client->getHttpVersion());
 		client->sendResponse(httpResponse);
 	}
 	close(cgi_fd);

@@ -15,6 +15,33 @@
 //     return *this;
 // };
 
+bool		ParseUtils::isNumber(const std::string &s) {
+	if (s.empty())
+		return false;
+
+	size_t i = 0;
+	if ((s[0] == '-' || s[0] == '+') && std::isdigit(s[1]))
+		i++;
+	for (; i < s.size(); ++i)
+	{
+		if (!std::isdigit(s[i]))
+			return false;
+	}
+	return true;
+}
+
+bool		ParseUtils::isUnsigNumber(const std::string &s) {
+	if (s.empty())
+		return false;
+
+	for (size_t i = 0; i < s.size(); ++i)
+	{
+		if (!std::isdigit(s[i]))
+			return false;
+	}
+	return true;
+}
+
 std::string ParseUtils::itoa(int n)
 {
 	std::stringstream ss;
@@ -31,38 +58,16 @@ std::string ParseUtils::trim(const std::string &s)
 	return s.substr(start, end - start + 1);
 };
 
-bool		ParseUtils::isNumber(const std::string &s)
-{
-	if (s.empty())
-		return false;
-
-	size_t i = 0;
-	if ((s[0] == '-' || s[0] == '+') && std::isdigit(s[1]))
-		i++;
-	for (; i < s.size(); ++i)
-	{
-		if (!std::isdigit(s[i]))
-			return false;
-	}
-	return true;
-}
-
-bool		ParseUtils::isUnsigNumber(const std::string &s)
-{
-	if (s.empty())
-		return false;
-
-	for (size_t i = 0; i < s.size(); ++i)
-	{
-		if (!std::isdigit(s[i]))
-			return false;
-	}
-	return true;
-}
-
 std::string ParseUtils::toUpper(std::string str) {
 	for (size_t i = 0; i < str.length(); ++i) {
 		str[i] = std::toupper(static_cast<unsigned char>(str[i]));
+	}
+	return str;
+}
+
+std::string ParseUtils::toLower(std::string str) {
+	for (size_t i = 0; i < str.length(); ++i) {
+		str[i] = std::tolower(static_cast<unsigned char>(str[i]));
 	}
 	return str;
 }
@@ -121,4 +126,46 @@ std::string ParseUtils::htmlEscape(const std::string &s) {
 		}
 	}
 	return escaped;
+}
+
+std::pair<std::string, std::string> ParseUtils::splitHeadersAndBody(const std::string &raw) {
+	size_t headerEnd = raw.find("\r\n\r\n");
+	size_t sepLen = 4;
+
+	if (headerEnd == std::string::npos) {
+		headerEnd = raw.find("\n\n");
+		sepLen = 2;
+	}
+
+	if (headerEnd == std::string::npos)
+		return std::make_pair("", raw);
+
+	return std::make_pair(raw.substr(0, headerEnd), raw.substr(headerEnd + sepLen));
+}
+
+std::pair<std::string, std::string> ParseUtils::splitPair(const std::string &s, const std::string &delimiter) {
+	size_t pos = s.find(delimiter);
+	if (pos == std::string::npos)
+		return std::make_pair(s, "");
+	return std::make_pair(s.substr(0, pos), s.substr(pos + delimiter.length()));
+}
+
+std::string ParseUtils::extractAttribute(const std::string &header, const std::string &key) {
+	size_t pos = header.find(key + "=");
+	if (pos == std::string::npos)
+		return "";
+
+	pos += key.length() + 1;
+	if (pos < header.length() && header[pos] == '"') {
+		size_t end = header.find('"', pos + 1);
+		if (end != std::string::npos)
+			return header.substr(pos + 1, end - pos - 1);
+	} 
+	else {
+		size_t end = header.find_first_of("; \r\n", pos);
+		if (end == std::string::npos)
+			end = header.length();
+		return header.substr(pos, end - pos);
+	}
+	return "";
 }
