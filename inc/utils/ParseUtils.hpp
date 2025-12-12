@@ -24,8 +24,7 @@ class ParseUtils {
 		static std::string  toUpper(std::string str);
 		static std::string  replaceChar(std::string str, char find, char replace);
 		static bool			hasSpecialChar(const std::string &str);
+		static std::string  htmlEscape(const std::string &s);
 
 		static std::vector<std::string> split(const std::string &str, char delimiter);
 };
-
-#endif

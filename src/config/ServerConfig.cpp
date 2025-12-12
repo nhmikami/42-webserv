@@ -123,11 +123,11 @@ void ServerConfig::setServerName(const std::vector<std::string>&values)
 	_server_name = values[0];
 }
 
-const std::string								ServerConfig::getHost(void) const { return _host; };
+const std::string&								ServerConfig::getHost(void) const { return _host; };
 
 int												ServerConfig::getPort(void) const { return _port; };
 
-const std::string								ServerConfig::getServerName(void) const { return _server_name; };
+const std::string&								ServerConfig::getServerName(void) const { return _server_name; };
 
 const std::map<std::string, LocationConfig>&	ServerConfig::getLocations(void) const { return _locations; };
 

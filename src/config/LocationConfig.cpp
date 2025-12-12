@@ -81,3 +81,22 @@ const std::set<std::string>&		LocationConfig::getMethods(void) const { return _m
 
 const std::pair<int, std::string>&	LocationConfig::getReturn(void) const { return _return; };
 
+bool	LocationConfig::hasReturn(void) const {
+	return _return.first != 0;
+}
+
+bool	LocationConfig::isRedirectReturn(void) const {
+	return _return.first >= 300 && _return.first < 400;
+}
+
+bool	LocationConfig::isErrorReturn(void) const {
+	return _return.first >= 400 && _return.first < 600;
+}
+
+int		LocationConfig::getReturnCode(void) const {
+	return _return.first;
+}
+
+const std::string&	LocationConfig::getReturnPath(void) const {
+	return _return.second;
+}

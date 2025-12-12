@@ -123,14 +123,14 @@ void BaseConfig::setUpload(const std::vector<std::string>& values)
 
 const std::string& 							BaseConfig::getRoot(void) const { return _root; };
 
-const std::vector<std::string>				BaseConfig::getIndexFiles(void) const { return _index_files; };
-
 bool										BaseConfig::getAutoIndex(void) const { return _autoindex; };
 
 size_t										BaseConfig::getClientMaxBodySize(void) const { return _client_max_body_size; };
 
-const std::map<int, std::string>			BaseConfig::getErrorPages(void) const { return _error_pages; };
+const std::vector<std::string>&				BaseConfig::getIndexFiles(void) const { return _index_files; };
 
-const std::map<std::string, std::string>	BaseConfig::getCgi(void) const { return _cgi; };
+const std::map<int, std::string>&			BaseConfig::getErrorPages(void) const { return _error_pages; };
 
-const std::string							BaseConfig::getUpload(void) const { return _upload; };
+const std::map<std::string, std::string>&	BaseConfig::getCgi(void) const { return _cgi; };
+
+const std::string&							BaseConfig::getUpload(void) const { return _upload; };

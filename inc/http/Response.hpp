@@ -3,6 +3,7 @@
 
 #include "config/ServerConfig.hpp"
 #include "config/LocationConfig.hpp"
+#include "http/Request.hpp"
 #include "utils/FileUtils.hpp"
 #include <algorithm>
 #include <fstream>
@@ -56,6 +57,7 @@ class Response {
 		const std::map<std::string, std::string>&	getHeaders(void) const;
 
 		std::string			buildResponse(void) const;
+		std::string			buildResponse(const ServerConfig& server, const Request& request) const;
 		HttpStatus			processError(HttpStatus status, const ServerConfig& server, const LocationConfig* location);
 		void				parseCgiOutput(const std::string& cgiOutput);
 };

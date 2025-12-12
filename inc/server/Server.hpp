@@ -1,27 +1,31 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include "server/Client.hpp"
-#include "utils/Logger.hpp"
-#include "utils/ParseUtils.hpp"
 #include "config/ServerConfig.hpp"
+#include "server/Client.hpp"
 #include "parse/ParseHttp.hpp"
 #include "http/Request.hpp"
 #include "http/Response.hpp"
 #include "http/MethodGET.hpp"
 #include "http/MethodPOST.hpp"
 #include "http/MethodDELETE.hpp"
+#include "utils/Logger.hpp"
+#include "utils/ParseUtils.hpp"
 
-#include <poll.h>
-#include <string>
+#include <map>
+#include <set>
 #include <vector>
-#include <unistd.h>
-#include <arpa/inet.h>
+#include <string>
 #include <cstring>
-#include <stdio.h>
+#include <fstream>
 #include <iostream>
-#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
 #include <netinet/in.h>
+#include <poll.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/socket.h>
 
 class Server {
 	private:
@@ -38,7 +42,7 @@ class Server {
 		
 		Server &operator=(const Server &other);
 
-		bool			startServer();
+		bool			startServer(void);
 		bool			bindServer(int server_fd, struct sockaddr_in address, int port);
 		bool			startListen(int server_fd, std::string host, int port);
 		bool			addToFDs(int server_fd);
@@ -47,12 +51,13 @@ class Server {
 		ServerConfig	*findServerConfig(int client_fd);
 		bool			handleClient(int i);
 		void			unhandleClient(int i);
-		void			closeClient(int i, int j, Client *client);
+		void			closeClient(int j, Client *client);
 
 		bool	_isMethodAllowed(const std::string& method, const LocationConfig* location);
-		bool	_parseRequest(const std::string& raw_request, Request& request, ServerConfig* config, Client* client, int i, size_t j);
-		bool 	_processRequest(Request& request, ServerConfig* config, const LocationConfig* location, Client* client, int i, size_t j);
-		bool	_processError(HttpStatus status, ServerConfig* config, const LocationConfig* location, Client* client, int i, size_t j);
+		bool	_parseRequest(const std::string& raw_request, Request& request, ServerConfig* config, Client* client, size_t j);
+		bool 	_processRequest(Request& request, ServerConfig* config, const LocationConfig* location, Client* client, size_t j);
+		bool	_processRedirect(int code, ServerConfig* config, const LocationConfig* location, Client* client, size_t j);
+		bool	_processError(HttpStatus status, ServerConfig* config, const LocationConfig* location, Client* client, size_t j);
 		bool	_processCgi(AMethod* method, Client* client, int client_fd);
 		bool	_sendResponse(AMethod* method, HttpStatus status, Client* client);
 
@@ -66,7 +71,7 @@ class Server {
 		Server(std::vector<ServerConfig> configs);
 		~Server(void);
 
-		void run();
+		void run(void);
 };
 
 void printRequest(ParseHttp parser);

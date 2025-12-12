@@ -125,7 +125,7 @@ HttpStatus ParseHttpReader::validateBodyChunked(
 		
 		if (buffer.size() < chunk_size + 2)
 			return CONTINUE;
-			
+		
 		if (buffer[chunk_size] != '\r' || buffer[chunk_size + 1] != '\n')
 			return BAD_REQUEST;
 		

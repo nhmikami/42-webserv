@@ -12,7 +12,7 @@ class FileUtils {
 		FileUtils(void);
 		~FileUtils(void);
 
-        static bool	exists(const std::string& path);
+		static bool	exists(const std::string& path);
 		static bool	isCGI(const std::string& path);
 		static bool	isFile(const std::string& path);
 		static bool	isDirectory(const std::string& path);
@@ -20,10 +20,9 @@ class FileUtils {
 		static bool	isWritable(const std::string& path);
 		static bool	isExecutable(const std::string& path);
 
-        static std::string	resolvePath(const std::string &root, const std::string &reqPath);
-        static std::string	normalizePath(const std::string &path);
+		static std::string	resolvePath(const std::string &root, const std::string &path);
+		static std::string	normalizePath(const std::string &path);
 		static std::string	guessMimeType(const std::string &path);
-        static std::string  htmlEscape(const std::string &s);
 
 };
 
