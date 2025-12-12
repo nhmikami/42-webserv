@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import os
 import cgi
+import re
 
-DATA_FILE = os.path.join(os.path.dirname(__file__), "../cadets/cadets.txt")
+DATA_FILE = os.path.join(os.path.dirname(__file__), "cadets.txt")
 
 print("Content-Type: text/html")
 print()
