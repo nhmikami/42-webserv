@@ -108,5 +108,3 @@ std::string FileUtils::guessMimeType(const std::string &path) {
 
 	return "application/octet-stream";
 }
-
-
