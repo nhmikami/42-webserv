@@ -9,10 +9,13 @@
 
 #include "utils/Logger.hpp"
 #include "parse/ParseHttp.hpp"
+#include "http/Response.hpp"
 
 class Client {
 	private:
-		int		_client_fd;
+		int			_client_fd;
+		std::string	_server_name;
+		std::string	_http_version;
 
 		Client(void);
 		Client(const Client &other);
@@ -25,7 +28,13 @@ class Client {
 
 		std::string	receive();
 		bool		sendResponse(const std::string &response);
+
+		void		setServerName(const std::string &name);
+		void		setHttpVersion(const std::string &version);
+
 		int			getFd();
+		std::string	getServerName() const;
+		std::string	getHttpVersion() const;
 };
 
 #endif

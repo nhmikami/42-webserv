@@ -9,6 +9,8 @@
 
 Client::Client(int client_fd) : _client_fd(client_fd) 
 {
+	_server_name = "WebServ";
+	_http_version = "HTTP/1.1";
 	Logger::log(Logger::SERVER, "Client connected!");
 }
 
@@ -32,18 +34,32 @@ Client::~Client(void)
 
 std::string Client::receive() 
 {
-	char buffer[4096] = {0};
-	int bytes = recv(_client_fd, buffer, sizeof(buffer) - 1, 0);
+	char buffer[4096];
+	ssize_t bytes;
+	std::string result;
+	Response res;
 
-	if (bytes > 0) {
-		return std::string(buffer, bytes);
+	while (true) {
+
+		bytes = recv(_client_fd, buffer, sizeof(buffer), 0);
+
+		if (bytes == 0)
+			break;
+
+		if (bytes < 0) {
+			res.setStatus(BAD_REQUEST);
+			sendResponse(res.buildResponse(_server_name, _http_version));
+			return "";
+		}
+
+		result.append(buffer, static_cast<size_t>(bytes));
+
+		if (result.find("\r\n\r\n") != std::string::npos)
+            break;
 	}
-	if (bytes < 0) {
-		Logger::log(Logger::ERROR, "Failed to receive data.");
-	}
-	return "";
+
+	return result;
 };
-
 
 bool		Client::sendResponse(const std::string &response)
 {
@@ -73,3 +89,18 @@ int			Client::getFd(){
 	return _client_fd;
 }
 
+std::string	Client::getServerName() const {
+	return _server_name;
+}
+
+std::string	Client::getHttpVersion() const {
+	return _http_version;
+}
+
+void Client::setServerName(const std::string &name) {
+	_server_name = name;
+}
+
+void Client::setHttpVersion(const std::string &version) {
+	_http_version = version;
+}

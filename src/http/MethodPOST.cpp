@@ -13,7 +13,7 @@ HttpStatus MethodPOST::handleMethod(void) {
 
 	std::string full_path = FileUtils::resolvePath(_getRootPath(), _stripLocationPrefix(_req.getPath()));
 
-	if (_req.getHeader("Content-Type").find("multipart/form-data") != std::string::npos)
+	if (_req.getContentType().find("multipart/form-data") != std::string::npos)
 		return _handleMultipart();
 
 	if (FileUtils::exists(full_path) && _isCGI(full_path) && FileUtils::isFile(full_path))
@@ -35,11 +35,13 @@ HttpStatus MethodPOST::handleMethod(void) {
 
 	if (_writeToFile(full_path, _req.getBody())) {
 		if (!fileExisted) {
-			_res.addHeader("Location", _buildAbsoluteUrl(_req.getPath()));
+			_res.addHeader("Location", _buildAbsoluteUrl(FileUtils::normalizePath(_req.getPath())));
 			_res.setBody("File created successfully");
+			_res.addHeader("Content-Type", "text/plain");
 			return CREATED;
 		}
 		_res.setBody("File updated successfully");
+		_res.addHeader("Content-Type", "text/plain");
 		return OK;
 	}
 
@@ -91,17 +93,8 @@ HttpStatus MethodPOST::_handleMultipart(void) {
 	if (!FileUtils::exists(uploadLoc) || !FileUtils::isDirectory(uploadLoc) || !FileUtils::isWritable(uploadLoc))
 		return FORBIDDEN;
 
-	std::string contentType = _req.getHeader("Content-Type");
-	size_t bpos = contentType.find("boundary=");
-	if (bpos == std::string::npos)
-		return BAD_REQUEST;
-
-	std::string boundary = contentType.substr(bpos + 9);
-	size_t endPos = boundary.find_first_of("; \r\n");
-	if (endPos != std::string::npos)
-		boundary = boundary.substr(0, endPos);
-	if (boundary.size() >= 2 && boundary[0] == '"' && boundary[boundary.size() - 1] == '"')
-		boundary = boundary.substr(1, boundary.size() - 2);
+	std::string contentType = _req.getContentType();
+	std::string boundary = ParseUtils::extractAttribute(contentType, "boundary");
 	if (boundary.empty())
 		return BAD_REQUEST;
 
@@ -125,46 +118,26 @@ HttpStatus MethodPOST::_handleMultipart(void) {
 			return BAD_REQUEST;
 
 		std::string headers = body.substr(pos, headersEnd - pos);
-		std::string filename;
-		
-		size_t cdpos = headers.find("Content-Disposition:");
-		if (cdpos != std::string::npos) {
-			size_t fnpos = headers.find("filename=\"", cdpos);
-			if (fnpos != std::string::npos) {
-				fnpos += 10;
-				size_t endQuote = headers.find("\"", fnpos);
-				if (endQuote != std::string::npos)
-					filename = headers.substr(fnpos, endQuote - fnpos);
-			}
-		}
-
-		if (filename.empty()) {
-			size_t nextBoundary = body.find(sep, headersEnd + 4);
-			if (nextBoundary == std::string::npos)
-				break ;
-			pos = nextBoundary + sep.size();
-			continue ;
-		}
-
 		size_t fileStart = headersEnd + 4;
+		std::string filename = ParseUtils::extractAttribute(headers, "filename");
 		size_t nextBoundary = body.find(sep, fileStart);
 		if (nextBoundary == std::string::npos)
 			return BAD_REQUEST;
 
-		size_t fileEnd = nextBoundary;
-		if (fileEnd >= 2 && body.compare(fileEnd - 2, 2, "\r\n") == 0)
-			fileEnd -= 2;
+		if (!filename.empty()) {
+			size_t fileEnd = nextBoundary;
+			if (fileEnd >= 2 && body.compare(fileEnd - 2, 2, "\r\n") == 0)
+				fileEnd -= 2;
 
-		filename = _extractFilename(filename);
-		std::string outPath = FileUtils::resolvePath(uploadLoc, filename);
-
-		size_t dataSize = (fileEnd > fileStart) ? fileEnd - fileStart : 0;
-		if (!_writeToFile(outPath, body.c_str() + fileStart, dataSize))
-			return SERVER_ERR;
-
+			filename = _extractFilename(filename);
+			std::string outPath = FileUtils::resolvePath(uploadLoc, filename);
+			size_t dataSize = (fileEnd > fileStart) ? fileEnd - fileStart : 0;
+			if (!_writeToFile(outPath, body.c_str() + fileStart, dataSize))
+				return SERVER_ERR;
+		}
 		pos = nextBoundary + sep.size();
 	}
-
 	_res.setBody("Files uploaded successfully\n");
+	_res.addHeader("Content-Type", "text/plain");
 	return CREATED;
 }
