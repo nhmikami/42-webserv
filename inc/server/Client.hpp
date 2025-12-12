@@ -9,6 +9,7 @@
 
 #include "utils/Logger.hpp"
 #include "parse/ParseHttp.hpp"
+#include "http/Response.hpp"
 
 class Client {
 	private:

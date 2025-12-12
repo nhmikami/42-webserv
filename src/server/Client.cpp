@@ -34,18 +34,32 @@ Client::~Client(void)
 
 std::string Client::receive() 
 {
-	char buffer[4096] = {0};
-	int bytes = recv(_client_fd, buffer, sizeof(buffer) - 1, 0);
+	char buffer[4096];
+	ssize_t bytes;
+	std::string result;
+	Response res;
 
-	if (bytes > 0) {
-		return std::string(buffer, bytes);
+	while (true) {
+
+		bytes = recv(_client_fd, buffer, sizeof(buffer), 0);
+
+		if (bytes == 0)
+			break;
+
+		if (bytes < 0) {
+			res.setStatus(BAD_REQUEST);
+			sendResponse(res.buildResponse(_server_name, _http_version));
+			return "";
+		}
+
+		result.append(buffer, static_cast<size_t>(bytes));
+
+		if (result.find("\r\n\r\n") != std::string::npos)
+            break;
 	}
-	if (bytes < 0) {
-		Logger::log(Logger::ERROR, "Failed to receive data.");
-	}
-	return "";
+
+	return result;
 };
-
 
 bool		Client::sendResponse(const std::string &response)
 {
