@@ -199,7 +199,6 @@ bool Server::handleClient(int i) {
 	HttpStatus status = receive_parse_request.first;
 	ParseHttp& parser = receive_parse_request.second;
 
-	// std::string raw_request = client->receive();
 	if (status == SERVER_ERR) {
 		Logger::log(Logger::SERVER, "Client disconnected (fd=" + ParseUtils::itoa(client_fd) + ")");
 		closeClient(j, client);
@@ -209,7 +208,7 @@ bool Server::handleClient(int i) {
     if (status >= BAD_REQUEST) {
         return _processError(status, config, NULL, client, j);
     }
-	printRequest(parser);
+	// printRequest(parser);
 	
     Request request = parser.buildRequest();
     
@@ -217,31 +216,9 @@ bool Server::handleClient(int i) {
     client->setServerName(config->getServerName());
 
 
-	// Logger::log(Logger::SERVER, "Received from fd=" + ParseUtils::itoa(client_fd) + ":\n" + raw_request);
-
-	// Request	request;
-	// if (!_parseRequest(raw_request, request, config, client, j)) {
-	// 	std::cout << "Failed to parse request" << std::endl;
-	// 	return false;
-	// }
-
 	const LocationConfig* location = config->findLocation(FileUtils::normalizePath(request.getPath()));
 	return _processRequest(request, config, location, client, j);
 }
-
-// bool Server::_parseRequest(const std::string& raw_request, Request& request, ServerConfig* config, Client* client, size_t j) {
-// 	ParseHttp	parser;
-// 	std::string	req = raw_request;
-// 	HttpStatus	status = parser.initParse(req);
-// 	if (status >= BAD_REQUEST)
-// 		return _processError(status, config, NULL, client, j);
-
-// 	request = parser.buildRequest();
-// 	client->setHttpVersion(request.getHttpVersion());
-// 	client->setServerName(config->getServerName());
-// 	// printRequest(parser); // for debugging
-// 	return true;
-// }
 
 bool Server::_processRequest(Request& request, ServerConfig* config, const LocationConfig* location, Client* client, size_t j) {
 	if (location && location->hasReturn())
