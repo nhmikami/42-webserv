@@ -179,7 +179,7 @@ std::map<std::string,std::string> ParseHttp::parseHeaders(const std::string &hea
 	return headers;
 }
 
-HttpStatus	ParseHttp::initParse(std::string &request) {
+HttpStatus	ParseHttp::parseHeader(std::string &request) {
 	size_t headers_end_pos = request.find("\r\n\r\n");
 	if (headers_end_pos == std::string::npos)
 		return BAD_REQUEST;
@@ -242,12 +242,14 @@ HttpStatus	ParseHttp::initParse(std::string &request) {
 		this->_accept = headers_map["accept"];
 	if (headers_map.find("cookie") != headers_map.end())
 		this->_cookies = ParseCookie::parseCookie(headers_map["cookie"]);
-
+	return OK;
+}
+HttpStatus	ParseHttp::parseBody(std::string &body) {
 	if (this->_request_method == POST) {
-		std::map<std::string, std::string>::const_iterator cl_it = headers_map.find("content-length");
-		std::map<std::string, std::string>::const_iterator te_it = headers_map.find("transfer-encoding");
-		bool has_content_length = (cl_it != headers_map.end());
-		bool has_transfer_encoding = (te_it != headers_map.end());
+		std::map<std::string, std::string>::const_iterator cl_it = this->_all_headers.find("content-length");
+		std::map<std::string, std::string>::const_iterator te_it = this->_all_headers.find("transfer-encoding");
+		bool has_content_length = (cl_it != this->_all_headers.end());
+		bool has_transfer_encoding = (te_it != this->_all_headers.end());
 		
 		if (!has_content_length && !has_transfer_encoding)
 			return LENGTH_REQUIRED;
@@ -258,12 +260,12 @@ HttpStatus	ParseHttp::initParse(std::string &request) {
 			if (is_chunked) {
 				HttpStatus status = ParseHttpReader::validateBodyChunked(
 					_max_body_size,
-					body_buffer,
+					body,
 					this->_request_body
 				);
 				if (status != OK)
 					return status;
-				request = body_buffer;
+				body.clear();
 				return OK;
 			}
 			else if (has_content_length)
@@ -277,12 +279,13 @@ HttpStatus	ParseHttp::initParse(std::string &request) {
 			HttpStatus status = ParseHttpReader::validateBodyContentLength(
 				cl_value,
 				_max_body_size,
-				body_buffer,
+				body,
 				this->_request_body
 			);
+			std::cout << "STATUS VALIDADE CONTENT-LENGTH : " << status << std::endl;
 			if (status != OK)
 				return status;
-			request = body_buffer;
+			body.clear();
 			return OK;
 		}
 	}

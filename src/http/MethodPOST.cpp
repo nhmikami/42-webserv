@@ -19,19 +19,25 @@ HttpStatus MethodPOST::handleMethod(void) {
 	if (FileUtils::exists(full_path) && _isCGI(full_path) && FileUtils::isFile(full_path))
 		return _runCGI(full_path);
 
-	if (FileUtils::isDirectory(full_path))
+	if (FileUtils::isDirectory(full_path)) {
+		std::cout << "É DIRETÓRIO" << std::endl;
 		return BAD_REQUEST;
+	}
 
 	bool fileExisted = FileUtils::exists(full_path);
 	if (!fileExisted) {
 		std::string parent = full_path.substr(0, full_path.find_last_of('/'));
 		if (!FileUtils::exists(parent) || !FileUtils::isDirectory(parent))
 			return NOT_FOUND;
-		if (!FileUtils::isWritable(parent))
+		if (!FileUtils::isWritable(parent)) {
+			std::cout << "NÃO É ESCREVÍVEL 1" << std::endl;
 			return FORBIDDEN;
+		}
 	}
-	else if (!FileUtils::isWritable(full_path))
+	else if (!FileUtils::isWritable(full_path)) {
+		std::cout << "NÃO É ESCREVÍVEL 2" << std::endl;
 		return FORBIDDEN;
+	}
 
 	if (_writeToFile(full_path, _req.getBody())) {
 		if (!fileExisted) {
@@ -89,9 +95,12 @@ std::string MethodPOST::_extractFilename(const std::string& filename) {
 }
 
 HttpStatus MethodPOST::_handleMultipart(void) {
-	std::string uploadLoc = _getUploadLocation(); 
-	if (!FileUtils::exists(uploadLoc) || !FileUtils::isDirectory(uploadLoc) || !FileUtils::isWritable(uploadLoc))
+	std::string uploadLoc = _getUploadLocation();
+	std::cout << "Upload location: " << uploadLoc << std::endl;
+	if (!FileUtils::exists(uploadLoc) || !FileUtils::isDirectory(uploadLoc) || !FileUtils::isWritable(uploadLoc)) {
+		std::cout << "PROBLEMA NO MULTIPART" << std::endl;
 		return FORBIDDEN;
+	}
 
 	std::string contentType = _req.getContentType();
 	std::string boundary = ParseUtils::extractAttribute(contentType, "boundary");

@@ -80,7 +80,7 @@ std::string AMethod::_getUploadLocation(void) {
 
 	if (uploadPath.empty())
 		return ""; 
-	if (uploadPath[0] == '/')
+	if (uploadPath[0] == '/' || (uploadPath[0] == '.' && uploadPath[1] == '/')) 
 		return uploadPath;
 	return FileUtils::resolvePath(_getRootPath(), uploadPath);
 }

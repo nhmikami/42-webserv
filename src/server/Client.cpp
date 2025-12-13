@@ -100,55 +100,120 @@ Client::~Client(void)
 // 	return body;
 // };
 
-std::string Client::receive() 
+// std::pair<HttpStatus, ParseHttp> Client::receive() 
+// {
+//     char buffer[4096];
+//     ParseHttp empty_parser;
+
+//     while (true) {
+//         size_t
+//         ssize_t bytes = recv(_client_fd, buffer, sizeof(buffer), 0);
+//         if (bytes > 0) {
+//             _recv_buffer.append(buffer, static_cast<size_t>(bytes));
+//         } else if (bytes == 0) {
+//             // connection closed by peer
+//             if (!_recv_buffer.empty()) {
+//                 ParseHttp parser;
+//                 std::string tmp = _recv_buffer;
+//                 HttpStatus status = parser.initParse(tmp);
+//                 _recv_buffer.clear();
+                
+//                 return std::make_pair(status, parser);
+//             }
+//             return std::make_pair(BAD_REQUEST, empty_parser);
+//         } else {
+//             Logger::log(Logger::ERROR, "Failed to receive data.");
+//             return std::make_pair(BAD_REQUEST, empty_parser);
+//         }
+
+//         // Check if we have full headers
+//         size_t headers_end = _recv_buffer.find("\r\n\r\n");
+//         if (headers_end == std::string::npos) {
+//             // need more data for headers
+//             continue;
+//         }
+
+//         // Try to parse using existing ParseHttp logic to know if body is complete
+//         std::string tmp = _recv_buffer; // parser will modify this
+//         ParseHttp parser;
+//         HttpStatus status = parser.initParse(tmp);
+
+//         if (status == CONTINUE) {
+//             // body incomplete, continue reading
+//             continue;
+//         }
+
+//         // If parser returned OK or an error status, consume the bytes corresponding
+//         // to the first request (parser modified tmp to contain leftover beyond the request)
+//         size_t consumed = _recv_buffer.size() - tmp.size();
+//         _recv_buffer.erase(0, consumed);
+//         return std::make_pair(OK, parser);
+//     }
+// };
+
+std::pair<HttpStatus, ParseHttp> Client::receive()
 {
     char buffer[4096];
-	std::string recv_buffer;
+    ParseHttp empty_parser;
 
+    // 1. Leia até encontrar o fim dos headers
     while (true) {
+        size_t headers_end = _recv_buffer.find("\r\n\r\n");
+        if (headers_end == std::string::npos) {
+            ssize_t bytes = recv(_client_fd, buffer, sizeof(buffer), 0);
+            if (bytes > 0) {
+                _recv_buffer.append(buffer, static_cast<size_t>(bytes));
+                continue;
+            } else if (bytes == 0) {
+                // conexão fechada pelo cliente
+                return std::make_pair(SERVER_ERR, empty_parser);
+            } else {
+                Logger::log(Logger::ERROR, "Failed to receive data.");
+                return std::make_pair(SERVER_ERR, empty_parser);
+            }
+        }
+        break;
+    }
+
+    // 2. Parseie apenas os headers
+    size_t headers_end = _recv_buffer.find("\r\n\r\n");
+    std::string headers_part = _recv_buffer.substr(0, headers_end + 4);
+    ParseHttp parser;
+    HttpStatus status = parser.parseHeader(headers_part);
+    if (status != OK)
+        return std::make_pair(status, parser);
+
+    // 3. Descubra o Content-Length
+    size_t content_length = 0;
+    std::string cl_str = parser.getContentLength();
+    if (!cl_str.empty())
+        content_length = static_cast<size_t>(std::atoi(cl_str.c_str()));
+
+    // 4. Leia o corpo até ter tudo
+    size_t body_start = headers_end + 4;
+    while (_recv_buffer.size() < body_start + content_length) {
         ssize_t bytes = recv(_client_fd, buffer, sizeof(buffer), 0);
         if (bytes > 0) {
-            recv_buffer.append(buffer, static_cast<size_t>(bytes));
+            _recv_buffer.append(buffer, static_cast<size_t>(bytes));
         } else if (bytes == 0) {
-            // connection closed by peer
-            if (!recv_buffer.empty()) {
-                std::string leftover = recv_buffer;
-                recv_buffer.clear();
-                return leftover;
-            }
-            return "";
+            // conexão fechada antes do corpo completo
+            return std::make_pair(BAD_REQUEST, empty_parser);
         } else {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-                return "";
             Logger::log(Logger::ERROR, "Failed to receive data.");
-            return "";
+            return std::make_pair(BAD_REQUEST, empty_parser);
         }
-
-        // Check if we have full headers
-        size_t headers_end = recv_buffer.find("\r\n\r\n");
-        if (headers_end == std::string::npos) {
-            // need more data for headers
-            continue;
-        }
-
-        // Try to parse using existing ParseHttp logic to know if body is complete
-        std::string tmp = recv_buffer; // parser will modify this
-        ParseHttp parser;
-        HttpStatus status = parser.initParse(tmp);
-
-        if (status == CONTINUE) {
-            // body incomplete, continue reading
-            continue;
-        }
-
-        // If parser returned OK or an error status, consume the bytes corresponding
-        // to the first request (parser modified tmp to contain leftover beyond the request)
-        size_t consumed = recv_buffer.size() - tmp.size();
-        std::string request = recv_buffer.substr(0, consumed);
-        recv_buffer.erase(0, consumed);
-        return request;
     }
-};
+
+    // 5. Parseie o corpo
+    std::string body_part = _recv_buffer.substr(body_start, content_length);
+    status = parser.parseBody(body_part);
+    if (status != OK)
+        return std::make_pair(status, parser);
+
+    // 6. Consuma o request do buffer
+    _recv_buffer.erase(0, body_start + content_length);
+    return std::make_pair(OK, parser);
+}
 
 bool		Client::sendResponse(const std::string &response)
 {

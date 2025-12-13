@@ -16,6 +16,7 @@ class Client {
 		int			_client_fd;
 		std::string	_server_name;
 		std::string	_http_version;
+		std::string _recv_buffer;
 
 		Client(void);
 		Client(const Client &other);
@@ -26,7 +27,7 @@ class Client {
 		Client(int client_fd);
 		~Client(void);
 
-		std::string	receive();
+		std::pair<HttpStatus, ParseHttp>	receive();
 		bool		sendResponse(const std::string &response);
 
 		void		setServerName(const std::string &name);
