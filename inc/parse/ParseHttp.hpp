@@ -66,6 +66,7 @@ class ParseHttp {
 		const std::string& getUserAgent() const;
 		const std::string& getBody() const;
 		const std::string& getUri() const;
+		const std::string& getContentLength() const;
 		const std::map<std::string, std::string>& getCookies() const;
 };
 

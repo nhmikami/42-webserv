@@ -79,6 +79,10 @@ const std::map<std::string, std::string>& ParseHttp::getCookies() const {
 	return _cookies;
 }
 
+const std::string& ParseHttp::getContentLength() const {
+	return _content_length;
+}
+
 bool	ParseHttp::parseRequestLine(const std::string &line,
 						std::string &out_method,
 						std::string &out_path,

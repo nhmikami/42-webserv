@@ -275,7 +275,7 @@ bool Server::_parseRequest(const std::string& raw_request, Request& request, Ser
 	request = parser.buildRequest();
 	client->setHttpVersion(request.getHttpVersion());
 	client->setServerName(config->getServerName());
-	printRequest(parser); // for debugging
+	// printRequest(parser); // for debugging
 	return true;
 }
 
@@ -286,6 +286,7 @@ bool Server::_processRequest(Request& request, ServerConfig* config, const Locat
 	if (!_isMethodAllowed(request.getMethodStr(), location))
 		return _processError(NOT_ALLOWED, config, location, client, j);
 
+	std::cout << "PROCESSANDO REQUEST" << std::endl;
 	AMethod* method = NULL;
 	if (request.getMethodStr() == "GET")
 		method = new MethodGET(request, *config, location);
