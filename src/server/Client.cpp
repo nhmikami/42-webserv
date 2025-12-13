@@ -1,12 +1,5 @@
 #include "server/Client.hpp"
 
-// Client::Client(void) : _client_fd(-1) {};
-
-// Client::Client(const Client &other) : _client_fd(-1)
-// {
-// 	(void)other;
-// };
-
 Client::Client(int client_fd) : _client_fd(client_fd) 
 {
 	_server_name = "WebServ";
@@ -23,12 +16,9 @@ Client::~Client(void)
 	}
 };
 
-std::pair<HttpStatus, ParseHttp> Client::receive()
-{
+HttpStatus Client::readHeaders() {
     char buffer[4096];
-    ParseHttp empty_parser;
 
-    // 1. Leia até encontrar o fim dos headers
     while (true) {
         size_t headers_end = _recv_buffer.find("\r\n\r\n");
         if (headers_end == std::string::npos) {
@@ -37,52 +27,74 @@ std::pair<HttpStatus, ParseHttp> Client::receive()
                 _recv_buffer.append(buffer, static_cast<size_t>(bytes));
                 continue;
             } else if (bytes == 0) {
-                // conexão fechada pelo cliente
-                return std::make_pair(SERVER_ERR, empty_parser);
+                return SERVER_ERR;
             } else {
                 Logger::log(Logger::ERROR, "Failed to receive data.");
-                return std::make_pair(SERVER_ERR, empty_parser);
+                return SERVER_ERR;
             }
         }
         break;
     }
 
-    // 2. Parseie apenas os headers
-    size_t headers_end = _recv_buffer.find("\r\n\r\n");
-    std::string headers_part = _recv_buffer.substr(0, headers_end + 4);
-    ParseHttp parser;
-    HttpStatus status = parser.parseHeader(headers_part);
-    if (status != OK)
-        return std::make_pair(status, parser);
+    return OK;
+}
 
-    // 3. Descubra o Content-Length
-    size_t content_length = 0;
+size_t Client::getContentLength(const ParseHttp &parser)
+{
     std::string cl_str = parser.getContentLength();
     if (!cl_str.empty())
-        content_length = static_cast<size_t>(std::atoi(cl_str.c_str()));
+        return static_cast<size_t>(std::atoi(cl_str.c_str()));
+    return 0;
+}
 
-    // 4. Leia o corpo até ter tudo
-    size_t body_start = headers_end + 4;
-    while (_recv_buffer.size() < body_start + content_length) {
+HttpStatus Client::readBody(size_t body_start, size_t content_length)
+{
+    char buffer [4096];
+
+     while (_recv_buffer.size() < body_start + content_length) {
         ssize_t bytes = recv(_client_fd, buffer, sizeof(buffer), 0);
         if (bytes > 0) {
             _recv_buffer.append(buffer, static_cast<size_t>(bytes));
         } else if (bytes == 0) {
-            // conexão fechada antes do corpo completo
-            return std::make_pair(BAD_REQUEST, empty_parser);
+            return SERVER_ERR;
         } else {
             Logger::log(Logger::ERROR, "Failed to receive data.");
-            return std::make_pair(BAD_REQUEST, empty_parser);
+            return SERVER_ERR;
         }
     }
+    return OK;
+}
 
-    // 5. Parseie o corpo
+std::pair<HttpStatus, ParseHttp> Client::receive()
+{
+    ParseHttp parser;
+    ParseHttp empty_parser;
+
+    //HEADERS
+    HttpStatus status = readHeaders();
+    if (status != OK)
+        return std::make_pair(status, empty_parser);
+
+    size_t headers_end = _recv_buffer.find("\r\n\r\n");
+    std::string headers_part = _recv_buffer.substr(0, headers_end + 4);
+
+    status = parser.parseHeader(headers_part);
+    if (status != OK)
+        return std::make_pair(status, parser);
+    
+    //BODY
+    size_t content_length = getContentLength(parser);
+    size_t body_start = headers_end + 4;
+
+    status = readBody(body_start, content_length);
+    if (status != OK)
+        return std::make_pair(status, empty_parser);
+
     std::string body_part = _recv_buffer.substr(body_start, content_length);
     status = parser.parseBody(body_part);
     if (status != OK)
         return std::make_pair(status, parser);
 
-    // 6. Consuma o request do buffer
     _recv_buffer.erase(0, body_start + content_length);
     return std::make_pair(OK, parser);
 }

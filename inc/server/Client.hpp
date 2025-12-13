@@ -19,9 +19,10 @@ class Client {
 		std::string _recv_buffer;
 
 		Client(void);
-		Client(const Client &other);
-
-		Client &operator=(const Client &other);
+		
+		HttpStatus	readHeaders();
+		HttpStatus	readBody(size_t body_start, size_t content_length);
+		size_t		getContentLength(const ParseHttp &parser);
 		
 	public:
 		Client(int client_fd);
