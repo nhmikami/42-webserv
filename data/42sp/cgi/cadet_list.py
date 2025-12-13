@@ -26,7 +26,7 @@ try:
                 <img src="/cadets/uploads/{html.escape(photo)}" alt="{html.escape(name)}">
                 <div class="card-content">
                     <div class="subtitle">{html.escape(name)}</div>
-                    <form method="POST" action="/cadet?delete={urllib.parse.quote(photo)}">
+                    <form method="DELETE" action="./cgi/cadet_delete.py">
                         <button type="submit" class="delete-btn">DELETE</button>
                     </form>
                 </div>

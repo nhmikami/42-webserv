@@ -227,7 +227,6 @@ bool Server::_processRequest(Request& request, ServerConfig* config, const Locat
 	if (!_isMethodAllowed(request.getMethodStr(), location))
 		return _processError(NOT_ALLOWED, config, location, client, j);
 
-	std::cout << "PROCESSANDO REQUEST" << std::endl;
 	AMethod* method = NULL;
 	if (request.getMethodStr() == "GET")
 		method = new MethodGET(request, *config, location);
@@ -242,7 +241,7 @@ bool Server::_processRequest(Request& request, ServerConfig* config, const Locat
 	
 	if (status == CGI_PENDING)
 		return _processCgi(method, client, client->getFd());
-	std::cout << "RESPONSE : " << status << std::endl;
+
 	return _sendResponse(method, status, client);
 }
 

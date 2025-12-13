@@ -13,8 +13,21 @@ HttpStatus MethodPOST::handleMethod(void) {
 
 	std::string full_path = FileUtils::resolvePath(_getRootPath(), _stripLocationPrefix(_req.getPath()));
 
-	if (_req.getContentType().find("multipart/form-data") != std::string::npos)
-		return _handleMultipart();
+	if (_req.getContentType().find("multipart/form-data") != std::string::npos) {
+		HttpStatus uploadStatus = _handleMultipart();
+        // Se falhou o upload, retorna erro
+		std::cout << "UPLOAD STATUS" << uploadStatus << std::endl;
+		std::cout << "FULL PATH" << full_path << std::endl;
+		std::cout << "É CGI?" << _isCGI(full_path) << std::endl;
+        if (uploadStatus != CREATED)
+            return uploadStatus;
+        // Se a rota tem CGI, executa o CGI após o upload
+        if (_isCGI(full_path))
+            return _runCGI(full_path);
+        // Se não tem CGI, retorna CREATED normalmente
+        return CREATED;
+	}
+		// return _handleMultipart();
 
 	if (FileUtils::exists(full_path) && _isCGI(full_path) && FileUtils::isFile(full_path))
 		return _runCGI(full_path);
