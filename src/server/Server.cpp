@@ -1,6 +1,7 @@
 #include "server/Server.hpp"
 
-Server::Server(std::vector<ServerConfig> configs) : _configs(configs) {
+Server::Server(std::vector<ServerConfig> configs) : _configs(configs), _sessions(300) {
+	srand(static_cast<unsigned int>(time(NULL)));
 	if (!startServer())
 		Logger::log(Logger::ERROR, "Failed to start server.");
 }
@@ -95,7 +96,14 @@ bool	Server::addToFDs(int server_fd) {
 };
 
 void	Server::run(void) {
+	time_t last_cleanup = std::time(NULL);
 	while (true) {
+		time_t now = std::time(NULL);
+		if (now - last_cleanup >= 60) {
+			_sessions.cleanup();
+			last_cleanup = now;
+		}
+
 		int res = poll(_fds.data(), _fds.size(), -1);
 		if (res == -1) {
 			Logger::log(Logger::ERROR, "Failed to poll.");
@@ -205,22 +213,25 @@ bool Server::handleClient(int i) {
 		return false;
 	}
 
-    if (status >= BAD_REQUEST) {
-        return _processError(status, config, NULL, client, j);
-    }
-	// printRequest(parser);
+	if (status >= BAD_REQUEST) {
+		return _processError(status, config, NULL, client, j);
+	}
+	printRequest(parser);
 	
-    Request request = parser.buildRequest();
-    
-    client->setHttpVersion(request.getHttpVersion());
-    client->setServerName(config->getServerName());
+	Request* request = new Request(parser.buildRequest());
+	client->setCurrentRequest(request);
+	client->setHttpVersion(request->getHttpVersion());
+	client->setServerName(config->getServerName());
 
-
-	const LocationConfig* location = config->findLocation(FileUtils::normalizePath(request.getPath()));
-	return _processRequest(request, config, location, client, j);
+	const LocationConfig* location = config->findLocation(FileUtils::normalizePath(request->getPath()));
+	return _processRequest(*request, config, location, client, j);
 }
 
 bool Server::_processRequest(Request& request, ServerConfig* config, const LocationConfig* location, Client* client, size_t j) {
+	Response response;
+	Session* session = _handleSession(request);
+	request.setSession(session);
+
 	if (location && location->hasReturn())
 		return _processRedirect(static_cast<HttpStatus>(location->getReturnCode()), config, location, client, j);
 
@@ -271,15 +282,22 @@ bool Server::_processCgi(AMethod* method, Client* client, int client_fd) {
 bool Server::_processRedirect(int code, ServerConfig* config, const LocationConfig* location, Client* client, size_t j) {
 	Response res;
 	res.setStatus(static_cast<HttpStatus>(code));
+	Request& req = *client->getCurrentRequest();
+	Session* session = req.getSession();
+	if (session)
+		res.addHeader("Set-Cookie", std::string("SESSION_ID=") + session->getId() + "; Path=/; HttpOnly");
+
 	std::string content = location->getReturnPath();
 	if (code >= 300 && code < 400) {
 		res.addHeader("Location", content);
 		client->sendResponse(res.buildResponse(client->getServerName(), client->getHttpVersion()));
+		client->clearCurrentRequest();
 		return true;
 	} else if ((code >= 200 && code < 300) || (code >= 400 && code < 600)) {
 		res.setBody(content);
 		res.addHeader("Content-Type", "text/plain");
 		client->sendResponse(res.buildResponse(client->getServerName(), client->getHttpVersion()));
+		client->clearCurrentRequest();
 		return true;
 	}
 	return _processError(SERVER_ERR, config, location, client, j);
@@ -297,24 +315,32 @@ bool Server::_processError(HttpStatus status, ServerConfig* config, const Locati
 		res.setBody("Fatal error");
 		res.addHeader("Content-Type", "text/plain");
 	}
+	Request& req = *client->getCurrentRequest();
+	Session* session = req.getSession();
+	if (session)
+		res.addHeader("Set-Cookie", std::string("SESSION_ID=") + session->getId() + "; Path=/; HttpOnly");
+
 	client->sendResponse(res.buildResponse(client->getServerName(), client->getHttpVersion()));
+	client->clearCurrentRequest();
 	closeClient(j, client);
 	return false;
 }
 
 bool Server::_sendResponse(AMethod* method, HttpStatus status, Client* client) {
 	Response res = method->getResponse();
-	if (status >= 400)
+	if (status >= BAD_REQUEST)
 		res.processError(status, method->getServerConfig(), method->getLocationConfig());
 	else
 		res.setStatus(status);
 
-	if (status != NO_CONTENT && res.getHeader("Content-Length").empty()) {
-		res.addHeader("Content-Length", ParseUtils::itoa(static_cast<int>(res.getBody().size())));
-	}
+	Session* s = method->getRequest().getSession();
+	if (s)
+		res.addHeader("Set-Cookie", std::string("SESSION_ID=") + s->getId() + "; Path=/; HttpOnly");
+
 	std::string response = res.buildResponse(client->getServerName(), client->getHttpVersion());
 	client->sendResponse(response);
-	
+	client->clearCurrentRequest();
+
 	delete method;
 	return true;
 }
@@ -437,8 +463,14 @@ void Server::_finalizeCgiResponse(size_t index, int cgi_fd) {
 		std::string rawCgi = cgi->getOutput();
 		Response res;
 		res.parseCgiOutput(rawCgi);
+		Request* req = client->getCurrentRequest();
+		Session* session = req->getSession();
+		if (session)
+			res.addHeader("Set-Cookie", std::string("SESSION_ID=") + session->getId() + "; Path=/; HttpOnly");
+		_setCookies(res, session);
 		std::string httpResponse = res.buildResponse(client->getServerName(), client->getHttpVersion());
 		client->sendResponse(httpResponse);
+		client->clearCurrentRequest();
 	}
 	close(cgi_fd);
 
@@ -447,6 +479,37 @@ void Server::_finalizeCgiResponse(size_t index, int cgi_fd) {
 	_cgiHandlers.erase(cgi_fd);
 	_cgiClient.erase(cgi_fd);
 	delete cgi;
+}
+
+Session* Server::_handleSession(const Request& request) {
+	std::map<std::string, std::string> cookies = request.getCookies();
+	std::map<std::string, std::string>::iterator it = cookies.find("SESSION_ID");
+	if (it != cookies.end()) {
+		Session* s = _sessions.getSession(it->second);
+		if (s)
+			return s;
+	}
+	return _sessions.createSession();
+}
+
+void Server::_setCookies(Response& response, Session* session) {
+	if (!session)
+		return ;
+
+	const std::multimap<std::string, std::string>& headers = response.getHeaders();
+	std::pair<
+		std::multimap<std::string, std::string>::const_iterator, 
+		std::multimap<std::string, std::string>::const_iterator
+	> range = headers.equal_range("x-session-set");
+
+	for (std::multimap<std::string, std::string>::const_iterator it = range.first; it != range.second; ++it) {
+		std::pair<std::string, std::string> key_value = ParseUtils::splitPair(it->second, "=");
+		std::string key = ParseUtils::trim(key_value.first);
+		std::string value = ParseUtils::trim(key_value.second);
+		if (!key.empty())
+			session->set(key, value);
+	}
+	response.removeHeader("x-session-set");
 }
 
 void printRequest(ParseHttp parser) {  // for debugging

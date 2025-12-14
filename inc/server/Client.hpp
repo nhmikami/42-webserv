@@ -9,6 +9,7 @@
 
 #include "utils/Logger.hpp"
 #include "parse/ParseHttp.hpp"
+#include "http/Request.hpp"
 #include "http/Response.hpp"
 
 class Client {
@@ -17,6 +18,7 @@ class Client {
 		std::string	_server_name;
 		std::string	_http_version;
 		std::string _recv_buffer;
+		Request*	_current_request;
 
 		Client(void);
 		
@@ -34,9 +36,12 @@ class Client {
 		void		setServerName(const std::string &name);
 		void		setHttpVersion(const std::string &version);
 
-		int			getFd();
-		std::string	getServerName() const;
-		std::string	getHttpVersion() const;
+		int			getFd(void);
+		std::string	getServerName(void) const;
+		std::string	getHttpVersion(void) const;
+		Request*	getCurrentRequest(void);
+		void		setCurrentRequest(Request* req);
+		void		clearCurrentRequest(void);
 };
 
 #endif

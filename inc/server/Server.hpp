@@ -3,6 +3,8 @@
 
 #include "config/ServerConfig.hpp"
 #include "server/Client.hpp"
+#include "server/CgiHandler.hpp"
+#include "server/SessionManager.hpp"
 #include "parse/ParseHttp.hpp"
 #include "http/Request.hpp"
 #include "http/Response.hpp"
@@ -37,6 +39,7 @@ class Server {
 
 		std::map<int, CgiHandler*>		_cgiHandlers;
 		std::map<int, Client*>			_cgiClient;
+		SessionManager					_sessions;
 
 		Server(const Server &other); //del?
 		
@@ -64,6 +67,8 @@ class Server {
 		bool	_handleCgiEvent(size_t i);
 		void	_registerCgiHandler(int client_fd, CgiHandler *cgi, Client *client);
 		void	_finalizeCgiResponse(size_t index, int cgi_fd);
+		void	_setCookies(Response& response, Session* session);
+		Session*	_handleSession(const Request& request);
 
 	public:
 		Server(void); //private del?

@@ -12,6 +12,7 @@ HttpStatus MethodPOST::handleMethod(void) {
 		return PAYLOAD_TOO_LARGE;
 
 	std::string full_path = FileUtils::resolvePath(_getRootPath(), _stripLocationPrefix(_req.getPath()));
+	std::cout << "DEBUG: full path = " << full_path << std::endl; // for debugging
 
 	if (_req.getContentType().find("multipart/form-data") != std::string::npos) {
 		HttpStatus uploadStatus = _handleMultipart();

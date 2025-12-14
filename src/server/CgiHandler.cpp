@@ -1,4 +1,4 @@
-#include "http/CgiHandler.hpp"
+#include "server/CgiHandler.hpp"
 #include "utils/ParseUtils.hpp"
 
 CgiHandler::CgiHandler(const Request& req, const std::string& scriptPath, const std::string& executor)
@@ -222,57 +222,3 @@ void CgiHandler::_handleCgiRead(void) {
 		}
 	}
 }
-
-	// void CgiHandler::buildResponse(Response& res) {
-	// (void)res;
-	// if (_state == CGI_ERROR) {
-	// 	res.setStatus(500);
-	// 	res.setBody("Internal Server Error: CGI process failed.");
-	// 	return ;
-	// }
-
-	// size_t headerEnd = _responseBuffer.find("\r\n\r\n");
-	// size_t bodyStart = 0;
-
-	// if (headerEnd != std::string::npos) {
-	// 	bodyStart = headerEnd + 4;
-	// } else {
-	// 	headerEnd = _responseBuffer.find("\n\n");
-	// 	if (headerEnd != std::string::npos) {
-	// 		bodyStart = headerEnd + 2;
-	// 	} else {
-	// 		res.setBody(_responseBuffer);
-	// 		res.setStatus(200);
-	// 		return ;
-	// 	}
-	// }
-
-	// std::string headers = _responseBuffer.substr(0, headerEnd);
-	// std::string body = _responseBuffer.substr(bodyStart);
-
-	// std::stringstream ss(headers);
-	// std::string line;
-	// while (std::getline(ss, line)) {
-	// 	if (!line.empty() && line[line.size() - 1] == '\r')
-	// 		line.erase(line.size() - 1);
-	// 	if (line.empty())
-	// 		continue ;
-
-	// 	size_t sep = line.find(':');
-	// 	if (sep != std::string::npos) {
-	// 		std::string key = line.substr(0, sep);
-	// 		std::string val = line.substr(sep + 1);
-			
-	// 		size_t first = val.find_first_not_of(" \t");
-	// 		if (first != std::string::npos) 
-	// 			val = val.substr(first);
-	// 		if (key == "Status")
-	// 			res.setStatus(std::atoi(val.c_str()));
-	// 		else
-	// 			res.addHeader(key, val);
-	// 	}
-	// }
-
-	// res.setBody(body);
-	// if (res.getStatus() == 0) res.setStatus(200);
-	// }

@@ -36,9 +36,9 @@ enum HttpStatus {
 
 class Response {
 	private:
-		HttpStatus							_status;
-		std::string							_body;
-		std::map<std::string, std::string>	_headers;
+		HttpStatus								_status;
+		std::string								_body;
+		std::multimap<std::string, std::string>	_headers;
 
 		std::string			_getErrorPage(int status, const ServerConfig& server, const LocationConfig* location) const;
 		std::string			_generateDate(void) const;
@@ -56,7 +56,8 @@ class Response {
 		const std::string	getStatusMessage(void) const;
 		const std::string&	getBody(void) const;
 		const std::string&	getHeader(const std::string &key) const;
-		const std::map<std::string, std::string>&	getHeaders(void) const;
+		const std::multimap<std::string, std::string>&	getHeaders(void) const;
+		void				removeHeader(const std::string &key);
 
 		std::string			buildResponse(const std::string& server_name, const std::string& http_version) const;
 		HttpStatus			processError(HttpStatus status, const ServerConfig& server, const LocationConfig* location);

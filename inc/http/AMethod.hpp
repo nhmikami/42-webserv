@@ -1,11 +1,11 @@
 #ifndef AMETHOD_HPP
 #define AMETHOD_HPP
 
-#include "http/CgiHandler.hpp"
-#include "http/Response.hpp"
 #include "http/Request.hpp"
+#include "http/Response.hpp"
 #include "config/LocationConfig.hpp"
 #include "config/ServerConfig.hpp"
+#include "server/CgiHandler.hpp"
 #include <fstream>
 #include <sstream>
 #include <sys/stat.h>

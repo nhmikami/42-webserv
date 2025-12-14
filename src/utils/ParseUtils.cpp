@@ -129,7 +129,7 @@ std::string ParseUtils::htmlEscape(const std::string &s) {
 	return escaped;
 }
 
-std::pair<std::string, std::string> ParseUtils::splitHeadersAndBody(const std::string &raw) {
+std::pair<std::string, std::string> ParseUtils::splitHeadersAndBody(const std::string& raw) {
 	size_t headerEnd = raw.find("\r\n\r\n");
 	size_t sepLen = 4;
 
@@ -144,14 +144,14 @@ std::pair<std::string, std::string> ParseUtils::splitHeadersAndBody(const std::s
 	return std::make_pair(raw.substr(0, headerEnd), raw.substr(headerEnd + sepLen));
 }
 
-std::pair<std::string, std::string> ParseUtils::splitPair(const std::string &s, const std::string &delimiter) {
+std::pair<std::string, std::string> ParseUtils::splitPair(const std::string& s, const std::string& delimiter) {
 	size_t pos = s.find(delimiter);
 	if (pos == std::string::npos)
 		return std::make_pair(s, "");
 	return std::make_pair(s.substr(0, pos), s.substr(pos + delimiter.length()));
 }
 
-std::string ParseUtils::extractAttribute(const std::string &header, const std::string &key) {
+std::string ParseUtils::extractAttribute(const std::string& header, const std::string& key) {
 	std::string target = key + "=";
 	size_t pos = 0;
 	
