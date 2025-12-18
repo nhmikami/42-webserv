@@ -44,7 +44,7 @@ button:hover {
     flex-direction: column;
 }
 
-.colums {
+.columns {
     display: flex;
     justify-content: center;
     align-items: center;
