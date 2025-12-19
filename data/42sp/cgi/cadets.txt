@@ -1,1 +1,6 @@
 Marvin,marvin.jpg
+unknown,plataforma-logo.png
+Carol,plataforma-logo.png
+asdjhbasd,plataforma-logo.png
+asdjhbasd,selfie.jpeg
+que me ama,marvin.jpg

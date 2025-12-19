@@ -10,23 +10,25 @@ output = f"""
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Cadet's List</title>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body class="bg">
-    <div class="colums">
+    <div class="columns">
 """
 
 try:
     with open(DATA_FILE, "r") as f:
         for line in f:
             name, photo = line.strip().split(",")
+            photo_encoded = urllib.parse.quote(photo)
             output += f"""
             <div class="card">
-                <img src="/cadets/uploads/{html.escape(photo)}" alt="{html.escape(name)}">
+                <img src="/cadets/uploads/{photo_encoded}" alt="{html.escape(name)}">
                 <div class="card-content">
                     <div class="subtitle">{html.escape(name)}</div>
-                    <form method="DELETE" action="./cgi/cadet_delete.py">
+                    <form method="POST" action="./cgi/cadet_delete.py">
                         <button type="submit" class="delete-btn">DELETE</button>
                     </form>
                 </div>
