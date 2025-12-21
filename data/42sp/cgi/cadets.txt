@@ -1,2 +1,1 @@
-1,Marvin,marvin.jpg
-2,Carol Yamashita,marvin.jpg
+Marvin,marvin.jpg
