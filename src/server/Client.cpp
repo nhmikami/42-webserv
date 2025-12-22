@@ -68,12 +68,12 @@ HttpStatus Client::readBody(size_t body_start, size_t content_length)
 
 std::pair<HttpStatus, ParseHttp> Client::receive()
 {
-    ParseHttp parser;
+	ParseHttp parser;
 
-    //HEADERS
-    HttpStatus status = readHeaders();
-    if (status != OK)
-        return std::make_pair(status, parser);
+	//HEADERS
+	HttpStatus status = readHeaders();
+	if (status != OK)
+		return std::make_pair(status, parser);
 
 	size_t headers_end = _recv_buffer.find("\r\n\r\n");
 	std::string headers_part = _recv_buffer.substr(0, headers_end + 4);
@@ -86,9 +86,9 @@ std::pair<HttpStatus, ParseHttp> Client::receive()
 	size_t content_length = getContentLength(parser);
 	size_t body_start = headers_end + 4;
 
-    status = readBody(body_start, content_length);
-    if (status != OK)
-        return std::make_pair(status, parser);
+	status = readBody(body_start, content_length);
+	if (status != OK)
+		return std::make_pair(status, parser);
 
 	std::string body_part = _recv_buffer.substr(body_start, content_length);
 	status = parser.parseBody(body_part);
