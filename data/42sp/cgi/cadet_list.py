@@ -21,14 +21,17 @@ output = f"""
 try:
     with open(DATA_FILE, "r") as f:
         for line in f:
-            name, photo = line.strip().split(",")
+            parts = line.strip().split(",")
+            if len(parts) != 2:
+                continue
+            name, photo = parts
             photo_encoded = urllib.parse.quote(photo)
             output += f"""
             <div class="card">
                 <img src="/cadets/uploads/{photo_encoded}" alt="{html.escape(name)}">
                 <div class="card-content">
                     <div class="subtitle">{html.escape(name)}</div>
-                    <form method="POST" action="./cgi/cadet_delete.py">
+                    <form method="POST" action="./cgi/cadet_delete.py?file={photo_encoded}">
                         <button type="submit" class="delete-btn">DELETE</button>
                     </form>
                 </div>
