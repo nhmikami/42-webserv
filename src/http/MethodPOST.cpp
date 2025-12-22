@@ -106,11 +106,15 @@ HttpStatus MethodPOST::_runCGIWithFormFields(const std::string& path) {
 		return FORBIDDEN;
 
 	std::map<std::string, std::string> executors = _getCgiExecutors();
-	std::string	ext = path.substr(path.find_last_of('.'));
+	size_t dotPos = path.find_last_of('.');
+	if (dotPos == std::string::npos || dotPos >= path.length() - 1)
+		return SERVER_ERR;
+	
+	std::string	ext = path.substr(dotPos);
 	std::string	executor = executors[ext];
 
 	_cgiHandler = new CgiHandler(_req, path, executor, _formFields);
-	_cgiHandler->start(); 
+	_cgiHandler->start();
 
 	return CGI_PENDING;
 }
@@ -153,7 +157,14 @@ HttpStatus MethodPOST::_handleMultipart(void) {
 		if (nextBoundary == std::string::npos)
 			return BAD_REQUEST;
 
+		// Skip parts without a field name
+		if (fieldName.empty()) {
+			pos = nextBoundary + sep.size();
+			continue;
+		}
+
 		if (!filename.empty()) {
+			// Handle file upload field
 			size_t fileEnd = nextBoundary;
 			if (fileEnd >= 2 && body.compare(fileEnd - 2, 2, "\r\n") == 0)
 				fileEnd -= 2;
@@ -165,9 +176,9 @@ HttpStatus MethodPOST::_handleMultipart(void) {
 				return SERVER_ERR;
 			
 			// Store the uploaded filename for CGI access
-			if (!fieldName.empty())
-				_formFields[fieldName + "_FILENAME"] = filename;
-		} else if (!fieldName.empty()) {
+			_formFields[fieldName + "_FILENAME"] = filename;
+		} else {
+			// Handle regular form field
 			size_t dataEnd = nextBoundary;
 			if (dataEnd >= 2 && body.compare(dataEnd - 2, 2, "\r\n") == 0)
 				dataEnd -= 2;

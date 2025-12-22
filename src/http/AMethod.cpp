@@ -122,11 +122,15 @@ HttpStatus AMethod::_runCGI(const std::string &path) {
 		return FORBIDDEN;
 
 	std::map<std::string, std::string> executors = _getCgiExecutors();
-	std::string	ext = path.substr(path.find_last_of('.'));
+	size_t dotPos = path.find_last_of('.');
+	if (dotPos == std::string::npos || dotPos >= path.length() - 1)
+		return SERVER_ERR;
+	
+	std::string	ext = path.substr(dotPos);
 	std::string	executor = executors[ext];
 
 	_cgiHandler = new CgiHandler(_req, path, executor);
-	_cgiHandler->start(); 
+	_cgiHandler->start();
 
 	return CGI_PENDING;
 }
