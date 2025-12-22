@@ -78,8 +78,15 @@ if 'multipart/form-data' in content_type:
     filename = os.path.basename(filename)
     filename = re.sub(r'[^\w\s.-]', '', filename)
     
-    with open(DATA_FILE, "a") as f:
-        f.write(f"{name},{filename}\n")
+    try:
+        with open(DATA_FILE, "a") as f:
+            f.write(f"{name},{filename}\n")
+    except (OSError, IOError):
+        print("Content-Type: text/html")
+        print()
+        print("<h1>Error: Could not save data</h1>")
+        sys.stdout.flush()
+        exit()
     
     print("Status: 303 See Other")
     print("Location: /cadets_list")
