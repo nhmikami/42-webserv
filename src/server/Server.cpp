@@ -208,7 +208,6 @@ bool Server::handleClient(int i) {
     if (status >= BAD_REQUEST) {
         return _processError(status, config, NULL, client, j);
     }
-	// printRequest(parser);
 	
     Request request = parser.buildRequest();
     

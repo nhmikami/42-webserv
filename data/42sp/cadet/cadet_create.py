@@ -1,45 +1,8 @@
-# #!/usr/bin/env python3
-# import os
-# import sys
-# import re
-# from urllib.parse import parse_qs
-
-# DATA_FILE = os.path.join(os.path.dirname(__file__), "../cgi/cadets.txt")
-
-# form = cgi.FieldStorage()
-
-# name = form.getfirst("name", "unknown")
-# print("NOME: ")
-# print(name)
-# name = re.sub(r'[^\w\s-]', '', name).strip()[:50] #sanitize filename
-# if not name:
-#     print("Content-Type: text/html\n")
-#     print("<h1>Error: Invalid name</h1>")
-#     exit()
-
-# photo_field = form["photo"]
-# if not photo_field.filename:
-#     print("Content-Type: text/html\n")
-#     print("<h1>Error: No file uploaded</h1>")
-#     exit()
-
-# filename = os.path.basename(photo_field.filename)
-# filename = re.sub(r'[^\w\s.-]', '', filename)
-
-# with open(DATA_FILE, "a") as f:
-#     f.write(f"{name},{filename}\n")
-
-# # Redireciona para a página de cadets
-# print("Status: 303 See Other")
-# print("Location: /cadets")
-# print()
-
 
 #!/usr/bin/env python3
 import os
 import sys
 import re
-from urllib.parse import parse_qs
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), "../cgi/cadets.txt")
 
@@ -60,9 +23,9 @@ if 'multipart/form-data' in content_type:
     
     for part in parts:
         if b'name="name"' in part:
-            name = part.split(b'\r\n\r\n')[1].split(b'\r\n')[0].decode('utf-8', errors='ignore')
+            name = part.split(b'\r\n\r\n')[1].split(b'\r\n')[0].decode('utf-8', errors='replace')
         elif b'name="photo"' in part and b'filename=' in part:
-            filename = part.split(b'filename="')[1].split(b'"')[0].decode('utf-8', errors='ignore')
+            filename = part.split(b'filename="')[1].split(b'"')[0].decode('utf-8', errors='replace')
     
     name = re.sub(r'[^\w\s-]', '', name).strip()[:50]
     if not name:
