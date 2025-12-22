@@ -23,7 +23,7 @@ if not filename:
     print("<h1>Error: No file uploaded</h1>")
     exit()
 
-# Sanitize the filename (it's already sanitized by the server, but ensure safety)
+# Additional filename sanitization for safety
 filename = os.path.basename(filename)
 filename = re.sub(r'[^\w\s.-]', '', filename)
 

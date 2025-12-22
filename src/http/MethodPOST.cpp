@@ -164,8 +164,9 @@ HttpStatus MethodPOST::_handleMultipart(void) {
 			if (!_writeToFile(outPath, body.c_str() + fileStart, dataSize))
 				return SERVER_ERR;
 			
+			// Store the uploaded filename for CGI access
 			if (!fieldName.empty())
-				_formFields[fieldName + "_filename"] = filename;
+				_formFields[fieldName + "_FILENAME"] = filename;
 		} else if (!fieldName.empty()) {
 			size_t dataEnd = nextBoundary;
 			if (dataEnd >= 2 && body.compare(dataEnd - 2, 2, "\r\n") == 0)
