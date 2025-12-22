@@ -16,7 +16,7 @@ class MethodPOST : public AMethod {
 		std::string	_buildAbsoluteUrl(const std::string& targetPath);
 		std::string	_extractFilename(const std::string& filename);
 		HttpStatus	_handleMultipart(void);
-		HttpStatus	_runCGIWithFormFields(const std::string& path);
+		HttpStatus	_runCGI(const std::string& path, bool useFormFields);
 
 	public:
 		MethodPOST(const Request& req, const ServerConfig& config, const LocationConfig* location);

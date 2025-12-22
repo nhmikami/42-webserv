@@ -65,8 +65,10 @@ void CgiHandler::_initEnv(const Request& req) {
 void CgiHandler::_initEnv(const Request& req, const std::map<std::string, std::string>& formFields) {
 	_initEnv(req);
 	for (std::map<std::string, std::string>::const_iterator it = formFields.begin(); it != formFields.end(); ++it) {
-		std::string key = ParseUtils::toUpper(ParseUtils::replaceChar(it->first, '-', '_'));
-		_envMap["FORM_" + key] = it->second;
+		std::string fieldKey = it->first;
+		fieldKey = ParseUtils::replaceChar(fieldKey, '-', '_');
+		fieldKey = ParseUtils::toUpper(fieldKey);
+		_envMap["FORM_" + fieldKey] = it->second;
 	}
 }
 

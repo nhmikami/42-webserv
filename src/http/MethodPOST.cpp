@@ -18,12 +18,12 @@ HttpStatus MethodPOST::handleMethod(void) {
         if (uploadStatus != CREATED)
             return uploadStatus;
         if (_isCGI(full_path))
-            return _runCGIWithFormFields(full_path);
+            return _runCGI(full_path, true);
         return CREATED;
 	}
 
 	if (FileUtils::exists(full_path) && _isCGI(full_path) && FileUtils::isFile(full_path))
-		return _runCGI(full_path);
+		return _runCGI(full_path, false);
 
 	if (FileUtils::isDirectory(full_path)) {
 		return BAD_REQUEST;
@@ -101,7 +101,7 @@ const std::map<std::string, std::string>& MethodPOST::getFormFields(void) const 
 	return _formFields;
 }
 
-HttpStatus MethodPOST::_runCGIWithFormFields(const std::string& path) {
+HttpStatus MethodPOST::_runCGI(const std::string& path, bool useFormFields) {
 	if (!FileUtils::isReadable(path) || !FileUtils::isExecutable(path))
 		return FORBIDDEN;
 
@@ -113,7 +113,11 @@ HttpStatus MethodPOST::_runCGIWithFormFields(const std::string& path) {
 	std::string	ext = path.substr(dotPos);
 	std::string	executor = executors[ext];
 
-	_cgiHandler = new CgiHandler(_req, path, executor, _formFields);
+	if (useFormFields)
+		_cgiHandler = new CgiHandler(_req, path, executor, _formFields);
+	else
+		_cgiHandler = new CgiHandler(_req, path, executor);
+	
 	_cgiHandler->start();
 
 	return CGI_PENDING;
