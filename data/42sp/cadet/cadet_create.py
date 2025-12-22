@@ -20,8 +20,15 @@ if not name:
     exit()
 
 # Extract the 'photo' field
-photo_field = form["photo"] if "photo" in form else None
-if not photo_field or not photo_field.filename:
+if "photo" not in form:
+    print("Content-Type: text/html")
+    print()
+    print("<h1>Error: No file uploaded</h1>")
+    sys.stdout.flush()
+    exit()
+
+photo_field = form["photo"]
+if not photo_field.filename:
     print("Content-Type: text/html")
     print()
     print("<h1>Error: No file uploaded</h1>")
