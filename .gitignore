@@ -2,3 +2,11 @@
 ./vscode
 
 .nfs*
+
+# Build artifacts
+obj/
+webserv
+
+# Python cache
+__pycache__/
+*.pyc
