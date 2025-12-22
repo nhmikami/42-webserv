@@ -9,7 +9,7 @@ DATA_FILE = os.path.join(os.path.dirname(__file__), "../cgi/cadets.txt")
 # Read form data from environment variables set by the C++ server
 # The server parses multipart form data and provides fields via FORM_* environment variables
 name = os.environ.get('FORM_NAME', 'unknown')
-filename = os.environ.get('FORM_PHOTO_FILENAME', '')
+filename = os.environ.get('FORM_PHOTO__FILENAME', '')
 
 # Sanitize the name
 name = re.sub(r'[^\w\s-]', '', name).strip()[:50]

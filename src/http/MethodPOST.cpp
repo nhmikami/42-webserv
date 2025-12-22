@@ -179,8 +179,8 @@ HttpStatus MethodPOST::_handleMultipart(void) {
 			if (!_writeToFile(outPath, body.c_str() + fileStart, dataSize))
 				return SERVER_ERR;
 			
-			// Store the uploaded filename for CGI access
-			_formFields[fieldName + "_FILENAME"] = filename;
+			// Store uploaded filename for CGI access with __FILENAME suffix to avoid naming conflicts
+			_formFields[fieldName + "__FILENAME"] = filename;
 		} else {
 			// Handle regular form field
 			size_t dataEnd = nextBoundary;
