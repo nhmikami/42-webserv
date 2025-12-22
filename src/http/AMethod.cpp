@@ -91,7 +91,6 @@ bool AMethod::_isCGI(const std::string& path) const {
 		return false;
 
 	std::string extension = path.substr(dotPos);
-	std::cout << "LOCATION" << _location->getPath() << std::endl;
 	if (_location) {
 		const std::map<std::string, std::string>& locCgi = _location->getCgi();
 		if (locCgi.count(extension) > 0)

@@ -282,7 +282,6 @@ HttpStatus	ParseHttp::parseBody(std::string &body) {
 				body,
 				this->_request_body
 			);
-			std::cout << "STATUS VALIDADE CONTENT-LENGTH : " << status << std::endl;
 			if (status != OK)
 				return status;
 			body.clear();
