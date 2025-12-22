@@ -23,14 +23,14 @@ HttpStatus Client::readHeaders() {
         size_t headers_end = _recv_buffer.find("\r\n\r\n");
         if (headers_end == std::string::npos) {
             ssize_t bytes = recv(_client_fd, buffer, sizeof(buffer), 0);
-            if (bytes > 0) {
-                _recv_buffer.append(buffer, static_cast<size_t>(bytes));
-                continue;
+            if (bytes < 0) {
+                Logger::log(Logger::ERROR, "Failed to receive data.");
+                return SERVER_ERR;
             } else if (bytes == 0) {
                 return SERVER_ERR;
             } else {
-                Logger::log(Logger::ERROR, "Failed to receive data.");
-                return SERVER_ERR;
+                _recv_buffer.append(buffer, static_cast<size_t>(bytes));
+                continue;
             }
         }
         break;
@@ -53,13 +53,13 @@ HttpStatus Client::readBody(size_t body_start, size_t content_length)
 
      while (_recv_buffer.size() < body_start + content_length) {
         ssize_t bytes = recv(_client_fd, buffer, sizeof(buffer), 0);
-        if (bytes > 0) {
-            _recv_buffer.append(buffer, static_cast<size_t>(bytes));
+        if (bytes < 0) {
+            Logger::log(Logger::ERROR, "Failed to receive data.");
+            return SERVER_ERR;
         } else if (bytes == 0) {
             return SERVER_ERR;
         } else {
-            Logger::log(Logger::ERROR, "Failed to receive data.");
-            return SERVER_ERR;
+            _recv_buffer.append(buffer, static_cast<size_t>(bytes));
         }
     }
     return OK;
