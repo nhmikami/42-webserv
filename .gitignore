@@ -2,3 +2,8 @@
 ./vscode
 
 .nfs*
+
+# Build artifacts
+obj/
+*.o
+webserv
