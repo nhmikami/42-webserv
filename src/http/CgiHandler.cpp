@@ -6,6 +6,11 @@ CgiHandler::CgiHandler(const Request& req, const std::string& scriptPath, const 
 	_initEnv(req);
 }
 
+CgiHandler::CgiHandler(const Request& req, const std::string& scriptPath, const std::string& executor, const std::map<std::string, std::string>& formFields)
+	: _scriptPath(scriptPath), _executorPath(executor), _pid(-1), _socketFd(-1), _state(CGI_NOT_STARTED), _bytesSent(0), _requestBody(req.getBody()) {
+	_initEnv(req, formFields);
+}
+
 CgiHandler::~CgiHandler(void) {
 	if (_socketFd != -1) {
 		close(_socketFd);
@@ -55,6 +60,14 @@ void CgiHandler::_initEnv(const Request& req) {
 	}
 	if (req.getMethodStr() == "POST")
 		_envMap["CONTENT_LENGTH"] = ParseUtils::itoa(_requestBody.size());
+}
+
+void CgiHandler::_initEnv(const Request& req, const std::map<std::string, std::string>& formFields) {
+	_initEnv(req);
+	for (std::map<std::string, std::string>::const_iterator it = formFields.begin(); it != formFields.end(); ++it) {
+		std::string key = ParseUtils::toUpper(ParseUtils::replaceChar(it->first, '-', '_'));
+		_envMap["FORM_" + key] = it->second;
+	}
 }
 
 char** CgiHandler::_createEnvArray(void) const {

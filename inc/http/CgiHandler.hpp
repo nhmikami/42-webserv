@@ -46,6 +46,7 @@ class CgiHandler {
 
 	public:
 		CgiHandler(const Request& req, const std::string& scriptPath, const std::string& executor);
+		CgiHandler(const Request& req, const std::string& scriptPath, const std::string& executor, const std::map<std::string, std::string>& formFields);
 		~CgiHandler(void);
 
 		int			getSocketFd(void) const;
@@ -58,6 +59,7 @@ class CgiHandler {
 
 	private:
 		void	_initEnv(const Request& req);
+		void	_initEnv(const Request& req, const std::map<std::string, std::string>& formFields);
 		char**	_createEnvArray(void) const;
 		void	_freeEnvArray(char** envp) const;
 		void	_handleCgiWrite(void);

@@ -18,7 +18,7 @@ HttpStatus MethodPOST::handleMethod(void) {
         if (uploadStatus != CREATED)
             return uploadStatus;
         if (_isCGI(full_path))
-            return _runCGI(full_path);
+            return _runCGIWithFormFields(full_path);
         return CREATED;
 	}
 
@@ -97,6 +97,24 @@ std::string MethodPOST::_extractFilename(const std::string& filename) {
 	return base;
 }
 
+const std::map<std::string, std::string>& MethodPOST::getFormFields(void) const {
+	return _formFields;
+}
+
+HttpStatus MethodPOST::_runCGIWithFormFields(const std::string& path) {
+	if (!FileUtils::isReadable(path) || !FileUtils::isExecutable(path))
+		return FORBIDDEN;
+
+	std::map<std::string, std::string> executors = _getCgiExecutors();
+	std::string	ext = path.substr(path.find_last_of('.'));
+	std::string	executor = executors[ext];
+
+	_cgiHandler = new CgiHandler(_req, path, executor, _formFields);
+	_cgiHandler->start(); 
+
+	return CGI_PENDING;
+}
+
 HttpStatus MethodPOST::_handleMultipart(void) {
 	std::string uploadLoc = _getUploadLocation();
 	if (!FileUtils::exists(uploadLoc) || !FileUtils::isDirectory(uploadLoc) || !FileUtils::isWritable(uploadLoc)) {
@@ -130,6 +148,7 @@ HttpStatus MethodPOST::_handleMultipart(void) {
 		std::string headers = body.substr(pos, headersEnd - pos);
 		size_t fileStart = headersEnd + 4;
 		std::string filename = ParseUtils::extractAttribute(headers, "filename");
+		std::string fieldName = ParseUtils::extractAttribute(headers, "name");
 		size_t nextBoundary = body.find(sep, fileStart);
 		if (nextBoundary == std::string::npos)
 			return BAD_REQUEST;
@@ -144,6 +163,15 @@ HttpStatus MethodPOST::_handleMultipart(void) {
 			size_t dataSize = (fileEnd > fileStart) ? fileEnd - fileStart : 0;
 			if (!_writeToFile(outPath, body.c_str() + fileStart, dataSize))
 				return SERVER_ERR;
+			
+			if (!fieldName.empty())
+				_formFields[fieldName + "_filename"] = filename;
+		} else if (!fieldName.empty()) {
+			size_t dataEnd = nextBoundary;
+			if (dataEnd >= 2 && body.compare(dataEnd - 2, 2, "\r\n") == 0)
+				dataEnd -= 2;
+			std::string fieldValue = body.substr(fileStart, dataEnd - fileStart);
+			_formFields[fieldName] = fieldValue;
 		}
 		pos = nextBoundary + sep.size();
 	}
