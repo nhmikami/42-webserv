@@ -39,7 +39,7 @@ try:
     with open(DATA_FILE, "r") as f:
         for line in f:
             parts = line.strip().split(",")
-            if name != parts[0] or filename != parts[1]:
+            if len(parts) != 2 or name != parts[0] or filename != parts[1]:
                 new_lines.append(line)
     with open(DATA_FILE, "w") as f:
         f.writelines(new_lines)
