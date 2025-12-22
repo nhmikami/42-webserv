@@ -21,7 +21,10 @@ output = f"""
 try:
     with open(DATA_FILE, "r") as f:
         for line in f:
-            name, photo = line.strip().split(",")
+            parts = line.strip().split(",")
+            if len(parts) != 2:
+                continue
+            name, photo = parts
             photo_encoded = urllib.parse.quote(photo)
             output += f"""
             <div class="card">
