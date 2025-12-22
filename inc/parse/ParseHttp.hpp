@@ -56,7 +56,8 @@ class ParseHttp {
 
 		void toLowerStr(std::string &str);
 		void setMaxBodySize(size_t max_body_size);
-		HttpStatus	initParse(std::string &request);
+		HttpStatus	parseHeader(std::string &request);
+		HttpStatus	parseBody(std::string &request);
 		Request		buildRequest() const;
 
 		RequestMethod getRequestMethod() const;
@@ -66,6 +67,7 @@ class ParseHttp {
 		const std::string& getUserAgent() const;
 		const std::string& getBody() const;
 		const std::string& getUri() const;
+		const std::string& getContentLength() const;
 		const std::map<std::string, std::string>& getCookies() const;
 };
 

@@ -9,23 +9,26 @@
 
 #include "utils/Logger.hpp"
 #include "parse/ParseHttp.hpp"
+#include "http/Response.hpp"
 
 class Client {
 	private:
 		int			_client_fd;
 		std::string	_server_name;
 		std::string	_http_version;
+		std::string _recv_buffer;
 
 		Client(void);
-		Client(const Client &other);
-
-		Client &operator=(const Client &other);
+		
+		HttpStatus	readHeaders();
+		HttpStatus	readBody(size_t body_start, size_t content_length);
+		size_t		getContentLength(const ParseHttp &parser);
 		
 	public:
 		Client(int client_fd);
 		~Client(void);
 
-		std::string	receive();
+		std::pair<HttpStatus, ParseHttp>	receive();
 		bool		sendResponse(const std::string &response);
 
 		void		setServerName(const std::string &name);

@@ -1,32 +1,5 @@
 #include "server/Server.hpp"
 
-// Server::Server(void) : _server_fd(-1), _addlen(sizeof(_address)), _host("127.0.0.1"), _port(8000)
-// {
-// 	memset(&_address, 0, sizeof(_address));
-// 	if (!startServer())
-// 		Logger::log(Logger::ERROR, "Failed to start server.");
-// };
-
-// Server::Server(const Server &other) : _server_fd(-1), _addlen(sizeof(_address)), _host(other._host), _port(other._port)
-// {
-// 	memset(&_address, 0, sizeof(_address));
-// 	if (!startServer())
-// 		Logger::log(Logger::ERROR, "Failed to start server.");
-// };
-
-// Server::Server(std::string host, int port): 
-// 	_server_fd(-1), 
-// 	_addlen(sizeof(_address)), 
-// 	_host(host), 
-// 	_port(port)
-// {
-// 	memset(&_address, 0, sizeof(_address));
-// 	if (!startServer())
-// 		Logger::log(Logger::ERROR, "Failed to start server.");
-// };
-
-// deletar construtores acima //
-
 Server::Server(std::vector<ServerConfig> configs) : _configs(configs) {
 	if (!startServer())
 		Logger::log(Logger::ERROR, "Failed to start server.");
@@ -52,31 +25,6 @@ Server::~Server(void) {
 	_fd_to_config.clear();
 	_client_to_config.clear();
 };
-
-// Server &Server::operator=(const Server &other)
-// {
-// 	if (this != &other)
-// 	{
-// 		for (size_t i = 0; i < _clients.size(); i++)
-//             delete _clients[i];
-
-//         _clients.clear();
-//         _fds.clear();
-
-//         if (_server_fd >= 0)
-//             close(_server_fd);
-
-// 		_server_fd = -1;
-// 		_addlen = sizeof(_address);
-// 		_host = other._host;
-// 		_port = other._port;
-
-// 		memset(&_address, 0, sizeof(_address));
-// 		if (!startServer())
-// 			Logger::log(Logger::ERROR, "Failed to start server.");
-// 	}
-// 	return *this;
-// };
 
 bool	Server::startServer(void) {
 	for (size_t i = 0; i < _configs.size(); i++) {
@@ -246,37 +194,29 @@ bool Server::handleClient(int i) {
 		closeClient(j, client);
 		return false;
 	}
+	
+	std::pair<HttpStatus, ParseHttp>receive_parse_request = client->receive();
+	HttpStatus status = receive_parse_request.first;
+	ParseHttp& parser = receive_parse_request.second;
 
-	std::string raw_request = client->receive();
-	if (raw_request.empty()) {
+	if (status == SERVER_ERR) {
 		Logger::log(Logger::SERVER, "Client disconnected (fd=" + ParseUtils::itoa(client_fd) + ")");
 		closeClient(j, client);
 		return false;
 	}
-	Logger::log(Logger::SERVER, "Received from fd=" + ParseUtils::itoa(client_fd) + ":\n" + raw_request);
 
-	Request	request;
-	if (!_parseRequest(raw_request, request, config, client, j)) {
-		std::cout << "Failed to parse request" << std::endl;
-		return false;
-	}
+    if (status >= BAD_REQUEST) {
+        return _processError(status, config, NULL, client, j);
+    }
+	
+    Request request = parser.buildRequest();
+    
+    client->setHttpVersion(request.getHttpVersion());
+    client->setServerName(config->getServerName());
+
 
 	const LocationConfig* location = config->findLocation(FileUtils::normalizePath(request.getPath()));
 	return _processRequest(request, config, location, client, j);
-}
-
-bool Server::_parseRequest(const std::string& raw_request, Request& request, ServerConfig* config, Client* client, size_t j) {
-	ParseHttp	parser;
-	std::string	req = raw_request;
-	HttpStatus	status = parser.initParse(req);
-	if (status >= BAD_REQUEST)
-		return _processError(status, config, NULL, client, j);
-
-	request = parser.buildRequest();
-	client->setHttpVersion(request.getHttpVersion());
-	client->setServerName(config->getServerName());
-	printRequest(parser); // for debugging
-	return true;
 }
 
 bool Server::_processRequest(Request& request, ServerConfig* config, const LocationConfig* location, Client* client, size_t j) {

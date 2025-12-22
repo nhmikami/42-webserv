@@ -1,26 +1,51 @@
 #!/usr/bin/env python3
 import os, html
+import urllib.parse
 
-DATA_FILE = os.path.join(os.path.dirname(__file__), "../cadets/cadets.txt")
+DATA_FILE = os.path.join(os.path.dirname(__file__), "cadets.txt")
 print("Content-Type: text/html")
 print()
 
-print("<ul>")
+output = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Cadet's List</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="bg">
+    <div class="columns">
+"""
 
 try:
     with open(DATA_FILE, "r") as f:
         for line in f:
-            name, photo = line.strip().split(",")
-            print(f"""
-            <li>
-                {html.escape(name)} –
-                <a href="/cadets/uploads/{html.escape(photo)}" target="_blank">Photo</a>
-                <form style='display:inline' method="POST" action="/cadet?delete={urllib.parse.quote(photo)}">
-                    <button type="submit">Delete</button>
-                </form>
-            </li>
-            """)
-except Exception:
-    print("<li>No cadets registered.</li>")
+            parts = line.strip().split(",")
+            if len(parts) != 2:
+                continue
+            name, photo = parts
+            photo_encoded = urllib.parse.quote(photo)
+            output += f"""
+            <div class="card">
+                <img src="/cadets/uploads/{photo_encoded}" alt="{html.escape(name)}">
+                <div class="card-content">
+                    <div class="subtitle">{html.escape(name)}</div>
+                    <form method="POST" action="./cgi/cadet_delete.py?file={photo_encoded}">
+                        <button type="submit" class="delete-btn">DELETE</button>
+                    </form>
+                </div>
+            </div>
+            """
 
-print("</ul>")
+except Exception:
+    output += '<div class="no-cadets">No cadets registered.</div>'
+
+
+output += """
+</div>
+</body>
+</html>
+"""
+
+print(output)

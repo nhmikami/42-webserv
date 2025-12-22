@@ -50,7 +50,7 @@ val: re
 				--track-fds=yes \
 				--trace-children=yes \
 				--trace-children-skip='*/bin/*,*/sbin/*,/usr/bin/*' \
-				./${NAME} ./config/oficial.conf
+				./${NAME} ./config/valid/oficial.conf
 						
 clean:
 				@rm -rf $(OBJ_DIR)
