@@ -62,7 +62,7 @@ class Server {
 		bool	_processRedirect(int code, ServerConfig* config, const LocationConfig* location, Client* client, size_t j);
 		bool	_processError(HttpStatus status, ServerConfig* config, const LocationConfig* location, Client* client, size_t j);
 		bool	_processCgi(AMethod* method, Client* client, int client_fd);
-		bool	_sendResponse(AMethod* method, HttpStatus status, Client* client);
+		bool	_sendResponse(AMethod* method, HttpStatus status, Client* client, size_t j);
 
 		bool	_handleCgiEvent(size_t i);
 		void	_registerCgiHandler(int client_fd, CgiHandler *cgi, Client *client);

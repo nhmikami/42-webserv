@@ -218,6 +218,7 @@ bool Server::handleClient(int i) {
     }
 	// printRequest(parser);
 	
+	client->clearCurrentRequest();
 	Request* request = new Request(parser.buildRequest());
 	client->setCurrentRequest(request);
 	client->setHttpVersion(request->getHttpVersion());
@@ -253,7 +254,7 @@ bool Server::_processRequest(Request& request, ServerConfig* config, const Locat
 	if (status == CGI_PENDING)
 		return _processCgi(method, client, client->getFd());
 
-	return _sendResponse(method, status, client);
+	return _sendResponse(method, status, client, j);
 }
 
 bool Server::_isMethodAllowed(const std::string& method, const LocationConfig* location) {
@@ -326,7 +327,7 @@ bool Server::_processError(HttpStatus status, ServerConfig* config, const Locati
 	return false;
 }
 
-bool Server::_sendResponse(AMethod* method, HttpStatus status, Client* client) {
+bool Server::_sendResponse(AMethod* method, HttpStatus status, Client* client, size_t j) {
 	Response res = method->getResponse();
 	if (status >= BAD_REQUEST)
 		res.processError(status, method->getServerConfig(), method->getLocationConfig());
@@ -337,12 +338,24 @@ bool Server::_sendResponse(AMethod* method, HttpStatus status, Client* client) {
 	if (s)
 		res.addHeader("Set-Cookie", std::string("SESSION_ID=") + s->getId() + "; Path=/; HttpOnly");
 
-	std::string response = res.buildResponse(client->getServerName(), client->getHttpVersion());
-	client->sendResponse(response);
-	client->clearCurrentRequest();
+	std::string connHeader = method->getRequest().getHeader("connection");
+	bool keepAlive = true;
+    if (connHeader == "close") {
+        keepAlive = false;
+        res.addHeader("Connection", "close");
+    } else {
+        res.addHeader("Connection", "keep-alive");
+    }
 
-	delete method;
-	return true;
+    client->sendResponse(res.buildResponse(client->getServerName(), client->getHttpVersion()));
+    delete method;
+    client->clearCurrentRequest();
+
+    if (!keepAlive) {
+        closeClient(j, client); // 'j' precisaria ser passado para cá
+        return false;
+    }
+    return true;
 }
 
 void Server::unhandleClient(int i) {
