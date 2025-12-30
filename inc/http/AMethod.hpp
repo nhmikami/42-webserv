@@ -33,8 +33,7 @@ class AMethod {
 		CgiHandler*				releaseCgiHandler(void);
 
 	protected:
-		std::string 		_stripLocationPrefix(const std::string& path) const;
-		
+		std::string					_stripLocationPrefix(const std::string& path) const;
 		std::string					_getRootPath(void) const;
 		bool						_getAutoindex(void) const;
 		size_t						_getMaxBodySize(void) const;

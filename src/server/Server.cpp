@@ -242,6 +242,7 @@ bool Server::handleClient(int i) {
 }
 
 bool Server::_processRequest(Request& req, Client* cli, ServerConfig* cfg, const LocationConfig* loc) {
+	Logger::log(Logger::SERVER, "fd=" + ParseUtils::itoa(cli->getFd()) + " -> " + req.getMethodStr() + " " + req.getPath() + " " + cli->getHttpVersion());
 	Response response;
 	Session* session = _handleSession(req);
 	req.setSession(session);
@@ -319,6 +320,7 @@ bool Server::_completeResponse(HttpStatus status, Client* cli, ServerConfig* cfg
 		res.addHeader("set-cookie", "SESSION_ID=" + req->getSession()->getId() + "; Path=/; HttpOnly");
 	}
 
+	Logger::log(Logger::SERVER, "fd=" + ParseUtils::itoa(cli->getFd()) + " <- " + cli->getHttpVersion() + " " + ParseUtils::itoa(static_cast<int>(status)) + " " + res.getStatusMessage());
 	cli->queueResponse(res.buildResponse(cli->getServerName(), cli->getHttpVersion()));
 	cli->setState(CLIENT_WRITING);
 	enablePollOut(cli->getFd());
@@ -403,6 +405,7 @@ bool Server::_processCgi(Client* cli, AMethod* method) {
 	cli->setState(CLIENT_WAITING_CGI);
 	CgiHandler* cgi = method->releaseCgiHandler();
 	cgi->start();
+	Logger::log(Logger::SERVER, "CGI execution started: pid=" + ParseUtils::itoa(cgi->getPid()));
 	_registerCgiHandler(cgi, cli);
 
 	delete method;
@@ -458,6 +461,7 @@ void Server::_finalizeCgiResponse(size_t i, int cgi_fd) {
 			res.addHeader("set-cookie", "SESSION_ID=" + req->getSession()->getId() + "; Path=/; HttpOnly");
 		}
 
+		Logger::log(Logger::SERVER, "fd=" + ParseUtils::itoa(cli->getFd()) + " <- " + cli->getHttpVersion() + " " + ParseUtils::itoa(static_cast<int>(res.getStatus())) + " " + res.getStatusMessage());
 		cli->queueResponse(res.buildResponse(cli->getServerName(), cli->getHttpVersion()));
 		cli->setState(CLIENT_WRITING);
 		enablePollOut(cli->getFd());

@@ -78,6 +78,10 @@ void CgiHandler::_freeEnvArray(char** envp) const {
 	delete[] envp;
 }
 
+pid_t CgiHandler::getPid(void) const {
+	return _pid;
+}
+
 int CgiHandler::getSocketFd(void) const {
 	return _socketFd;
 }

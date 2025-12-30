@@ -47,6 +47,7 @@ class CgiHandler {
 		CgiHandler(const Request& req, const std::string& scriptPath, const std::string& executor);
 		~CgiHandler(void);
 
+		pid_t		getPid(void) const;
 		int			getSocketFd(void) const;
 		CgiState	getState(void) const;
 		std::string	getOutput(void) const;
