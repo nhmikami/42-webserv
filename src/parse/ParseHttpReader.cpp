@@ -18,7 +18,7 @@ HttpStatus ParseHttpReader::validateBodyContentLength(
 		return PAYLOAD_TOO_LARGE;
 	
 	if (buffer.size() < content_length)
-		return CONTINUE;
+		return HTTP_PENDING;
 	
 	out_body = buffer.substr(0, content_length);
 	buffer = buffer.substr(content_length);
@@ -93,7 +93,7 @@ HttpStatus ParseHttpReader::validateBodyChunked(
 	while (true) {
 		size_t crlf_pos = buffer.find("\r\n");
 		if (crlf_pos == std::string::npos)
-			return CONTINUE;
+			return HTTP_PENDING;
 		
 		std::string size_line = buffer.substr(0, crlf_pos);
 		size_t chunk_size;
@@ -108,7 +108,7 @@ HttpStatus ParseHttpReader::validateBodyChunked(
 			while (true) {
 				size_t crlf_pos = buffer.find("\r\n");
 				if (crlf_pos == std::string::npos)
-					return CONTINUE;
+					return HTTP_PENDING;
 				if (crlf_pos == 0) {
 					buffer = buffer.substr(2);
 					return OK;
@@ -124,7 +124,7 @@ HttpStatus ParseHttpReader::validateBodyChunked(
 			return PAYLOAD_TOO_LARGE;
 		
 		if (buffer.size() < chunk_size + 2)
-			return CONTINUE;
+			return HTTP_PENDING;
 		
 		if (buffer[chunk_size] != '\r' || buffer[chunk_size + 1] != '\n')
 			return BAD_REQUEST;

@@ -12,7 +12,9 @@
 #include <map>
 
 enum HttpStatus {
-	CGI_PENDING			= -1,
+	CGI_PENDING			= -3,
+	HTTP_CLOSED			= -2,
+	HTTP_PENDING		= -1,
 	ZERO				= 0,
 	CONTINUE			= 100,
 	OK					= 200,

@@ -24,23 +24,24 @@
 
 class ParseHttp {
 	private:
-		RequestMethod _request_method;
-		std::string _request_uri;
-		std::string _request_path;
-		std::string _request_path_info;
-		std::string _query;
-		std::string _http_version;
-		std::string _host_header;
-		std::string _user_agent_header;
-		std::string _content_length;
-		std::string _transfer_encoding;
-		std::string _content_type;
-		std::string _connection;
-		std::string _accept;
+		RequestMethod	_request_method;
+		std::string		_request_uri;
+		std::string		_request_path;
+		std::string		_request_path_info;
+		std::string		_query;
+		std::string		_http_version;
+		std::string		_host_header;
+		std::string		_user_agent_header;
+		std::string		_content_length;
+		std::string		_transfer_encoding;
+		std::string		_content_type;
+		std::string		_connection;
+		std::string		_accept;
+		std::string		_request_body;
+		size_t			_max_body_size;
+		bool			_header_parsed;
 		std::map<std::string, std::string> _cookies;
-		std::string _request_body;
 		std::map<std::string, std::string> _all_headers;
-		size_t _max_body_size;
 
 		bool parseRequestLine(const std::string &line,
 			std::string &out_method,
@@ -69,6 +70,8 @@ class ParseHttp {
 		const std::string& getUri() const;
 		const std::string& getContentLength() const;
 		const std::map<std::string, std::string>& getCookies() const;
+		bool isHeaderComplete() const;
+		void reset();
 };
 
 RequestMethod stringToMethod(const std::string &method);

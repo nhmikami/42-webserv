@@ -1,6 +1,5 @@
 #include "http/MethodDELETE.hpp"
 #include "utils/FileUtils.hpp"
-#include "utils/Logger.hpp"
 
 MethodDELETE::MethodDELETE(const Request& req, const ServerConfig& config, const LocationConfig* location)
 	: AMethod(req, config, location) {}

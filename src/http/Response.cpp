@@ -46,11 +46,11 @@ const std::string& Response::getBody(void) const {
 }
 
 void Response::addHeader(const std::string &key, const std::string &value) {
-	_headers.insert(std::make_pair(key, value));
+	_headers.insert(std::make_pair(ParseUtils::toLower(key), value));
 }
 
 const std::string& Response::getHeader(const std::string &key) const {
-	std::multimap<std::string, std::string>::const_iterator it = _headers.find(key);
+	std::multimap<std::string, std::string>::const_iterator it = _headers.find(ParseUtils::toLower(key));
 	if (it != _headers.end())
 		return it->second;
 	static const std::string empty = "";
@@ -62,7 +62,7 @@ const std::multimap<std::string, std::string>& Response::getHeaders() const {
 }
 
 void Response::removeHeader(const std::string &key) {
-	_headers.erase(key);
+	_headers.erase(ParseUtils::toLower(key));
 }
 
 std::string Response::buildResponse(const std::string& server_name, const std::string& http_version) const {
@@ -70,22 +70,22 @@ std::string Response::buildResponse(const std::string& server_name, const std::s
 
 	response << http_version << " " << _status << " " << getStatusMessage() << "\r\n";
 
-	if (_headers.find("Date") == _headers.end())
+	if (_headers.find("date") == _headers.end())
 		response << "Date: " << _generateDate() << "\r\n";
 
 	response << "Server: " << server_name << "\r\n";
 
 	if (_status == NO_CONTENT) {
 		for (std::multimap<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
-			if (ParseUtils::toLower(it->first) != "content-type" && ParseUtils::toLower(it->first) != "content-length")
+			if (it->first != "content-type" && it->first != "content-length")
 				response << it->first << ": " << it->second << "\r\n";
 		}
 		response << "\r\n";
 		return response.str();
 	}
 
-	if (_headers.find("Content-Length") == _headers.end())
-		response << "Content-Length: " << ParseUtils::itoa(_body.size()) << "\r\n";
+	if (_headers.find("content-length") == _headers.end())
+		response << "content-length: " << ParseUtils::itoa(_body.size()) << "\r\n";
 
 	for (std::multimap<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
 		response << it->first << ": " << it->second << "\r\n";
@@ -111,7 +111,7 @@ HttpStatus Response::processError(HttpStatus status, const ServerConfig& server,
 					file.read(buffer.data(), file_size);
 					if (file) {
 						setBody(std::string(buffer.begin(), buffer.end()));
-						addHeader("Content-Type", FileUtils::guessMimeType(path));
+						addHeader("content-type", FileUtils::guessMimeType(path));
 						return status;
 					}
 				}
@@ -125,7 +125,7 @@ HttpStatus Response::processError(HttpStatus status, const ServerConfig& server,
 
 	std::string body = html.str();
 	setBody(body);
-	addHeader("Content-Type", "text/html");
+	addHeader("content-type", "text/html");
 	return status;
 }
 
@@ -165,8 +165,8 @@ void Response::parseCgiOutput(const std::string& raw) {
 	std::pair<std::string, std::string> parts = ParseUtils::splitHeadersAndBody(raw);
 	if (parts.first.empty() && parts.second == raw) {
 		setBody(raw);
-		addHeader("Content-Type", "text/plain");
-		addHeader("Content-Length", ParseUtils::itoa(_body.size()));
+		addHeader("content-type", "text/plain");
+		addHeader("content-length", ParseUtils::itoa(_body.size()));
 		return ;
 	}
 
@@ -181,7 +181,7 @@ void Response::parseCgiOutput(const std::string& raw) {
 		if (header.second.empty())
 			continue ;
 
-		std::string key = ParseUtils::toLower(ParseUtils::trim(header.first));
+		std::string key = ParseUtils::trim(header.first);
 		std::string value = ParseUtils::trim(header.second);
 
 		if (key == "status") {
@@ -193,8 +193,8 @@ void Response::parseCgiOutput(const std::string& raw) {
 		}
 	}
 
-	if (getHeader("Content-Length").empty())
-		addHeader("Content-Length", ParseUtils::itoa(_body.size()));
-	if (getHeader("Content-Type").empty())
-		addHeader("Content-Type", "text/plain");
+	if (getHeader("content-length").empty())
+		addHeader("content-length", ParseUtils::itoa(_body.size()));
+	if (getHeader("content-type").empty())
+		addHeader("content-type", "text/plain");
 }

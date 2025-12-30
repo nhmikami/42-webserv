@@ -85,68 +85,6 @@ bool	Server::startListen(int server_fd, std::string host, int port) {
 	return true;
 };
 
-bool	Server::addToFDs(int server_fd) {
-	struct pollfd pollfd;
-	pollfd.fd = server_fd;
-	pollfd.events = POLLIN;
-	pollfd.revents = 0;
-	_fds.push_back(pollfd);
-
-	return true;
-};
-
-void	Server::run(void) {
-	time_t last_cleanup = std::time(NULL);
-	while (true) {
-		time_t now = std::time(NULL);
-		if (now - last_cleanup >= 60) {
-			_sessions.cleanup();
-			last_cleanup = now;
-		}
-
-		int res = poll(_fds.data(), _fds.size(), -1);
-		if (res == -1) {
-			Logger::log(Logger::ERROR, "Failed to poll.");
-			continue ;
-		} else if (res == 0) {
-			continue ;
-		}
-
-		size_t i = 0;
-		while (i < _fds.size()) {
-			int fd = _fds[i].fd;
-			if (_fds[i].revents == 0) {
-				i++;
-				continue ;
-			}
-			if (_fd_to_config.count(fd)) {
-				if (_fds[i].revents & POLLIN) {
-					acceptClient(fd, _fd_to_config[fd]);
-				}
-				i++;
-			} else if (_cgiHandlers.count(fd)) {
-				if (_handleCgiEvent(i))
-					continue ;
-				i++;
-			} else {
-				if (_fds[i].revents & (POLLERR | POLLHUP | POLLNVAL)) {
-					unhandleClient(i);
-					continue ;
-				} else if (_fds[i].revents & POLLIN) {
-					if (handleClient(i))
-						i++;
-					else
-						continue ;
-				} else if (_fds[i].revents & POLLOUT) {
-					i++;
-				} else {
-					i++;
-				}
-			}
-		}
-	}
-}
-
 void	Server::acceptClient(int server_fd, ServerConfig *config) {
 	struct sockaddr_in address;
 	socklen_t addrlen = sizeof(address);
@@ -171,6 +109,16 @@ void	Server::acceptClient(int server_fd, ServerConfig *config) {
 	Logger::log(Logger::SERVER, "New client accepted (fd=" + ParseUtils::itoa(client_fd) + ")");
 };
 
+bool	Server::addToFDs(int server_fd) {
+	struct pollfd pollfd;
+	pollfd.fd = server_fd;
+	pollfd.events = POLLIN;
+	pollfd.revents = 0;
+	_fds.push_back(pollfd);
+
+	return true;
+};
+
 Client	*Server::findClient(size_t *j, int client_fd) {
 	while (*j < _clients.size()){
 		if (_clients[*j]->getFd() == client_fd) {
@@ -190,6 +138,80 @@ ServerConfig *Server::findServerConfig(int client_fd) {
 	return it->second;
 }
 
+void	Server::run(void) {
+	time_t last_cleanup = std::time(NULL);
+
+	while (true) {
+		time_t now = std::time(NULL);
+		if (now - last_cleanup >= 60) {
+			_sessions.cleanup();
+			last_cleanup = now;
+		}
+
+		int poll_ret = poll(&_fds[0], _fds.size(), -1);
+		if (poll_ret == -1) {
+			Logger::log(Logger::ERROR, "Failed to poll.");
+			continue ;
+		}
+
+		for (size_t i = 0; i < _fds.size(); ++i) {
+			int		fd = _fds[i].fd;
+			short	revents = _fds[i].revents;
+
+			if (revents == 0) {
+				continue ;
+			}
+
+			if (_fd_to_config.count(fd)) {
+				if (revents & POLLIN)
+					acceptClient(fd, _fd_to_config[fd]);
+				continue ;
+			}
+
+			if (_cgiHandlers.count(fd)) {
+				if (_handleCgiEvent(i, revents))
+					i--;
+				continue ;
+			}
+
+			size_t j = 0;
+			Client* client = findClient(&j, fd);
+			if (!client) {
+				unhandleClient(i--);
+				continue;
+			}
+			if (revents & (POLLERR | POLLHUP | POLLNVAL)) {
+				unhandleClient(i--);
+				continue ;
+			}
+			if ((revents & POLLOUT) && client->getState() == CLIENT_WRITING) {
+				if (client->sendResponse()) {
+					Logger::log(Logger::SERVER, "Response sent!");
+					if (!resetClient(i, j, client))
+						i--;
+				}
+			}
+			else if ((revents & POLLIN) && client->getState() == CLIENT_READING) {
+				if (!handleClient(i))
+					i--;
+			}
+		}
+	}
+}
+
+void Server::enablePollOut(int fd) {
+	for (size_t i = 0; i < _fds.size(); i++) {
+		if (_fds[i].fd == fd) {
+			_fds[i].events |= POLLOUT;
+			return ;
+		}
+	}
+}
+
+void Server::disablePollOut(size_t i) {
+	_fds[i].events &= ~POLLOUT;
+}
+
 bool Server::handleClient(int i) {
 	size_t	j = 0;
 	int		client_fd = _fds[i].fd;
@@ -203,65 +225,55 @@ bool Server::handleClient(int i) {
 		return false;
 	}
 	
-	std::pair<HttpStatus, ParseHttp>receive_parse_request = client->receive();
-	HttpStatus status = receive_parse_request.first;
-	ParseHttp& parser = receive_parse_request.second;
-
-	if (status == SERVER_ERR) {
+	HttpStatus status = client->receive();
+	if (status == HTTP_CLOSED) {
 		Logger::log(Logger::SERVER, "Client disconnected (fd=" + ParseUtils::itoa(client_fd) + ")");
 		closeClient(j, client);
 		return false;
+	} else if (status == HTTP_PENDING) {
+		return true;
+	} else if (status >= BAD_REQUEST) {
+		return _completeResponse(status, client, config, NULL, NULL);
 	}
 
-    if (status >= BAD_REQUEST) {
-        return _processError(status, config, NULL, client, j);
-    }
-	// printRequest(parser);
-	
-	client->clearCurrentRequest();
-	Request* request = new Request(parser.buildRequest());
-	client->setCurrentRequest(request);
-	client->setHttpVersion(request->getHttpVersion());
-	client->setServerName(config->getServerName());
-
-	const LocationConfig* location = config->findLocation(FileUtils::normalizePath(request->getPath()));
-	return _processRequest(*request, config, location, client, j);
+	client->initRequest(config->getServerName());
+	const LocationConfig* location = config->findLocation(FileUtils::normalizePath(client->getCurrentRequest()->getPath()));
+	return _processRequest(*(client->getCurrentRequest()), client, config, location);
 }
 
-bool Server::_processRequest(Request& request, ServerConfig* config, const LocationConfig* location, Client* client, size_t j) {
+bool Server::_processRequest(Request& req, Client* cli, ServerConfig* cfg, const LocationConfig* loc) {
 	Response response;
-	Session* session = _handleSession(request);
-	request.setSession(session);
+	Session* session = _handleSession(req);
+	req.setSession(session);
 
-	if (location && location->hasReturn())
-		return _processRedirect(static_cast<HttpStatus>(location->getReturnCode()), config, location, client, j);
+	if (loc && loc->hasReturn())
+		return _processRedirect(static_cast<HttpStatus>(loc->getReturnCode()), cli, loc);
 
-	if (!_isMethodAllowed(request.getMethodStr(), location))
-		return _processError(NOT_ALLOWED, config, location, client, j);
+	if (!_isMethodAllowed(req.getMethodStr(), loc))
+		return _completeResponse(NOT_ALLOWED, cli, cfg, loc, NULL);
 
 	AMethod* method = NULL;
-	if (request.getMethodStr() == "GET")
-		method = new MethodGET(request, *config, location);
-	else if (request.getMethodStr() == "POST")
-		method = new MethodPOST(request, *config, location);
-	else if (request.getMethodStr() == "DELETE")
-		method = new MethodDELETE(request, *config, location);
-	else {
-		return _processError(NOT_IMPLEMENTED, config, location, client, j);
-	}
-	HttpStatus status = method->handleMethod();
-	
-	if (status == CGI_PENDING)
-		return _processCgi(method, client, client->getFd());
+	if (req.getMethodStr() == "GET")
+		method = new MethodGET(req, *cfg, loc);
+	else if (req.getMethodStr() == "POST")
+		method = new MethodPOST(req, *cfg, loc);
+	else if (req.getMethodStr() == "DELETE")
+		method = new MethodDELETE(req, *cfg, loc);
+	else
+		return _completeResponse(NOT_IMPLEMENTED, cli, cfg, loc, method);
 
-	return _sendResponse(method, status, client, j);
+	HttpStatus status = method->handleMethod();
+	if (status == CGI_PENDING)
+		return _processCgi(cli, method);
+
+	return _completeResponse(status, cli, cfg, loc, method);
 }
 
-bool Server::_isMethodAllowed(const std::string& method, const LocationConfig* location) {
-	if (!location)
+bool Server::_isMethodAllowed(const std::string& method, const LocationConfig* loc) {
+	if (!loc)
 		return true;
 	
-	const std::set<std::string>& allowed_methods = location->getMethods();
+	const std::set<std::string>& allowed_methods = loc->getMethods();
 	if (allowed_methods.empty())
 		return true;
 	if (allowed_methods.find(method) == allowed_methods.end())
@@ -270,92 +282,51 @@ bool Server::_isMethodAllowed(const std::string& method, const LocationConfig* l
 	return true;
 }
 
-bool Server::_processCgi(AMethod* method, Client* client, int client_fd) {
-	CgiHandler* cgi = method->releaseCgiHandler();
-	_registerCgiHandler(client_fd, cgi, client);
+bool Server::_processRedirect(int code, Client* cli, const LocationConfig* loc) {
+	Response res;
+	res.setStatus(static_cast<HttpStatus>(code));
+	std::string path = loc->getReturnPath();
+	if (code >= 300 && code < 400)
+		res.addHeader("location", path);
+	else
+		res.setBody(path);
 
-	Logger::log(Logger::SERVER, "CGI started for client fd=" + ParseUtils::itoa(client_fd));
+	Request* req = cli->getCurrentRequest();
+	if (req && req->getSession())
+		res.addHeader("set-cookie", "SESSION_ID=" + req->getSession()->getId() + "; Path=/; HttpOnly");
 
-	delete method;
+	cli->queueResponse(res.buildResponse(cli->getServerName(), cli->getHttpVersion()));
+	cli->setState(CLIENT_WRITING);
+	enablePollOut(cli->getFd());
 	return true;
 }
 
-bool Server::_processRedirect(int code, ServerConfig* config, const LocationConfig* location, Client* client, size_t j) {
+bool Server::_completeResponse(HttpStatus status, Client* cli, ServerConfig* cfg, const LocationConfig* loc, AMethod* method) {
 	Response res;
-	res.setStatus(static_cast<HttpStatus>(code));
-	Request& req = *client->getCurrentRequest();
-	Session* session = req.getSession();
-	if (session)
-		res.addHeader("Set-Cookie", std::string("SESSION_ID=") + session->getId() + "; Path=/; HttpOnly");
-
-	std::string content = location->getReturnPath();
-	if (code >= 300 && code < 400) {
-		res.addHeader("Location", content);
-		client->sendResponse(res.buildResponse(client->getServerName(), client->getHttpVersion()));
-		client->clearCurrentRequest();
-		return true;
-	} else if ((code >= 200 && code < 300) || (code >= 400 && code < 600)) {
-		res.setBody(content);
-		res.addHeader("Content-Type", "text/plain");
-		client->sendResponse(res.buildResponse(client->getServerName(), client->getHttpVersion()));
-		client->clearCurrentRequest();
-		return true;
-	}
-	return _processError(SERVER_ERR, config, location, client, j);
-}
-
-bool Server::_processError(HttpStatus status, ServerConfig* config, const LocationConfig* location, Client* client, size_t j) {
-	std::string statusLine = ParseUtils::itoa(static_cast<int>(status)) + " " + Response(status).getStatusMessage();
-	Logger::log(Logger::ERROR, "Error status: " + statusLine);
-	
-	Response res;
-	if (config) {
-		res.processError(status, *config, location);
+	if (method) {
+		res = method->getResponse();
+		if (status >= BAD_REQUEST)
+			res.processError(status, *cfg, loc);
+		else
+			res.setStatus(status);
 	} else {
-		res.setStatus(status);
-		res.setBody("Fatal error");
-		res.addHeader("Content-Type", "text/plain");
+		res.processError(status, *cfg, loc);
 	}
-	Request& req = *client->getCurrentRequest();
-	Session* session = req.getSession();
-	if (session)
-		res.addHeader("Set-Cookie", std::string("SESSION_ID=") + session->getId() + "; Path=/; HttpOnly");
 
-	client->sendResponse(res.buildResponse(client->getServerName(), client->getHttpVersion()));
-	client->clearCurrentRequest();
-	closeClient(j, client);
-	return false;
-}
+	Request* req = cli->getCurrentRequest();
+	if (req && req->getSession()) {
+		_processSessionData(res, req->getSession());
+		res.addHeader("set-cookie", "SESSION_ID=" + req->getSession()->getId() + "; Path=/; HttpOnly");
+	}
 
-bool Server::_sendResponse(AMethod* method, HttpStatus status, Client* client, size_t j) {
-	Response res = method->getResponse();
-	if (status >= BAD_REQUEST)
-		res.processError(status, method->getServerConfig(), method->getLocationConfig());
-	else
-		res.setStatus(status);
+	cli->queueResponse(res.buildResponse(cli->getServerName(), cli->getHttpVersion()));
+	cli->setState(CLIENT_WRITING);
+	enablePollOut(cli->getFd());
 
-	Session* s = method->getRequest().getSession();
-	if (s)
-		res.addHeader("Set-Cookie", std::string("SESSION_ID=") + s->getId() + "; Path=/; HttpOnly");
+	if (method)
+		delete method;
 
-	std::string connHeader = method->getRequest().getHeader("connection");
-	bool keepAlive = true;
-    if (connHeader == "close") {
-        keepAlive = false;
-        res.addHeader("Connection", "close");
-    } else {
-        res.addHeader("Connection", "keep-alive");
-    }
-
-    client->sendResponse(res.buildResponse(client->getServerName(), client->getHttpVersion()));
-    delete method;
-    client->clearCurrentRequest();
-
-    if (!keepAlive) {
-        closeClient(j, client); // 'j' precisaria ser passado para cá
-        return false;
-    }
-    return true;
+	return true;
 }
 
 void Server::unhandleClient(int i) {
@@ -372,32 +343,28 @@ void Server::unhandleClient(int i) {
 	_fds.erase(_fds.begin() + i);
 }
 
-void	Server::closeClient(int j, Client *client) {
-	if (!client)
+void Server::closeClient(int j, Client *cli) {
+	if (!cli)
 		return ;
-	int client_fd = client->getFd();
+	int client_fd = cli->getFd();
 
 	std::vector<int> cgi_fds;
 	for (std::map<int, Client*>::iterator it = _cgiClient.begin(); it != _cgiClient.end(); ++it) {
-		if (it->second == client)
+		if (it->second == cli)
 			cgi_fds.push_back(it->first);
 	}
 
+	std::set<int> remove_set;
+	remove_set.insert(client_fd);
 	for (size_t k = 0; k < cgi_fds.size(); ++k) {
 		int cgi_fd = cgi_fds[k];
-		close(cgi_fd);
+		remove_set.insert(cgi_fd);
 		if (_cgiHandlers.count(cgi_fd)) {
 			delete _cgiHandlers[cgi_fd];
 			_cgiHandlers.erase(cgi_fd);
 		}
 		_cgiClient.erase(cgi_fd);
 	}
-
-	std::set<int> remove_set;
-	for (size_t k = 0; k < cgi_fds.size(); ++k)
-		remove_set.insert(cgi_fds[k]);
-	remove_set.insert(client_fd);
-	close(client_fd);
 
 	for (size_t f = 0; f < _fds.size(); ) {
 		if (remove_set.find(_fds[f].fd) != remove_set.end()) {
@@ -406,89 +373,97 @@ void	Server::closeClient(int j, Client *client) {
 			++f;
 		}
 	}
-	if (j >= 0 && (size_t)j < _clients.size()) {
-		if (_clients[j] == client)
-			_clients.erase(_clients.begin() + j);
-		else {
-			for (size_t k = 0; k < _clients.size(); ++k) {
-				if (_clients[k] == client) {
-					_clients.erase(_clients.begin() + k);
-					break ;
-				}
+
+	if (j >= 0 && (size_t)j < _clients.size() && _clients[j] == cli) {
+		_clients.erase(_clients.begin() + j);
+	} else {
+		for (std::vector<Client*>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+			if (*it == cli) {
+				_clients.erase(it);
+				break;
 			}
 		}
 	}
+
 	_client_to_config.erase(client_fd);
-	delete client;
+	delete cli; 
 }
 
-bool Server::_handleCgiEvent(size_t i) {
-	int cgi_fd = _fds[i].fd;
-	if (_cgiHandlers.count(cgi_fd) == 0)
-		return false;
-	CgiHandler *cgi = _cgiHandlers[cgi_fd];
-
-	uint32_t events = 0;
-	if (_fds[i].revents & POLLIN)     events |= EPOLLIN;
-	if (_fds[i].revents & POLLOUT)    events |= EPOLLOUT;
-	if (_fds[i].revents & POLLERR)    events |= EPOLLERR;
-	if (_fds[i].revents & POLLHUP)    events |= EPOLLHUP;
-
-	cgi->handleEvent(events);
-
-	if (cgi->isFinished()) {
-		_finalizeCgiResponse(i, cgi_fd);
+bool Server::resetClient(size_t i, size_t j, Client* cli) {
+	if (cli->isKeepAlive()) {
+		cli->prepareForNextRequest();
+		disablePollOut(i);
 		return true;
 	}
-	if (cgi->getState() == CGI_WRITING) {
-		_fds[i].events = POLLOUT;
-	} else if (cgi->getState() == CGI_READING) {
-		_fds[i].events = POLLIN;
-	}
+	closeClient(j, cli);
 	return false;
 }
 
-void Server::_registerCgiHandler(int client_fd, CgiHandler *cgi, Client *client) {
+bool Server::_processCgi(Client* cli, AMethod* method) {
+	cli->setState(CLIENT_WAITING_CGI);
+	CgiHandler* cgi = method->releaseCgiHandler();
+	cgi->start();
+	_registerCgiHandler(cgi, cli);
+
+	delete method;
+	return true;
+}
+
+void Server::_registerCgiHandler(CgiHandler *cgi, Client *cli) {
 	int cgi_fd = cgi->getSocketFd();
 
 	struct pollfd p;
 	p.fd = cgi_fd;
 	p.revents = 0;
 	if (cgi->getState() == CGI_WRITING)
-		p.events = POLLOUT | POLLERR | POLLHUP;
+		p.events = POLLOUT;
 	else if (cgi->getState() == CGI_READING)
-		p.events = POLLIN | POLLERR | POLLHUP;
+		p.events = POLLIN;
 
 	_fds.push_back(p);
 	_cgiHandlers[cgi_fd] = cgi;
-	_cgiClient[cgi_fd] = client;
-
-	Logger::log(Logger::SERVER,
-		"CGI registered (cgi_fd=" + ParseUtils::itoa(cgi_fd)
-		+ ", client_fd=" + ParseUtils::itoa(client_fd) + ")");
+	_cgiClient[cgi_fd] = cli;
 }
 
-void Server::_finalizeCgiResponse(size_t index, int cgi_fd) {
-	CgiHandler* cgi = _cgiHandlers[cgi_fd];
-	Client* client = _cgiClient[cgi_fd];
+bool Server::_handleCgiEvent(size_t i, short revents) {
+	int cgi_fd = _fds[i].fd;
+	if (_cgiHandlers.count(cgi_fd) == 0)
+		return false;
 
-	if (cgi && client) {
-		std::string rawCgi = cgi->getOutput();
-		Response res;
-		res.parseCgiOutput(rawCgi);
-		Request* req = client->getCurrentRequest();
-		Session* session = req->getSession();
-		if (session)
-			res.addHeader("Set-Cookie", std::string("SESSION_ID=") + session->getId() + "; Path=/; HttpOnly");
-		_setCookies(res, session);
-		std::string httpResponse = res.buildResponse(client->getServerName(), client->getHttpVersion());
-		client->sendResponse(httpResponse);
-		client->clearCurrentRequest();
+	CgiHandler *cgi = _cgiHandlers[cgi_fd];
+	cgi->handleEvent(revents);
+	if (cgi->isFinished()) {
+		_finalizeCgiResponse(i, cgi_fd);
+		return true;
 	}
-	close(cgi_fd);
 
-	if (index < _fds.size() && _fds[index].fd == cgi_fd)
-		_fds.erase(_fds.begin() + index);
+	if (cgi->getState() == CGI_WRITING)
+		_fds[i].events = POLLOUT | POLLERR | POLLHUP;
+	else if (cgi->getState() == CGI_READING)
+		_fds[i].events = POLLIN | POLLERR | POLLHUP;
+	return false;
+}
+
+void Server::_finalizeCgiResponse(size_t i, int cgi_fd) {
+	CgiHandler* cgi = _cgiHandlers[cgi_fd];
+	Client* cli = _cgiClient[cgi_fd];
+
+	if (cgi && cli) {
+		Response res;
+		res.parseCgiOutput(cgi->getOutput());
+
+		Request* req = cli->getCurrentRequest();
+		if (req && req->getSession()) {
+			_processSessionData(res, req->getSession());
+			res.addHeader("set-cookie", "SESSION_ID=" + req->getSession()->getId() + "; Path=/; HttpOnly");
+		}
+
+		cli->queueResponse(res.buildResponse(cli->getServerName(), cli->getHttpVersion()));
+		cli->setState(CLIENT_WRITING);
+		enablePollOut(cli->getFd());
+	}
+
+	_fds.erase(_fds.begin() + i);
 	_cgiHandlers.erase(cgi_fd);
 	_cgiClient.erase(cgi_fd);
 	delete cgi;
@@ -505,7 +480,7 @@ Session* Server::_handleSession(const Request& request) {
 	return _sessions.createSession();
 }
 
-void Server::_setCookies(Response& response, Session* session) {
+void Server::_processSessionData(Response& response, Session* session) {
 	if (!session)
 		return ;
 
@@ -523,34 +498,4 @@ void Server::_setCookies(Response& response, Session* session) {
 			session->set(key, value);
 	}
 	response.removeHeader("x-session-set");
-}
-
-void printRequest(ParseHttp parser) {  // for debugging
-	std::cout << "Método: " << parser.getRequestMethod() << std::endl;
-	std::cout << "URI: " << parser.getUri() << std::endl;
-	std::cout << "Path: " << parser.getPath() << std::endl;
-	std::cout << "Versão HTTP: " << parser.getHttpVersion() << std::endl;
-	std::cout << std::endl;
-
-	std::cout << "=== Todos os Headers ===" << std::endl;
-	Request req = parser.buildRequest();
-	const std::map<std::string, std::string>& headers = req.getHeaders();
-	
-	for (std::map<std::string, std::string>::const_iterator it = headers.begin(); 
-		 it != headers.end(); ++it) {
-		std::cout << it->first << ": " << it->second << std::endl;
-	}
-
-	std::cout << std::endl;
-	std::cout << "=== Cookies ===" << std::endl;
-	const std::map<std::string, std::string>& cookies = parser.getCookies();
-	
-	if (cookies.empty()) {
-		std::cout << "(nenhum cookie)" << std::endl;
-	} else {
-		for (std::map<std::string, std::string>::const_iterator it = cookies.begin(); 
-			 it != cookies.end(); ++it) {
-			std::cout << it->first << " = " << it->second << std::endl;
-		}
-	}
 }

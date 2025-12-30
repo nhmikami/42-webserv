@@ -5,7 +5,7 @@
 #include <map>
 #include <vector>
 #include <unistd.h>
-#include <sys/epoll.h>
+#include <poll.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <sys/types.h>
@@ -14,7 +14,6 @@
 #include <cstring>
 #include <sstream>
 #include <algorithm>
-#include <cerrno>
 
 #include "http/Request.hpp"
 #include "http/Response.hpp"
@@ -53,7 +52,7 @@ class CgiHandler {
 		std::string	getOutput(void) const;
 
 		void	start(void);
-		void	handleEvent(uint32_t events);
+		void	handleEvent(short events);
 		bool	isFinished(void) const;
 
 	private:

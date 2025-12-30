@@ -7,16 +7,16 @@ CgiHandler::CgiHandler(const Request& req, const std::string& scriptPath, const 
 }
 
 CgiHandler::~CgiHandler(void) {
-	if (_socketFd != -1) {
-		close(_socketFd);
-		_socketFd = -1;
-	}
-	
 	if (_pid > 0) {
-		kill(_pid, SIGKILL);
-		waitpid(_pid, NULL, 0);
-		_pid = -1;
-	}
+        kill(_pid, SIGKILL);
+        waitpid(_pid, NULL, 0);
+        _pid = -1;
+    }
+    
+    if (_socketFd >= 0) {
+        close(_socketFd);
+        _socketFd = -1;
+    }
 }
 
 void CgiHandler::_initEnv(const Request& req) {
@@ -145,80 +145,74 @@ bool CgiHandler::isFinished(void) const {
 	return _state == CGI_FINISHED || _state == CGI_ERROR;
 }
 
-void CgiHandler::handleEvent(uint32_t events) {
+void CgiHandler::handleEvent(short events) {
 	if (_state == CGI_FINISHED || _state == CGI_ERROR) 
 		return ;
 
-	if (_state == CGI_WRITING && (events & EPOLLOUT))
+	if (_state == CGI_WRITING && (events & POLLOUT))
 		_handleCgiWrite();
-
-	else if (_state == CGI_READING && (events & (EPOLLIN | EPOLLHUP | EPOLLERR)))
+	else if (_state == CGI_READING && (events & POLLIN))
 		_handleCgiRead();
+
+	if (events & (POLLHUP | POLLERR)) {
+		int status;
+		waitpid(_pid, &status, 0);
+		if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+			_state = CGI_FINISHED;
+		else
+			_state = CGI_ERROR;
+		return ;
+	}
 }
 
 void CgiHandler::_handleCgiWrite(void) {
 	size_t	remaining = _requestBody.size() - _bytesSent;
 	size_t	toWrite = (remaining < CGI_BUF_SIZE) ? remaining : CGI_BUF_SIZE;
 	ssize_t	sent;
-	while (true) {
-		sent = write(_socketFd, _requestBody.c_str() + _bytesSent, toWrite);
-		if (sent > 0) {
-			_bytesSent += sent;
-			if (_bytesSent >= _requestBody.size()) {
-				shutdown(_socketFd, SHUT_WR);
-				_state = CGI_READING;
-			}
-			break ;
-		} else if (sent < 0) {
-			if (errno == EINTR)
-				continue ;
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				return ;
-			if (errno == EPIPE) {
-				shutdown(_socketFd, SHUT_WR);
-				_state = CGI_READING;
-				return ;
-			}
-			_state = CGI_ERROR;
-			break ;
-		} else {
-			_state = CGI_ERROR;
-			break ;
-		}
+
+	if (_bytesSent >= _requestBody.size()) {
+		shutdown(_socketFd, SHUT_WR);
+		_state = CGI_READING;
+		return ;
 	}
+
+	sent = write(_socketFd, _requestBody.c_str() + _bytesSent, toWrite);
+	if (sent > 0) {
+		_bytesSent += sent;
+		if (_bytesSent >= _requestBody.size()) {
+			shutdown(_socketFd, SHUT_WR);
+			_state = CGI_READING;
+		}
+		return ;
+	}
+
+	_state = CGI_ERROR; // sent <= 0
 }
 
 void CgiHandler::_handleCgiRead(void) {
 	char	buffer[CGI_BUF_SIZE];
 	ssize_t	bytesRead;
-	while (true) {
-		bytesRead = read(_socketFd, buffer, sizeof(buffer));
-		if (bytesRead > 0) {
-			_responseBuffer.append(buffer, bytesRead);
-			break ;
-		} else if (bytesRead == 0) {
-			int status = 0;
-			pid_t result = waitpid(_pid, &status, WNOHANG);
-			if (result == 0) {
-				kill(_pid, SIGKILL);
-				waitpid(_pid, &status, 0);
-				_state = CGI_FINISHED;
-			} else if (result == _pid) {
-				if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
-					_state = CGI_FINISHED;
-				else
-					_state = CGI_ERROR;
-			} else {
-				_state = CGI_ERROR;
-			}
-			break ;
-		} else if (bytesRead < 0) {
-			if (errno == EINTR)
-				continue ;
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				return ;
-			_state = CGI_ERROR;
-			break ;
-		}
+	int		status;
+
+	bytesRead = read(_socketFd, buffer, sizeof(buffer));
+	if (bytesRead > 0) {
+		_responseBuffer.append(buffer, bytesRead);
+		return ;
 	}
+
+	if (bytesRead == 0) {
+		pid_t r = waitpid(_pid, &status, WNOHANG);
+		if (r == 0) {
+			kill(_pid, SIGKILL);
+			waitpid(_pid, &status, 0);
+		}
+
+		if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+			_state = CGI_FINISHED;
+		else
+			_state = CGI_ERROR;
+		return ;
+	}
+
+	_state = CGI_ERROR; // bytesRead < 0
 }
