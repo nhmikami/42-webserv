@@ -42,6 +42,7 @@ class Response {
 		std::string								_body;
 		std::multimap<std::string, std::string>	_headers;
 
+		std::string			_formatHeaderKey(std::string key) const;
 		std::string			_getErrorPage(int status, const ServerConfig& server, const LocationConfig* location) const;
 		std::string			_generateDate(void) const;
 	

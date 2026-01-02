@@ -1,6 +1,4 @@
 #include "server/SessionManager.hpp"
-#include <sstream>
-#include <cstdlib>
 
 SessionManager::SessionManager(time_t timeout) : _timeout(timeout) {
 }
@@ -17,7 +15,11 @@ std::string SessionManager::_generateSessionId(void) {
 }
 
 Session* SessionManager::createSession(void) {
-	std::string id = _generateSessionId();
+	std::string id;
+	do {
+		id = _generateSessionId();
+	} while (_sessions.count(id) > 0); 
+	
 	Session* s = new Session(id);
 	_sessions[id] = s;
 	return s;

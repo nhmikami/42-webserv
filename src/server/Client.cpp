@@ -58,6 +58,7 @@ bool Client::sendResponse(void) {
 void Client::initRequest(const std::string& serverName) {
 	if (_current_request) {
 		delete _current_request;
+		_current_request = NULL;
 	}
 	_current_request = new Request(_parser.buildRequest());
 	_http_version = _current_request->getHttpVersion();

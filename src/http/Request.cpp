@@ -344,17 +344,24 @@ std::map<std::string, std::string> Request::getCookies(void) const {
 		return cookies;
 
 	size_t start = 0;
-	while (start < header.length()) {
+	size_t len = header.length();
+
+	while (start < len) {
 		size_t end = header.find(';', start);
+		size_t current_end = (end == std::string::npos) ? len : end;
+
+		if (current_end > start) {
+			std::string token = ParseUtils::trim(header.substr(start, current_end - start));
+			if (!token.empty()) {
+				std::pair<std::string, std::string> key_value = ParseUtils::splitPair(token, "=");
+				if (!key_value.first.empty()) {
+					cookies[key_value.first] = key_value.second;
+				}
+			}
+		}
+
 		if (end == std::string::npos)
-			end = header.length();
-
-		std::string token =  ParseUtils::trim(header.substr(start, end - start));
-		std::pair<std::string, std::string> key_value = ParseUtils::splitPair(token, "=");
-
-		if (!key_value.first.empty())
-			cookies[key_value.first] = key_value.second;
-
+			break;
 		start = end + 1;
 	}
 	

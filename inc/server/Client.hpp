@@ -34,10 +34,6 @@ class Client {
 
 		Client(void);
 		
-		// HttpStatus	readHeaders();
-		// HttpStatus	readBody(size_t body_start, size_t content_length);
-		// size_t		getContentLength(const ParseHttp &parser);
-		
 	public:
 		Client(int client_fd);
 		~Client(void);
@@ -56,9 +52,6 @@ class Client {
 		Request*	getCurrentRequest(void);
 		ClientState	getState(void) const;
 		bool		isKeepAlive(void) const;
-		
-		// std::pair<HttpStatus, ParseHttp>	receive(void);
-		// bool		sendResponse(const std::string &response);
 
 };
 

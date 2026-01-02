@@ -6,11 +6,15 @@ Session::Session(const std::string& id)	: _id(id), _lastAccess(std::time(NULL)) 
 Session::~Session(void) {
 }
 
-const std::string& Session::getId() const { 
+const std::string& Session::getId(void) const { 
 	return _id;
 }
 
-void Session::touch() {
+int Session::size(void) const {
+	return _data.size();
+}
+
+void Session::touch(void) {
 	_lastAccess = std::time(NULL);
 }
 

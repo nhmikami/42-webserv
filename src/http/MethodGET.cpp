@@ -74,7 +74,7 @@ HttpStatus MethodGET::_generateAutoindex(const std::string& path) {
 
 	while ((ent = readdir(dir)) != NULL) {
 		std::string entry = ent->d_name;
-		if (entry == ".")
+		if (entry == "." || entry == "..")
 			continue ;
 		entries.push_back(entry);
 	}
@@ -84,24 +84,20 @@ HttpStatus MethodGET::_generateAutoindex(const std::string& path) {
 	html << "<html>\n<head><title>Index of " << ParseUtils::htmlEscape(_req.getPath()) << "</title></head>\n";
 	html << "<body>\n<h1>Index of " << ParseUtils::htmlEscape(_req.getPath()) << "</h1>\n";
 	html << "<ul>\n";
+	if (!_req.getPath().empty() && _req.getPath() != "/")
+		html << "<li><a href=\"../\">../</a></li>\n";
 	
 	std::sort(entries.begin(), entries.end());
 	for (size_t i = 0; i < entries.size(); i++) {
 		std::string entry = entries[i];
-		if (entry == "..") {
-			if (!_req.getPath().empty() && _req.getPath() != "/")
-				html << "<li><a href=\"../\">../</a></li>\n";
-			continue;
-		}
 		std::string full_path = FileUtils::resolvePath(path, entry);
 		if (FileUtils::exists(full_path)) {
-			std::string display_name = entry;
 			std::string href = FileUtils::resolvePath(_req.getPath(), entry);
 			if (FileUtils::isDirectory(full_path)) {
-				display_name += "/";
+				entry += "/";
 				href += "/";
 			}
-			html << "<li><a href=\"" << ParseUtils::htmlEscape(href) << "\">" << ParseUtils::htmlEscape(display_name) << "</a></li>\n";
+			html << "<li><a href=\"" << ParseUtils::htmlEscape(href) << "\">" << ParseUtils::htmlEscape(entry) << "</a></li>\n";
 		}
 	}
 	html << "</ul>\n</body>\n</html>\n";

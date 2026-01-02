@@ -29,6 +29,11 @@
 #include <stdio.h>
 #include <sys/socket.h>
 
+#define SESSION_MAX_KEY_SIZE	64
+#define SESSION_MAX_VALUE_SIZE	1024
+#define SESSION_MAX_ENTRIES		50
+#define SESSION_TIMEOUT			300
+
 class Server {
 	private:
 		std::vector<ServerConfig>		_configs;
@@ -42,7 +47,6 @@ class Server {
 		SessionManager					_sessions;
 
 		Server(const Server &other); //del?
-		
 		Server &operator=(const Server &other);
 
 		bool			startServer(void);
@@ -70,11 +74,6 @@ class Server {
 
 		Session*		_handleSession(const Request& request);
 		void			_processSessionData(Response& response, Session* session);
-
-		// bool	_sendResponse(AMethod* method, HttpStatus status, Client* client);
-		// bool	_processError(HttpStatus status, ServerConfig* config, const LocationConfig* location, Client* client);
-		// bool	_parseRequest(const std::string& raw_request, Request& request, ServerConfig* config, Client* client, size_t j);
-
 
 	public:
 		Server(void); //private del?

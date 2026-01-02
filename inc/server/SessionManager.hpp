@@ -3,6 +3,8 @@
 
 #include "Session.hpp"
 #include <map>
+#include <cstdlib>
+#include <sstream>
 
 class SessionManager {
 private:

@@ -17,6 +17,7 @@ public:
 
 	const std::string&	getId(void) const;
 
+	int			size(void) const;
 	void		touch(void);
 	bool		isExpired(time_t now, time_t timeout) const;
 

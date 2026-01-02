@@ -1,6 +1,6 @@
 #include "server/Server.hpp"
 
-Server::Server(std::vector<ServerConfig> configs) : _configs(configs), _sessions(300) {
+Server::Server(std::vector<ServerConfig> configs) : _configs(configs), _sessions(SESSION_TIMEOUT) {
 	srand(static_cast<unsigned int>(time(NULL)));
 	if (!startServer())
 		Logger::log(Logger::ERROR, "Failed to start server.");
@@ -154,47 +154,42 @@ void	Server::run(void) {
 			continue ;
 		}
 
-		for (size_t i = 0; i < _fds.size(); ++i) {
+		size_t i = 0;
+		while (i < _fds.size()) {
 			int		fd = _fds[i].fd;
 			short	revents = _fds[i].revents;
+			bool	advance = true;
 
 			if (revents == 0) {
-				continue ;
-			}
 
-			if (_fd_to_config.count(fd)) {
+			} else if (_fd_to_config.count(fd)) {
 				if (revents & POLLIN)
 					acceptClient(fd, _fd_to_config[fd]);
-				continue ;
-			}
-
-			if (_cgiHandlers.count(fd)) {
+			} else if (_cgiHandlers.count(fd)) {
 				if (_handleCgiEvent(i, revents))
-					i--;
-				continue ;
-			}
-
-			size_t j = 0;
-			Client* client = findClient(&j, fd);
-			if (!client) {
-				unhandleClient(i--);
-				continue;
-			}
-			if (revents & (POLLERR | POLLHUP | POLLNVAL)) {
-				unhandleClient(i--);
-				continue ;
-			}
-			if ((revents & POLLOUT) && client->getState() == CLIENT_WRITING) {
-				if (client->sendResponse()) {
-					Logger::log(Logger::SERVER, "Response sent!");
-					if (!resetClient(i, j, client))
-						i--;
+					advance = false;
+			} else {
+				size_t j = 0;
+				Client* client = findClient(&j, fd);
+				if (!client) {
+					unhandleClient(i);
+					advance = false;
+				} else if (revents & (POLLERR | POLLHUP | POLLNVAL)) {
+					unhandleClient(i);
+					advance = false;
+				} else if ((revents & POLLOUT) && client->getState() == CLIENT_WRITING) {
+					if (client->sendResponse()) {
+						Logger::log(Logger::SERVER, "Response sent!");
+						if (!resetClient(i, j, client))
+							advance = false;
+					}
+				} else if ((revents & POLLIN) && client->getState() == CLIENT_READING) {
+					if (!handleClient(i))
+						advance = false;
 				}
 			}
-			else if ((revents & POLLIN) && client->getState() == CLIENT_READING) {
-				if (!handleClient(i))
-					i--;
-			}
+			if (advance)
+				++i;
 		}
 	}
 }
@@ -486,7 +481,7 @@ Session* Server::_handleSession(const Request& request) {
 
 void Server::_processSessionData(Response& response, Session* session) {
 	if (!session)
-		return ;
+		return;
 
 	const std::multimap<std::string, std::string>& headers = response.getHeaders();
 	std::pair<
@@ -495,11 +490,26 @@ void Server::_processSessionData(Response& response, Session* session) {
 	> range = headers.equal_range("x-session-set");
 
 	for (std::multimap<std::string, std::string>::const_iterator it = range.first; it != range.second; ++it) {
+		if (session->size() >= SESSION_MAX_ENTRIES) {
+			Logger::log(Logger::ERROR, "Session ID " + session->getId() + " reached max entries limit.");
+			break; 
+		}
+
 		std::pair<std::string, std::string> key_value = ParseUtils::splitPair(it->second, "=");
 		std::string key = ParseUtils::trim(key_value.first);
 		std::string value = ParseUtils::trim(key_value.second);
-		if (!key.empty())
-			session->set(key, value);
+		if (key.empty()) {
+			continue;
+		}
+		if (key.size() > SESSION_MAX_KEY_SIZE) {
+			Logger::log(Logger::ERROR, "Session key too long (size: " + ParseUtils::itoa(key.size()) + "). Skipping.");
+			continue;
+		}
+		if (value.size() > SESSION_MAX_VALUE_SIZE) {
+			Logger::log(Logger::ERROR, "Session value too long for key '" + key + "' (size: " + ParseUtils::itoa(value.size()) + "). Skipping.");
+			continue;
+		}
+		session->set(key, value);
 	}
 	response.removeHeader("x-session-set");
 }
