@@ -126,11 +126,8 @@ HttpStatus AMethod::_runCGI(const std::string &path) {
 	std::string	executor = executors[ext];
 
 	_cgiHandler = new CgiHandler(_req, path, executor);
-	_cgiHandler->start(); 
-
 	return CGI_PENDING;
 }
-
 
 std::string AMethod::_stripLocationPrefix(const std::string& path) const {
     if (!_location)

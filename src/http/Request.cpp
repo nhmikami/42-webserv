@@ -13,7 +13,8 @@
 #include "http/Request.hpp"
 
 Request::Request() : _method(UNKNOWN), _uri(""), _path(""),
-					 _path_info(""), _query(""), _http_version(""), _body("") { }
+					 _path_info(""), _query(""), _http_version(""), _body(""), 
+					 _session(NULL) { }
 
 Request::Request(const Request &other) {
 	*this = other;
@@ -325,4 +326,44 @@ std::string Request::getRequestTarget() const {
 
 bool Request::requiresBody() const {
 	return _method == POST;
+}
+
+void Request::setSession(Session* session) {
+	_session = session;
+}
+
+Session* Request::getSession(void) const {
+	return _session;
+}
+
+std::map<std::string, std::string> Request::getCookies(void) const {
+	std::map<std::string, std::string> cookies;
+	std::string header = getHeader("cookie");
+	
+	if (header.empty())
+		return cookies;
+
+	size_t start = 0;
+	size_t len = header.length();
+
+	while (start < len) {
+		size_t end = header.find(';', start);
+		size_t current_end = (end == std::string::npos) ? len : end;
+
+		if (current_end > start) {
+			std::string token = ParseUtils::trim(header.substr(start, current_end - start));
+			if (!token.empty()) {
+				std::pair<std::string, std::string> key_value = ParseUtils::splitPair(token, "=");
+				if (!key_value.first.empty()) {
+					cookies[key_value.first] = key_value.second;
+				}
+			}
+		}
+
+		if (end == std::string::npos)
+			break;
+		start = end + 1;
+	}
+	
+	return cookies;
 }

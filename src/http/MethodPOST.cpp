@@ -1,6 +1,5 @@
 #include "http/MethodPOST.hpp"
 #include "utils/FileUtils.hpp"
-#include "utils/Logger.hpp"
 
 MethodPOST::MethodPOST(const Request& req, const ServerConfig& config, const LocationConfig* location)
 	: AMethod(req, config, location) {}

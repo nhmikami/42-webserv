@@ -1,11 +1,11 @@
 #ifndef AMETHOD_HPP
 #define AMETHOD_HPP
 
-#include "http/CgiHandler.hpp"
-#include "http/Response.hpp"
 #include "http/Request.hpp"
+#include "http/Response.hpp"
 #include "config/LocationConfig.hpp"
 #include "config/ServerConfig.hpp"
+#include "server/CgiHandler.hpp"
 #include <fstream>
 #include <sstream>
 #include <sys/stat.h>
@@ -33,8 +33,7 @@ class AMethod {
 		CgiHandler*				releaseCgiHandler(void);
 
 	protected:
-		std::string 		_stripLocationPrefix(const std::string& path) const;
-		
+		std::string					_stripLocationPrefix(const std::string& path) const;
 		std::string					_getRootPath(void) const;
 		bool						_getAutoindex(void) const;
 		size_t						_getMaxBodySize(void) const;

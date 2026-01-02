@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include "parse/ParseUri.hpp"
 #include "utils/ParseUtils.hpp"
+#include "server/Session.hpp"
 
 enum RequestMethod {
 	GET,
@@ -28,14 +29,15 @@ enum RequestMethod {
 
 class Request {
 	private:
-		RequestMethod _method;
-		std::string _uri;
-		std::string _path;
-		std::string _path_info;
-		std::string _query;
-		std::string _http_version;
-		std::map<std::string, std::string> _headers;
-		std::string _body;
+		RequestMethod						_method;
+		std::string							_uri;
+		std::string							_path;
+		std::string							_path_info;
+		std::string							_query;
+		std::string							_http_version;
+		std::map<std::string, std::string>	_headers;
+		std::string							_body;
+		Session*							_session;
 		
 	public:
 		Request();
@@ -81,6 +83,10 @@ class Request {
 		
 		std::string getRequestTarget() const;
 		bool requiresBody() const;
+
+		void								setSession(Session* session);
+		Session*							getSession(void) const;
+		std::map<std::string, std::string>	getCookies(void) const;
 };
 
 #endif

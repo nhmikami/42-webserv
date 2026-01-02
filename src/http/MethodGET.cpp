@@ -1,7 +1,6 @@
 #include "http/MethodGET.hpp"
 #include "utils/FileUtils.hpp"
 #include "utils/ParseUtils.hpp"
-#include "utils/Logger.hpp"
 
 MethodGET::MethodGET(const Request& req, const ServerConfig& config, const LocationConfig* location)
 	: AMethod(req, config, location) {}
@@ -10,7 +9,6 @@ MethodGET::~MethodGET(void) {}
 
 HttpStatus MethodGET::handleMethod(void) {
 	std::string full_path = FileUtils::resolvePath(_getRootPath(), _stripLocationPrefix(_req.getPath()));
-	std::cout << "DEBUG: full path = " << full_path << std::endl; // for debugging
 
 	if (!FileUtils::exists(full_path))
 		return NOT_FOUND;
@@ -76,7 +74,7 @@ HttpStatus MethodGET::_generateAutoindex(const std::string& path) {
 
 	while ((ent = readdir(dir)) != NULL) {
 		std::string entry = ent->d_name;
-		if (entry == ".")
+		if (entry == "." || entry == "..")
 			continue ;
 		entries.push_back(entry);
 	}
@@ -86,12 +84,13 @@ HttpStatus MethodGET::_generateAutoindex(const std::string& path) {
 	html << "<html>\n<head><title>Index of " << ParseUtils::htmlEscape(_req.getPath()) << "</title></head>\n";
 	html << "<body>\n<h1>Index of " << ParseUtils::htmlEscape(_req.getPath()) << "</h1>\n";
 	html << "<ul>\n";
+	if (!_req.getPath().empty() && _req.getPath() != "/")
+		html << "<li><a href=\"../\">../</a></li>\n";
 	
 	std::sort(entries.begin(), entries.end());
 	for (size_t i = 0; i < entries.size(); i++) {
 		std::string entry = entries[i];
 		std::string full_path = FileUtils::resolvePath(path, entry);
-
 		if (FileUtils::exists(full_path)) {
 			std::string href = FileUtils::resolvePath(_req.getPath(), entry);
 			if (FileUtils::isDirectory(full_path)) {

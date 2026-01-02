@@ -3,6 +3,8 @@
 
 #include "config/ServerConfig.hpp"
 #include "server/Client.hpp"
+#include "server/CgiHandler.hpp"
+#include "server/SessionManager.hpp"
 #include "parse/ParseHttp.hpp"
 #include "http/Request.hpp"
 #include "http/Response.hpp"
@@ -27,19 +29,24 @@
 #include <stdio.h>
 #include <sys/socket.h>
 
+#define SESSION_MAX_KEY_SIZE	64
+#define SESSION_MAX_VALUE_SIZE	1024
+#define SESSION_MAX_ENTRIES		50
+#define SESSION_TIMEOUT			300
+
 class Server {
 	private:
 		std::vector<ServerConfig>		_configs;
+		std::vector<Client*>			_clients;
 		std::map<int, ServerConfig*>	_fd_to_config;
 		std::map<int, ServerConfig*>	_client_to_config;
 		std::vector<struct pollfd>		_fds;
-		std::vector<Client*>			_clients;
 
 		std::map<int, CgiHandler*>		_cgiHandlers;
 		std::map<int, Client*>			_cgiClient;
+		SessionManager					_sessions;
 
 		Server(const Server &other); //del?
-		
 		Server &operator=(const Server &other);
 
 		bool			startServer(void);
@@ -47,23 +54,26 @@ class Server {
 		bool			startListen(int server_fd, std::string host, int port);
 		bool			addToFDs(int server_fd);
 		void			acceptClient(int server_fd, ServerConfig *config);
-		Client			*findClient(size_t *j, int client_fd);
-		ServerConfig	*findServerConfig(int client_fd);
+		Client*			findClient(size_t *j, int client_fd);
+		ServerConfig*	findServerConfig(int client_fd);
 		bool			handleClient(int i);
 		void			unhandleClient(int i);
-		void			closeClient(int j, Client *client);
+		bool			resetClient(size_t i, size_t j, Client* cli);
+		void			closeClient(int j, Client *cli);
+		void			enablePollOut(int client_fd);
+		void			disablePollOut(size_t client_fd);
 
-		bool	_isMethodAllowed(const std::string& method, const LocationConfig* location);
-		bool	_parseRequest(const std::string& raw_request, Request& request, ServerConfig* config, Client* client, size_t j);
-		bool 	_processRequest(Request& request, ServerConfig* config, const LocationConfig* location, Client* client, size_t j);
-		bool	_processRedirect(int code, ServerConfig* config, const LocationConfig* location, Client* client, size_t j);
-		bool	_processError(HttpStatus status, ServerConfig* config, const LocationConfig* location, Client* client, size_t j);
-		bool	_processCgi(AMethod* method, Client* client, int client_fd);
-		bool	_sendResponse(AMethod* method, HttpStatus status, Client* client);
+		bool			_isMethodAllowed(const std::string& method, const LocationConfig* loc);
+		bool 			_processRequest(Request& req, Client* cli, ServerConfig* cfg, const LocationConfig* loc);
+		bool			_processRedirect(int code, Client* cli, const LocationConfig* loc);
+		bool			_processCgi(Client* cli, AMethod* method);
+		bool			_handleCgiEvent(size_t i, short revents);
+		void			_registerCgiHandler(CgiHandler *cgi, Client *cli);
+		void			_finalizeCgiResponse(size_t i, int cgi_fd);
+		bool			_completeResponse(HttpStatus status, Client* cli, ServerConfig* cfg, const LocationConfig* loc, AMethod* method);
 
-		bool	_handleCgiEvent(size_t i);
-		void	_registerCgiHandler(int client_fd, CgiHandler *cgi, Client *client);
-		void	_finalizeCgiResponse(size_t index, int cgi_fd);
+		Session*		_handleSession(const Request& request);
+		void			_processSessionData(Response& response, Session* session);
 
 	public:
 		Server(void); //private del?

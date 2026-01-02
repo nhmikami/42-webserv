@@ -1,6 +1,6 @@
 #include "parse/ParseHttp.hpp"
 
-ParseHttp::ParseHttp() : _max_body_size(DEFAULT_CLIENT_MAX_BODY_SIZE) {};
+ParseHttp::ParseHttp() : _max_body_size(DEFAULT_CLIENT_MAX_BODY_SIZE), _header_parsed(false) {};
 
 ParseHttp::ParseHttp(const ParseHttp &other) {
 	*this = other;
@@ -182,7 +182,7 @@ std::map<std::string,std::string> ParseHttp::parseHeaders(const std::string &hea
 HttpStatus	ParseHttp::parseHeader(std::string &request) {
 	size_t headers_end_pos = request.find("\r\n\r\n");
 	if (headers_end_pos == std::string::npos)
-		return BAD_REQUEST;
+		return HTTP_PENDING;
 	
 	if (headers_end_pos > MAX_HEADER_SIZE)
 		return PAYLOAD_TOO_LARGE;
@@ -242,8 +242,11 @@ HttpStatus	ParseHttp::parseHeader(std::string &request) {
 		this->_accept = headers_map["accept"];
 	if (headers_map.find("cookie") != headers_map.end())
 		this->_cookies = ParseCookie::parseCookie(headers_map["cookie"]);
+	
+	this->_header_parsed = true;
 	return OK;
 }
+
 HttpStatus	ParseHttp::parseBody(std::string &body) {
 	if (this->_request_method == POST) {
 		std::map<std::string, std::string>::const_iterator cl_it = this->_all_headers.find("content-length");
@@ -259,14 +262,11 @@ HttpStatus	ParseHttp::parseBody(std::string &body) {
 			bool is_chunked = ParseHttpReader::isLastTokenChunked(te_value);
 			if (is_chunked) {
 				HttpStatus status = ParseHttpReader::validateBodyChunked(
-					_max_body_size,
-					body,
-					this->_request_body
+					_max_body_size, body, this->_request_body
 				);
-				if (status != OK)
-					return status;
-				body.clear();
-				return OK;
+				if (status == OK)
+					body.clear();
+				return status;
 			}
 			else if (has_content_length)
 				return BAD_REQUEST;
@@ -277,16 +277,36 @@ HttpStatus	ParseHttp::parseBody(std::string &body) {
 		if (has_content_length) {
 			const std::string &cl_value = cl_it->second;
 			HttpStatus status = ParseHttpReader::validateBodyContentLength(
-				cl_value,
-				_max_body_size,
-				body,
-				this->_request_body
+				cl_value, _max_body_size, body, this->_request_body
 			);
-			if (status != OK)
-				return status;
-			body.clear();
-			return OK;
+			if (status == OK)
+				body.clear();
+			return status;
 		}
 	}
 	return OK;
+}
+
+bool ParseHttp::isHeaderComplete() const {
+    return _header_parsed;
+}
+
+void ParseHttp::reset() {
+	_request_method = UNKNOWN;
+	_request_uri.clear();
+	_request_path.clear();
+	_request_path_info.clear();
+	_query.clear();
+	_http_version.clear();
+	_host_header.clear();
+	_user_agent_header.clear();
+	_content_length.clear();
+	_transfer_encoding.clear();
+	_content_type.clear();
+	_connection.clear();
+	_accept.clear();
+	_request_body.clear();
+	_all_headers.clear();
+	_cookies.clear();
+	_header_parsed = false;
 }

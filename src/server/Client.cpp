@@ -1,143 +1,113 @@
 #include "server/Client.hpp"
 
-Client::Client(int client_fd) : _client_fd(client_fd) 
-{
+Client::Client(int client_fd) 
+	: _client_fd(client_fd), _sent_bytes(0), _keep_alive(true), _current_request(NULL), _state(CLIENT_READING) {
 	_server_name = "WebServ";
 	_http_version = "HTTP/1.1";
 	Logger::log(Logger::SERVER, "Client connected!");
 }
 
-Client::~Client(void)
-{
-	if (_client_fd >= 0)
-	{
+Client::~Client(void) {
+	if (_client_fd >= 0) {
 		close(_client_fd);
+		_client_fd = -1;
 		Logger::log(Logger::SERVER, "Connection closed.");
 	}
+	delete _current_request;
 };
 
-HttpStatus Client::readHeaders() {
-    char buffer[4096];
+HttpStatus Client::receive(void) {
+	char buffer[4096];
+	ssize_t bytes = recv(_client_fd, buffer, sizeof(buffer), 0);
+	
+	if (bytes > 0)
+		_recv_buffer.append(buffer, bytes);
+	else if (bytes == 0)
+		return HTTP_CLOSED;
+	else
+		return HTTP_PENDING;
 
-    while (true) {
-        size_t headers_end = _recv_buffer.find("\r\n\r\n");
-        if (headers_end == std::string::npos) {
-            ssize_t bytes = recv(_client_fd, buffer, sizeof(buffer), 0);
-            if (bytes > 0) {
-                _recv_buffer.append(buffer, static_cast<size_t>(bytes));
-                continue;
-            } else if (bytes == 0) {
-                return SERVER_ERR;
-            } else {
-                Logger::log(Logger::ERROR, "Failed to receive data.");
-                return SERVER_ERR;
-            }
-        }
-        break;
-    }
-
-    return OK;
-}
-
-size_t Client::getContentLength(const ParseHttp &parser)
-{
-    std::string cl_str = parser.getContentLength();
-    if (!cl_str.empty())
-        return static_cast<size_t>(std::atoi(cl_str.c_str()));
-    return 0;
-}
-
-HttpStatus Client::readBody(size_t body_start, size_t content_length)
-{
-    char buffer [4096];
-
-     while (_recv_buffer.size() < body_start + content_length) {
-        ssize_t bytes = recv(_client_fd, buffer, sizeof(buffer), 0);
-        if (bytes > 0) {
-            _recv_buffer.append(buffer, static_cast<size_t>(bytes));
-        } else if (bytes == 0) {
-            return SERVER_ERR;
-        } else {
-            Logger::log(Logger::ERROR, "Failed to receive data.");
-            return SERVER_ERR;
-        }
-    }
-    return OK;
-}
-
-std::pair<HttpStatus, ParseHttp> Client::receive()
-{
-    ParseHttp parser;
-
-    //HEADERS
-    HttpStatus status = readHeaders();
-    if (status != OK)
-        return std::make_pair(status, parser);
-
-    size_t headers_end = _recv_buffer.find("\r\n\r\n");
-    std::string headers_part = _recv_buffer.substr(0, headers_end + 4);
-
-    status = parser.parseHeader(headers_part);
-    if (status != OK)
-        return std::make_pair(status, parser);
-    
-    //BODY
-    size_t content_length = getContentLength(parser);
-    size_t body_start = headers_end + 4;
-
-    status = readBody(body_start, content_length);
-    if (status != OK)
-        return std::make_pair(status, parser);
-
-    std::string body_part = _recv_buffer.substr(body_start, content_length);
-    status = parser.parseBody(body_part);
-    if (status != OK)
-        return std::make_pair(status, parser);
-
-    _recv_buffer.erase(0, body_start + content_length);
-    return std::make_pair(OK, parser);
-}
-
-bool		Client::sendResponse(const std::string &response)
-{
-	size_t		total_sent = 0;
-	size_t		to_send = response.size();
-	const char*	data = response.c_str();
-
-	while (total_sent < to_send) {
-		ssize_t sent = send(_client_fd, data + total_sent, to_send - total_sent, 0);
-
-		if (sent < 0) {
-			Logger::log(Logger::ERROR, "Failed to send response.");
-			return false;
-		}
-		if (sent == 0) {
-			Logger::log(Logger::ERROR, "Socket closed before response was fully sent.");
-			return false;
-		}
-		total_sent += static_cast<size_t>(sent);
+	if (!_parser.isHeaderComplete()) {
+		HttpStatus status = _parser.parseHeader(_recv_buffer);
+		if (status != OK)
+			return status; 
 	}
 
-	Logger::log(Logger::SERVER, "Response Sent!");
-	return true;
-};
+	return _parser.parseBody(_recv_buffer);
+}
 
-int			Client::getFd(){
+void Client::queueResponse(const std::string& response) {
+	_send_buffer = response;
+	_sent_bytes = 0;
+}
+
+bool Client::sendResponse(void) {
+	if (_sent_bytes >= _send_buffer.size())
+		return true;
+
+	ssize_t sent = send(_client_fd, _send_buffer.c_str() + _sent_bytes, _send_buffer.size() - _sent_bytes, 0);
+
+	if (sent > 0) {
+		_sent_bytes += static_cast<size_t>(sent);
+		return _sent_bytes == _send_buffer.size();
+	}
+
+	return false;
+}
+
+void Client::initRequest(const std::string& serverName) {
+	if (_current_request) {
+		delete _current_request;
+		_current_request = NULL;
+	}
+	_current_request = new Request(_parser.buildRequest());
+	_http_version = _current_request->getHttpVersion();
+	_server_name = serverName;
+	_state = CLIENT_PROCESSING;
+
+	if (_current_request->isKeepAlive())
+		_keep_alive = true;
+	else
+		_keep_alive = false;
+}
+
+void Client::prepareForNextRequest(void) {
+	if (_current_request) {
+		delete _current_request;
+		_current_request = NULL;
+	}
+	_parser.reset();
+	_state = CLIENT_READING;
+}
+
+int			Client::getFd(void) {
 	return _client_fd;
 }
 
-std::string	Client::getServerName() const {
+std::string	Client::getServerName(void) const {
 	return _server_name;
 }
 
-std::string	Client::getHttpVersion() const {
+std::string	Client::getHttpVersion(void) const {
 	return _http_version;
 }
 
-void Client::setServerName(const std::string &name) {
-	_server_name = name;
+ParseHttp& Client::getParser(void) {
+	return _parser;
 }
 
-void Client::setHttpVersion(const std::string &version) {
-	_http_version = version;
+Request* Client::getCurrentRequest(void) {
+	return _current_request;
+}
+
+bool Client::isKeepAlive(void) const {
+	return _keep_alive;
+}
+
+void Client::setState(ClientState state) {
+	_state = state;
+}
+
+ClientState Client::getState(void) const {
+	return _state;
 }

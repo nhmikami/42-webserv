@@ -7,36 +7,52 @@
 #include <iostream>
 #include <sys/socket.h>
 
-#include "utils/Logger.hpp"
+#include "http/Request.hpp"
 #include "parse/ParseHttp.hpp"
-#include "http/Response.hpp"
+#include "utils/Logger.hpp"
+
+enum ClientState {
+	CLIENT_READING,
+	CLIENT_PROCESSING,
+	CLIENT_WAITING_CGI,
+	CLIENT_WRITING,
+	CLIENT_CLOSED
+};
 
 class Client {
 	private:
 		int			_client_fd;
 		std::string	_server_name;
 		std::string	_http_version;
-		std::string _recv_buffer;
+		std::string	_recv_buffer;
+		std::string	_send_buffer;
+		size_t		_sent_bytes;
+		bool		_keep_alive;
+		ParseHttp	_parser;
+		Request*	_current_request;
+		ClientState	_state;
 
 		Client(void);
-		
-		HttpStatus	readHeaders();
-		HttpStatus	readBody(size_t body_start, size_t content_length);
-		size_t		getContentLength(const ParseHttp &parser);
 		
 	public:
 		Client(int client_fd);
 		~Client(void);
 
-		std::pair<HttpStatus, ParseHttp>	receive();
-		bool		sendResponse(const std::string &response);
+		HttpStatus	receive(void);
+		void		initRequest(const std::string& serverName);
+		void		queueResponse(const std::string& response);
+		bool		sendResponse(void);
+		void		prepareForNextRequest(void);
+		void		setState(ClientState state);
+		
+		int			getFd(void);
+		std::string	getServerName(void) const;
+		std::string	getHttpVersion(void) const;
+		ParseHttp&	getParser(void);
+		Request*	getCurrentRequest(void);
+		ClientState	getState(void) const;
+		bool		isKeepAlive(void) const;
 
-		void		setServerName(const std::string &name);
-		void		setHttpVersion(const std::string &version);
-
-		int			getFd();
-		std::string	getServerName() const;
-		std::string	getHttpVersion() const;
 };
 
 #endif

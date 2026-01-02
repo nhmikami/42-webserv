@@ -17,10 +17,10 @@ OBJ_DIR		=	obj/
 
 # source files
 SRC			=	$(addprefix $(SRC_DIR), main.cpp) \
-				$(addprefix $(HTTP_DIR), Request.cpp Response.cpp AMethod.cpp MethodGET.cpp MethodPOST.cpp MethodDELETE.cpp CgiHandler.cpp) \
+				$(addprefix $(HTTP_DIR), Request.cpp Response.cpp AMethod.cpp MethodGET.cpp MethodPOST.cpp MethodDELETE.cpp) \
 				$(addprefix $(PARS_DIR), ParseHttp.cpp ParseHttpReader.cpp ParseHttpValidator.cpp ParseUri.cpp ParseCookie.cpp) \
 				$(addprefix $(CONF_DIR), ParseConfig.cpp BaseConfig.cpp ServerConfig.cpp LocationConfig.cpp) \
-				$(addprefix $(SERV_DIR), Server.cpp Client.cpp) \
+				$(addprefix $(SERV_DIR), Server.cpp Client.cpp CgiHandler.cpp Session.cpp SessionManager.cpp) \
 				$(addprefix $(UTIL_DIR), Logger.cpp ParseUtils.cpp FileUtils.cpp)
 OBJ			=	$(SRC:$(SRC_DIR)%.cpp=$(OBJ_DIR)%.o)
 INC			=	-I $(INC_DIR)

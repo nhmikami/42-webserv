@@ -46,48 +46,58 @@ const std::string& Response::getBody(void) const {
 }
 
 void Response::addHeader(const std::string &key, const std::string &value) {
-	_headers[key] = value;
+	_headers.insert(std::make_pair(ParseUtils::toLower(key), value));
 }
 
 const std::string& Response::getHeader(const std::string &key) const {
-	std::map<std::string, std::string>::const_iterator it = _headers.find(key);
+	std::multimap<std::string, std::string>::const_iterator it = _headers.find(ParseUtils::toLower(key));
 	if (it != _headers.end())
 		return it->second;
 	static const std::string empty = "";
 	return empty;
 }
 
-const std::map<std::string, std::string>& Response::getHeaders() const {
+const std::multimap<std::string, std::string>& Response::getHeaders() const {
 	return _headers;
+}
+
+void Response::removeHeader(const std::string &key) {
+	_headers.erase(ParseUtils::toLower(key));
 }
 
 std::string Response::buildResponse(const std::string& server_name, const std::string& http_version) const {
 	std::ostringstream response;
-
 	response << http_version << " " << _status << " " << getStatusMessage() << "\r\n";
-
-	if (_headers.find("Date") == _headers.end())
+	
+	if (_headers.find("date") == _headers.end())
 		response << "Date: " << _generateDate() << "\r\n";
-
 	response << "Server: " << server_name << "\r\n";
 
-	if (_status == NO_CONTENT) {
-		for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
-			if (it->first != "Content-Type" && it->first != "Content-Length")
-				response << it->first << ": " << it->second << "\r\n";
-		}
-		response << "\r\n";
-		return response.str();
+	if (_status != NO_CONTENT && getHeader("content-length").empty()) {
+		response << "Content-Length: " << _body.size() << "\r\n";
 	}
 
-	if (_headers.find("Content-Length") == _headers.end())
-		response << "Content-Length: " << ParseUtils::itoa(_body.size()) << "\r\n";
-
-	for (std::map<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it)
-		response << it->first << ": " << it->second << "\r\n";
+	for (std::multimap<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
+		if (_status == NO_CONTENT && (it->first == "content-type" || it->first == "content-length"))
+			continue;
+		response << _formatHeaderKey(it->first) << ": " << it->second << "\r\n";
+	}
 	
 	response << "\r\n" << _body;
 	return response.str();
+}
+
+std::string Response::_formatHeaderKey(std::string key) const {
+	bool capitalize = true;
+	for (size_t i = 0; i < key.length(); ++i) {
+		if (capitalize && islower(key[i]))
+			key[i] = toupper(key[i]);
+		else if (!capitalize && isupper(key[i]))
+			key[i] = tolower(key[i]);
+		
+		capitalize = (key[i] == '-');
+	}
+	return key;
 }
 
 HttpStatus Response::processError(HttpStatus status, const ServerConfig& server, const LocationConfig* location) {
@@ -107,7 +117,7 @@ HttpStatus Response::processError(HttpStatus status, const ServerConfig& server,
 					file.read(buffer.data(), file_size);
 					if (file) {
 						setBody(std::string(buffer.begin(), buffer.end()));
-						addHeader("Content-Type", FileUtils::guessMimeType(path));
+						addHeader("content-type", FileUtils::guessMimeType(path));
 						return status;
 					}
 				}
@@ -121,7 +131,7 @@ HttpStatus Response::processError(HttpStatus status, const ServerConfig& server,
 
 	std::string body = html.str();
 	setBody(body);
-	addHeader("Content-Type", "text/html");
+	addHeader("content-type", "text/html");
 	return status;
 }
 
@@ -159,17 +169,9 @@ void Response::parseCgiOutput(const std::string& raw) {
 	}
 
 	std::pair<std::string, std::string> parts = ParseUtils::splitHeadersAndBody(raw);
-	if (parts.first.empty() && parts.second == raw) {
-		setBody(raw);
-		addHeader("Content-Type", "text/plain");
-		addHeader("Content-Length", ParseUtils::itoa(_body.size()));
-		return ;
-	}
-
 	setBody(parts.second);
-	std::string headersPart = parts.first;
-	std::vector<std::string> lines = ParseUtils::split(headersPart, '\n');
 
+	std::vector<std::string> lines = ParseUtils::split(parts.first, '\n');
 	for (size_t i = 0; i < lines.size(); ++i) {
 		std::string line = ParseUtils::trim(lines[i]);
 		if (line.empty())
@@ -179,17 +181,16 @@ void Response::parseCgiOutput(const std::string& raw) {
 			std::vector<std::string> tokens = ParseUtils::split(line, ' ');
 			if (tokens.size() >= 2 && ParseUtils::isNumber(tokens[1]))
 				_status = static_cast<HttpStatus>(std::atoi(tokens[1].c_str()));
-			continue ;
+			continue;
 		}
 
 		std::pair<std::string, std::string> header = ParseUtils::splitPair(line, ":");
 		if (header.second.empty())
 			continue ;
 
-		std::string key = ParseUtils::trim(header.first);
+		std::string key = ParseUtils::toLower(ParseUtils::trim(header.first));
 		std::string value = ParseUtils::trim(header.second);
-
-		if (ParseUtils::toLower(key) == "status") {
+		if (key == "status") {
 			std::vector<std::string> statusParts = ParseUtils::split(value, ' ');
 			if (!statusParts.empty() && ParseUtils::isNumber(statusParts[0]))
 				_status = static_cast<HttpStatus>(std::atoi(statusParts[0].c_str()));
@@ -198,7 +199,6 @@ void Response::parseCgiOutput(const std::string& raw) {
 		}
 	}
 
-	addHeader("Content-Length", ParseUtils::itoa(_body.size()));
-	if (getHeader("Content-Type").empty())
-		addHeader("Content-Type", "text/plain");
+	if (getHeader("content-type").empty())
+		addHeader("content-type", "text/plain");
 }

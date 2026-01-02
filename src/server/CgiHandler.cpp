@@ -1,4 +1,4 @@
-#include "http/CgiHandler.hpp"
+#include "server/CgiHandler.hpp"
 #include "utils/ParseUtils.hpp"
 
 CgiHandler::CgiHandler(const Request& req, const std::string& scriptPath, const std::string& executor)
@@ -7,16 +7,16 @@ CgiHandler::CgiHandler(const Request& req, const std::string& scriptPath, const 
 }
 
 CgiHandler::~CgiHandler(void) {
-	if (_socketFd != -1) {
-		close(_socketFd);
-		_socketFd = -1;
-	}
-	
 	if (_pid > 0) {
-		kill(_pid, SIGKILL);
-		waitpid(_pid, NULL, 0);
-		_pid = -1;
-	}
+        kill(_pid, SIGKILL);
+        waitpid(_pid, NULL, 0);
+        _pid = -1;
+    }
+    
+    if (_socketFd >= 0) {
+        close(_socketFd);
+        _socketFd = -1;
+    }
 }
 
 void CgiHandler::_initEnv(const Request& req) {
@@ -76,6 +76,10 @@ void CgiHandler::_freeEnvArray(char** envp) const {
 	for (int i = 0; envp[i]; ++i)
 		delete[] envp[i];
 	delete[] envp;
+}
+
+pid_t CgiHandler::getPid(void) const {
+	return _pid;
 }
 
 int CgiHandler::getSocketFd(void) const {
@@ -145,134 +149,74 @@ bool CgiHandler::isFinished(void) const {
 	return _state == CGI_FINISHED || _state == CGI_ERROR;
 }
 
-void CgiHandler::handleEvent(uint32_t events) {
+void CgiHandler::handleEvent(short events) {
 	if (_state == CGI_FINISHED || _state == CGI_ERROR) 
 		return ;
 
-	if (_state == CGI_WRITING && (events & EPOLLOUT))
+	if (_state == CGI_WRITING && (events & POLLOUT))
 		_handleCgiWrite();
-
-	else if (_state == CGI_READING && (events & (EPOLLIN | EPOLLHUP | EPOLLERR)))
+	else if (_state == CGI_READING && (events & POLLIN))
 		_handleCgiRead();
+
+	if (events & (POLLHUP | POLLERR)) {
+		int status;
+		waitpid(_pid, &status, 0);
+		if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+			_state = CGI_FINISHED;
+		else
+			_state = CGI_ERROR;
+		return ;
+	}
 }
 
 void CgiHandler::_handleCgiWrite(void) {
 	size_t	remaining = _requestBody.size() - _bytesSent;
 	size_t	toWrite = (remaining < CGI_BUF_SIZE) ? remaining : CGI_BUF_SIZE;
 	ssize_t	sent;
-	while (true) {
-		sent = write(_socketFd, _requestBody.c_str() + _bytesSent, toWrite);
-		if (sent > 0) {
-			_bytesSent += sent;
-			if (_bytesSent >= _requestBody.size()) {
-				shutdown(_socketFd, SHUT_WR);
-				_state = CGI_READING;
-			}
-			break ;
-		} else if (sent < 0) {
-			if (errno == EINTR)
-				continue ;
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				return ;
-			if (errno == EPIPE) {
-				shutdown(_socketFd, SHUT_WR);
-				_state = CGI_READING;
-				return ;
-			}
-			_state = CGI_ERROR;
-			break ;
-		} else {
-			_state = CGI_ERROR;
-			break ;
-		}
+
+	if (_bytesSent >= _requestBody.size()) {
+		shutdown(_socketFd, SHUT_WR);
+		_state = CGI_READING;
+		return ;
 	}
+
+	sent = write(_socketFd, _requestBody.c_str() + _bytesSent, toWrite);
+	if (sent > 0) {
+		_bytesSent += sent;
+		if (_bytesSent >= _requestBody.size()) {
+			shutdown(_socketFd, SHUT_WR);
+			_state = CGI_READING;
+		}
+		return ;
+	}
+
+	_state = CGI_ERROR; // sent <= 0
 }
 
 void CgiHandler::_handleCgiRead(void) {
 	char	buffer[CGI_BUF_SIZE];
 	ssize_t	bytesRead;
-	while (true) {
-		bytesRead = read(_socketFd, buffer, sizeof(buffer));
-		if (bytesRead > 0) {
-			_responseBuffer.append(buffer, bytesRead);
-			break ;
-		} else if (bytesRead == 0) {
-			int status = 0;
-			pid_t result = waitpid(_pid, &status, WNOHANG);
-			if (result == 0) {
-				kill(_pid, SIGKILL);
-				waitpid(_pid, &status, 0);
-				_state = CGI_FINISHED;
-			} else if (result == _pid) {
-				if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
-					_state = CGI_FINISHED;
-				else
-					_state = CGI_ERROR;
-			} else {
-				_state = CGI_ERROR;
-			}
-			break ;
-		} else if (bytesRead < 0) {
-			if (errno == EINTR)
-				continue ;
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				return ;
-			_state = CGI_ERROR;
-			break ;
-		}
+	int		status;
+
+	bytesRead = read(_socketFd, buffer, sizeof(buffer));
+	if (bytesRead > 0) {
+		_responseBuffer.append(buffer, bytesRead);
+		return ;
 	}
+
+	if (bytesRead == 0) {
+		pid_t r = waitpid(_pid, &status, WNOHANG);
+		if (r == 0) {
+			kill(_pid, SIGKILL);
+			waitpid(_pid, &status, 0);
+		}
+
+		if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+			_state = CGI_FINISHED;
+		else
+			_state = CGI_ERROR;
+		return ;
+	}
+
+	_state = CGI_ERROR; // bytesRead < 0
 }
-
-	// void CgiHandler::buildResponse(Response& res) {
-	// (void)res;
-	// if (_state == CGI_ERROR) {
-	// 	res.setStatus(500);
-	// 	res.setBody("Internal Server Error: CGI process failed.");
-	// 	return ;
-	// }
-
-	// size_t headerEnd = _responseBuffer.find("\r\n\r\n");
-	// size_t bodyStart = 0;
-
-	// if (headerEnd != std::string::npos) {
-	// 	bodyStart = headerEnd + 4;
-	// } else {
-	// 	headerEnd = _responseBuffer.find("\n\n");
-	// 	if (headerEnd != std::string::npos) {
-	// 		bodyStart = headerEnd + 2;
-	// 	} else {
-	// 		res.setBody(_responseBuffer);
-	// 		res.setStatus(200);
-	// 		return ;
-	// 	}
-	// }
-
-	// std::string headers = _responseBuffer.substr(0, headerEnd);
-	// std::string body = _responseBuffer.substr(bodyStart);
-
-	// std::stringstream ss(headers);
-	// std::string line;
-	// while (std::getline(ss, line)) {
-	// 	if (!line.empty() && line[line.size() - 1] == '\r')
-	// 		line.erase(line.size() - 1);
-	// 	if (line.empty())
-	// 		continue ;
-
-	// 	size_t sep = line.find(':');
-	// 	if (sep != std::string::npos) {
-	// 		std::string key = line.substr(0, sep);
-	// 		std::string val = line.substr(sep + 1);
-			
-	// 		size_t first = val.find_first_not_of(" \t");
-	// 		if (first != std::string::npos) 
-	// 			val = val.substr(first);
-	// 		if (key == "Status")
-	// 			res.setStatus(std::atoi(val.c_str()));
-	// 		else
-	// 			res.addHeader(key, val);
-	// 	}
-	// }
-
-	// res.setBody(body);
-	// if (res.getStatus() == 0) res.setStatus(200);
-	// }
