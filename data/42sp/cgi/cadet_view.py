@@ -41,17 +41,24 @@ print(f"""
     <meta charset="UTF-8">
     <title>Cadet {html.escape(cadet_name)}</title>
     <link rel="stylesheet" href="/style.css">
+    <script>
+        function doDelete() {{
+            const name = "{html.escape(cadet_name)}";
+            const file = "{urllib.parse.quote(filename)}";
+            if (!confirm("Deletar " + name + "?")) return;
+            fetch("/cgi/cadet_delete.py?name=" + name + "&file=" + file, {{
+                method: 'DELETE'
+            }}).then(() => window.location.href = "/cadets_list");
+        }}
+    </script>
 </head>
-
 <body class="bg">
     <p class="title">{html.escape(cadet_name)}</p>
-
     <img src="{UPLOAD_DIR}{html.escape(filename)}" style="max-width:400px; border-radius:12px; margin-top:20px">
 
-    <form method="POST" action="/cadet_delete?file={urllib.parse.quote(filename)}">
-        <button class="btn" type="submit">Delete Cadet</button>
-    </form>
-
+    <div style="margin-top:20px">
+        <button class="btn" onclick="doDelete()" style="background-color:red; color:white;">Delete Cadet</button>
+    </div>
 </body>
 </html>
 """)
