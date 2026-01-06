@@ -97,12 +97,14 @@ CgiState CgiHandler::getState(void) const {
 void CgiHandler::start(void) {
 	int socks[2];
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, socks) < 0) {
+		std::cerr << "[CGI] ERROR: socketpair failed" << std::endl;
 		_state = CGI_ERROR;
 		return ;
 	}
 
 	_pid = fork();
 	if (_pid < 0) {
+		std::cerr << "[CGI] ERROR: fork failed" << std::endl;
 		close(socks[0]);
 		close(socks[1]);
 		_state = CGI_ERROR;
@@ -122,7 +124,19 @@ void CgiHandler::start(void) {
 		argv.push_back(const_cast<char*>(_executorPath.c_str()));
 		argv.push_back(const_cast<char*>(_scriptPath.c_str()));
 		argv.push_back(NULL);
+		int errFd = open("/tmp/cgi_errors.log", O_WRONLY | O_CREAT | O_APPEND, 0644);
+        if (errFd >= 0) {
+            dprintf(errFd, "Executor: %s\n", _executorPath.c_str());
+            dprintf(errFd, "Script: %s\n", _scriptPath.c_str());
+            dprintf(errFd, "Arguments:\n");
+            for (size_t i = 0; i < argv.size(); ++i)
+                dprintf(errFd, "  argv[%zu]: %s\n", i, argv[i]);
+        }
+
 		execve(argv[0], &argv[0], envp);
+
+		if (errFd >= 0)
+            dprintf(errFd, "execve failed: %s\n", strerror(errno));
 		
 		_freeEnvArray(envp);
 		exit(1);
@@ -201,10 +215,13 @@ void CgiHandler::_handleCgiRead(void) {
 	bytesRead = read(_socketFd, buffer, sizeof(buffer));
 	if (bytesRead > 0) {
 		_responseBuffer.append(buffer, bytesRead);
+		std::cerr << "[CGI] Read " << bytesRead << " bytes. Total: " << _responseBuffer.size() << std::endl;
 		return ;
 	}
 
 	if (bytesRead == 0) {
+		std::cerr << "[CGI] EOF reached. Buffer size: " << _responseBuffer.size() << std::endl;
+        std::cerr << "[CGI] Output: " << _responseBuffer << std::endl;
 		pid_t r = waitpid(_pid, &status, WNOHANG);
 		if (r == 0) {
 			kill(_pid, SIGKILL);
@@ -218,5 +235,6 @@ void CgiHandler::_handleCgiRead(void) {
 		return ;
 	}
 
+	std::cerr << "[CGI] ERROR: read failed" << std::endl;
 	_state = CGI_ERROR; // bytesRead < 0
 }

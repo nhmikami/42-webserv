@@ -177,3 +177,18 @@ std::string ParseUtils::extractAttribute(const std::string& header, const std::s
 	}
 	return "";
 }
+
+std::string ParseUtils::removeQuotes(const std::string& str) {
+	std::string result = trim(str);
+
+	size_t i = 0;
+	if (result.empty())
+		return result;
+	while (result[i]) {
+		if (result[i] == '"')
+			result.erase(i, 1);
+		else
+			i++;
+	}
+	return result;
+}
