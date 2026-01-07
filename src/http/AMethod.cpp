@@ -92,11 +92,11 @@ bool AMethod::_isCGI(const std::string& path) const {
 
 	std::string extension = path.substr(dotPos);
 	if (_location) {
-		const std::map<std::string, std::string>& locCgi = _location->getCgi();
+		const std::map<std::string, std::vector<std::string> >& locCgi = _location->getCgi();
 		if (locCgi.count(extension) > 0)
 			return true;
 	}
-	const std::map<std::string, std::string>& srvCgi = _config.getCgi();
+	const std::map<std::string, std::vector<std::string> >& srvCgi = _config.getCgi();
 	if (srvCgi.count(extension) > 0)
 		return true;
 
@@ -107,11 +107,11 @@ std::map<std::string, std::string> AMethod::_getCgiExecutors(void) const {
 	std::map<std::string, std::string> cgiMap;
 
 	if (_location) {
-		const std::map<std::string, std::string>& locCgi = _location->getCgi();
+		const std::map<std::string, std::vector<std::string> >& locCgi = _location->getCgi();
 		cgiMap.insert(locCgi.begin(), locCgi.end());
 	}
 
-	const std::map<std::string, std::string>& srvCgi = _config.getCgi();
+	const std::map<std::string, std::vector<std::string> >& srvCgi = _config.getCgi();
 	cgiMap.insert(srvCgi.begin(), srvCgi.end());
 
 	return cgiMap;
