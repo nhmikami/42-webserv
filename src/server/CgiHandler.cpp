@@ -25,6 +25,7 @@ void CgiHandler::_initEnv(const Request& req) {
 	_envMap["SERVER_SOFTWARE"] = "WebServ/1.0";
 	_envMap["REDIRECT_STATUS"] = "200";
 	_envMap["REQUEST_METHOD"] = req.getMethodStr();
+	_envMap["REQUEST_URI"] = req.getUri();
 	_envMap["QUERY_STRING"] = req.getQuery();
 	_envMap["PATH_INFO"] = req.getPathInfo();
 	_envMap["SCRIPT_NAME"] = req.getPath();
@@ -55,7 +56,7 @@ void CgiHandler::_initEnv(const Request& req) {
 		else
 			_envMap["HTTP_" + transformedKey] = value;
 	}
-	if (req.getMethodStr() == "POST")
+	if (req.getMethodStr() == "POST" && !_requestBody.empty())
 		_envMap["CONTENT_LENGTH"] = ParseUtils::itoa(_requestBody.size());
 }
 
@@ -177,7 +178,7 @@ void CgiHandler::handleEvent(short events) {
 		_handleCgiRead();
 
 	if (events & (POLLHUP | POLLERR)) {
-		int status;
+		int status = 0;
 		waitpid(_pid, &status, 0);
 		if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
 			_state = CGI_FINISHED;
@@ -214,7 +215,7 @@ void CgiHandler::_handleCgiWrite(void) {
 void CgiHandler::_handleCgiRead(void) {
 	char	buffer[CGI_BUF_SIZE];
 	ssize_t	bytesRead;
-	int		status;
+	int		status = 0;
 
 	bytesRead = read(_socketFd, buffer, sizeof(buffer));
 	if (bytesRead > 0) {

@@ -14,11 +14,11 @@ HttpStatus MethodPOST::handleMethod(void) {
 
 	if (_req.getContentType().find("multipart/form-data") != std::string::npos) {
 		HttpStatus uploadStatus = _handleMultipart();
-        if (uploadStatus != CREATED)
-            return uploadStatus;
-        if (_isCGI(full_path))
-            return _runCGI(full_path);
-        return CREATED;
+		if (uploadStatus != CREATED)
+			return uploadStatus;
+		if (_isCGI(full_path))
+			return _runCGI(full_path);
+		return CREATED;
 	}
 
 	if (FileUtils::exists(full_path) && _isCGI(full_path) && FileUtils::isFile(full_path))
