@@ -26,7 +26,7 @@ func main() {
     // Enviar headers
     fmt.Println("Content-Type: text/html")
     fmt.Println("Set-Cookie: user_id=123; Path=/; Max-Age=3600")
-    fmt.Printf("Set-Cookie: session_token=abc123xyz; Path=/; Expires=%s; HttpOnly\r\n", expires)
+    fmt.Printf("Set-Cookie: session_token=abc123xyz; Path=/; Expires=%s; HttpOnly\n", expires)
     fmt.Println("Set-Cookie: theme=dark; Path=/; Secure; SameSite=Strict")
     fmt.Println() // Linha vazia para separar headers do body
 
