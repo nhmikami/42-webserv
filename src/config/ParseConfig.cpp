@@ -71,20 +71,20 @@ bool ParseConfig::getKeyValues(const std::string line, std::string *key, std::ve
 
 	while (iss >> token)
 	{
-		if (token[0] == '"') {
-			if (token.empty() || token[token.length() - 1] != '"')
-			{
-				std::string rest;
-				while (iss >> rest)
-				{
-					token += " " + rest;
-					if (!rest.empty() && rest[rest.length() - 1] == '"')
-                        break;
-				}
-			}
-			token = ParseUtils::removeQuotes(token);
-			std::cout << token << std::endl;
-		}
+		// if (token[0] == '"') {
+		// 	if (token.empty() || token[token.length() - 1] != '"')
+		// 	{
+		// 		std::string rest;
+		// 		while (iss >> rest)
+		// 		{
+		// 			token += " " + rest;
+		// 			if (!rest.empty() && rest[rest.length() - 1] == '"')
+        //                 break;
+		// 		}
+		// 	}
+		// 	token = ParseUtils::removeQuotes(token);
+		// 	std::cout << token << std::endl;
+		// }
 		if (!token.empty() && token[token.length() - 1] == ';')
 			token = token.substr(0, token.length() - 1);
 		if (!token.empty())

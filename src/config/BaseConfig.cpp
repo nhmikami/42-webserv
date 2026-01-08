@@ -103,11 +103,11 @@ void BaseConfig::setErrorPages(const std::vector<std::string>& values)
 
 void BaseConfig::setCgi(const std::vector<std::string>& values)
 {
-	if (values.size() != 2)
-		throw std::invalid_argument("cgi must have two values: extension and root.");
+	if (values.size() < 2)
+		throw std::invalid_argument("cgi must have at least two values: extension and root.");
 	_is_cgi = true;
 	std::vector<std::string> cgi_values;
-	for (size_t i = 1; i < values.size() - 1; i++) {
+	for (size_t i = 1; i < values.size(); i++) {
 		cgi_values.push_back(values[i]);
 	}
 	_cgi[values[0]] = cgi_values;
