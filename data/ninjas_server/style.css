@@ -19,6 +19,12 @@ body.bg-silent {
     color: white;
 }
 
+body.bg-deadly {
+    background: url('ninja_deadly.jpg') no-repeat;
+    background-size: cover;
+    color: white;
+}
+
 nav a {
     margin: 0 15px;
     color: #ffcc33;
@@ -67,13 +73,14 @@ nav a {
     height: 10vh;
 }
 
-.silent-container {
+.center-container {
     height: 95vh;
     width: 95vw;
     display: flex;
     justify-content: center;
     align-items: center;
     flex-direction: column;
+    text-align: center;
 }
 
 .mb-0 {
@@ -127,7 +134,8 @@ nav a {
 button {
     padding: 15px;
     border-radius: 10px;
-    font-size: medium;
+    font-size: xx-large;
     background: #ffffff44;
     color: white;
+    border: none;
 }
