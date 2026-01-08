@@ -103,40 +103,36 @@ bool AMethod::_isCGI(const std::string& path) const {
 	return false;
 }
 
-std::map<std::string, std::string> AMethod::_getCgiExecutors(void) const {
-	std::map<std::string, std::string> cgiMap;
+const std::map<std::string, std::vector<std::string> >& AMethod::_getCgiExecutors(void) const {
+	if (_location && !_location->getCgi().empty())
+		return _location->getCgi();
 
-	if (_location) {
-		const std::map<std::string, std::vector<std::string> >& locCgi = _location->getCgi();
-		cgiMap.insert(locCgi.begin(), locCgi.end());
-	}
-
-	const std::map<std::string, std::vector<std::string> >& srvCgi = _config.getCgi();
-	cgiMap.insert(srvCgi.begin(), srvCgi.end());
-
-	return cgiMap;
+	return _config.getCgi();
 }
 
 HttpStatus AMethod::_runCGI(const std::string &path) {
 	if (!FileUtils::isReadable(path) || !FileUtils::isExecutable(path))
 		return FORBIDDEN;
 
-	std::map<std::string, std::string> executors = _getCgiExecutors();
-	std::string	ext = path.substr(path.find_last_of('.'));
-	std::string	executor = executors[ext];
+	std::string ext = path.substr(path.find_last_of('.'));
+	const std::map<std::string, std::vector<std::string> >& executors = _getCgiExecutors();
+	if (!executors.count(ext))
+		return FORBIDDEN;
+
+	const std::vector<std::string>& executor = executors.at(ext);
 
 	_cgiHandler = new CgiHandler(_req, path, executor);
 	return CGI_PENDING;
 }
 
 std::string AMethod::_stripLocationPrefix(const std::string& path) const {
-    if (!_location)
-        return path;
-    
-    const std::string& prefix = _location->getPath();
+	if (!_location)
+		return path;
+	
+	const std::string& prefix = _location->getPath();
 
-    if (path.find(prefix) == 0)
-        return path.substr(prefix.size());
-    
-    return path;
+	if (path.find(prefix) == 0)
+		return path.substr(prefix.size());
+	
+	return path;
 }

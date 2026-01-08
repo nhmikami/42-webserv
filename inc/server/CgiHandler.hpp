@@ -32,7 +32,7 @@ enum CgiState {
 class CgiHandler {
 	private:
 		std::string							_scriptPath;
-		std::string							_executorPath;
+		std::vector<std::string>			_executorPath;
 		std::map<std::string, std::string>  _envMap;
 
 		pid_t		_pid;
@@ -44,7 +44,7 @@ class CgiHandler {
 		std::string			_responseBuffer;
 
 	public:
-		CgiHandler(const Request& req, const std::string& scriptPath, const std::string& executor);
+		CgiHandler(const Request& req, const std::string& scriptPath, const std::vector<std::string>& executor);
 		~CgiHandler(void);
 
 		pid_t		getPid(void) const;
