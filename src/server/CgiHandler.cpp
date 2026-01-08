@@ -29,6 +29,8 @@ void CgiHandler::_initEnv(const Request& req) {
 	_envMap["PATH_INFO"] = req.getPathInfo();
 	_envMap["SCRIPT_NAME"] = req.getPath();
 	_envMap["SCRIPT_FILENAME"] = _scriptPath;
+	_envMap["GOCACHE"] = "/tmp/go-build-cache";
+	_envMap["HOME"] = "/tmp";
 	std::string host = req.getHost();
 	if (!host.empty()) {
 		size_t pos = host.find(':');
