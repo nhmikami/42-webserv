@@ -1,22 +1,22 @@
 #include "server/CgiHandler.hpp"
 #include "utils/ParseUtils.hpp"
 
-CgiHandler::CgiHandler(const Request& req, const std::string& scriptPath, const std::string& executor)
+CgiHandler::CgiHandler(const Request& req, const std::string& scriptPath, const std::vector<std::string>& executor)
 	: _scriptPath(scriptPath), _executorPath(executor), _pid(-1), _socketFd(-1), _state(CGI_NOT_STARTED), _bytesSent(0), _requestBody(req.getBody()) {
 	_initEnv(req);
 }
 
 CgiHandler::~CgiHandler(void) {
 	if (_pid > 0) {
-        kill(_pid, SIGKILL);
-        waitpid(_pid, NULL, 0);
-        _pid = -1;
-    }
-    
-    if (_socketFd >= 0) {
-        close(_socketFd);
-        _socketFd = -1;
-    }
+		kill(_pid, SIGKILL);
+		waitpid(_pid, NULL, 0);
+		_pid = -1;
+	}
+	
+	if (_socketFd >= 0) {
+		close(_socketFd);
+		_socketFd = -1;
+	}
 }
 
 void CgiHandler::_initEnv(const Request& req) {
@@ -121,22 +121,24 @@ void CgiHandler::start(void) {
 
 		char** envp = _createEnvArray();
 		std::vector<char*> argv;
-		argv.push_back(const_cast<char*>(_executorPath.c_str()));
+		for (size_t i = 0; i < _executorPath.size(); ++i)
+			argv.push_back(const_cast<char*>(_executorPath[i].c_str()));
 		argv.push_back(const_cast<char*>(_scriptPath.c_str()));
 		argv.push_back(NULL);
+
 		int errFd = open("/tmp/cgi_errors.log", O_WRONLY | O_CREAT | O_APPEND, 0644);
-        if (errFd >= 0) {
-            dprintf(errFd, "Executor: %s\n", _executorPath.c_str());
-            dprintf(errFd, "Script: %s\n", _scriptPath.c_str());
-            dprintf(errFd, "Arguments:\n");
-            for (size_t i = 0; i < argv.size(); ++i)
-                dprintf(errFd, "  argv[%zu]: %s\n", i, argv[i]);
-        }
+		if (errFd >= 0) {
+			dprintf(errFd, "Executor: %s\n", argv[0]);
+			dprintf(errFd, "Script: %s\n", _scriptPath.c_str());
+			dprintf(errFd, "Arguments:\n");
+			for (size_t i = 0; i < argv.size(); ++i)
+				dprintf(errFd, "  argv[%zu]: %s\n", i, argv[i]);
+		}
 
 		execve(argv[0], &argv[0], envp);
 
 		if (errFd >= 0)
-            dprintf(errFd, "execve failed: %s\n", strerror(errno));
+			dprintf(errFd, "execve failed: %s\n", strerror(errno));
 		
 		_freeEnvArray(envp);
 		exit(1);
@@ -204,7 +206,7 @@ void CgiHandler::_handleCgiWrite(void) {
 		return ;
 	}
 
-	_state = CGI_ERROR; // sent <= 0
+	_state = CGI_ERROR;
 }
 
 void CgiHandler::_handleCgiRead(void) {
@@ -221,7 +223,7 @@ void CgiHandler::_handleCgiRead(void) {
 
 	if (bytesRead == 0) {
 		std::cerr << "[CGI] EOF reached. Buffer size: " << _responseBuffer.size() << std::endl;
-        std::cerr << "[CGI] Output: " << _responseBuffer << std::endl;
+		std::cerr << "[CGI] Output: " << _responseBuffer << std::endl;
 		pid_t r = waitpid(_pid, &status, WNOHANG);
 		if (r == 0) {
 			kill(_pid, SIGKILL);
@@ -236,5 +238,5 @@ void CgiHandler::_handleCgiRead(void) {
 	}
 
 	std::cerr << "[CGI] ERROR: read failed" << std::endl;
-	_state = CGI_ERROR; // bytesRead < 0
+	_state = CGI_ERROR;
 }

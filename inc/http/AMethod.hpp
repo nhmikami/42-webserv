@@ -41,8 +41,8 @@ class AMethod {
 		std::string					_getUploadLocation(void);
 		
 		bool								_isCGI(const std::string& path) const;
-		std::map<std::string, std::string>	_getCgiExecutors(void) const;
 		HttpStatus							_runCGI(const std::string &path);
+		const std::map<std::string, std::vector<std::string> >&	_getCgiExecutors(void) const;
 
 };
 
