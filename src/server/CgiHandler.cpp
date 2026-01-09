@@ -4,6 +4,7 @@
 CgiHandler::CgiHandler(const Request& req, const std::string& scriptPath, const std::vector<std::string>& executor)
 	: _scriptPath(scriptPath), _executorPath(executor), _pid(-1), _socketFd(-1), _state(CGI_NOT_STARTED), _bytesSent(0), _requestBody(req.getBody()) {
 	_initEnv(req);
+	_startTime = time(NULL);
 }
 
 CgiHandler::~CgiHandler(void) {
@@ -100,14 +101,12 @@ CgiState CgiHandler::getState(void) const {
 void CgiHandler::start(void) {
 	int socks[2];
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, socks) < 0) {
-		std::cerr << "[CGI] ERROR: socketpair failed" << std::endl;
 		_state = CGI_ERROR;
 		return ;
 	}
 
 	_pid = fork();
 	if (_pid < 0) {
-		std::cerr << "[CGI] ERROR: fork failed" << std::endl;
 		close(socks[0]);
 		close(socks[1]);
 		_state = CGI_ERROR;
@@ -118,6 +117,8 @@ void CgiHandler::start(void) {
 		if (dup2(socks[1], STDIN_FILENO) < 0)
 			exit(1);
 		if (dup2(socks[1], STDOUT_FILENO) < 0)
+			exit(1);
+		if (dup2(socks[1], STDERR_FILENO) < 0)
 			exit(1);
 		close(socks[0]);
 		close(socks[1]);
@@ -172,16 +173,30 @@ void CgiHandler::handleEvent(short events) {
 	if (_state == CGI_FINISHED || _state == CGI_ERROR) 
 		return ;
 
+	time_t currentTime = time(NULL);
+    if (difftime(currentTime, _startTime) > CGI_TIMEOUT) {
+        if (_pid > 0) {
+            kill(_pid, SIGKILL);
+            waitpid(_pid, NULL, 0);
+        }
+        _state = CGI_ERROR;
+        return ;
+    }
+
 	if (_state == CGI_WRITING && (events & POLLOUT))
 		_handleCgiWrite();
 	else if (_state == CGI_READING && (events & POLLIN))
 		_handleCgiRead();
 
+	if (_state == CGI_FINISHED || _state == CGI_ERROR)
+		return ;
+
 	if (events & (POLLHUP | POLLERR)) {
 		int status = 0;
 		waitpid(_pid, &status, 0);
-		if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+		if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
 			_state = CGI_FINISHED;
+		}
 		else
 			_state = CGI_ERROR;
 		return ;
@@ -220,13 +235,10 @@ void CgiHandler::_handleCgiRead(void) {
 	bytesRead = read(_socketFd, buffer, sizeof(buffer));
 	if (bytesRead > 0) {
 		_responseBuffer.append(buffer, bytesRead);
-		std::cerr << "[CGI] Read " << bytesRead << " bytes. Total: " << _responseBuffer.size() << std::endl;
 		return ;
 	}
 
 	if (bytesRead == 0) {
-		std::cerr << "[CGI] EOF reached. Buffer size: " << _responseBuffer.size() << std::endl;
-		std::cerr << "[CGI] Output: " << _responseBuffer << std::endl;
 		pid_t r = waitpid(_pid, &status, WNOHANG);
 		if (r == 0) {
 			kill(_pid, SIGKILL);
@@ -235,11 +247,11 @@ void CgiHandler::_handleCgiRead(void) {
 
 		if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
 			_state = CGI_FINISHED;
-		else
+		else {
+
 			_state = CGI_ERROR;
+		}
 		return ;
 	}
-
-	std::cerr << "[CGI] ERROR: read failed" << std::endl;
 	_state = CGI_ERROR;
 }

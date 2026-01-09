@@ -21,6 +21,8 @@
 
 static const size_t CGI_BUF_SIZE = 4096;
 
+#define CGI_TIMEOUT 5          // Timeout em segundos
+
 enum CgiState {
 	CGI_NOT_STARTED,
 	CGI_WRITING,
@@ -34,6 +36,7 @@ class CgiHandler {
 		std::string							_scriptPath;
 		std::vector<std::string>			_executorPath;
 		std::map<std::string, std::string>  _envMap;
+		time_t _startTime;
 
 		pid_t		_pid;
 		int			_socketFd;

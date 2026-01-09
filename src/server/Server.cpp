@@ -2,8 +2,9 @@
 
 Server::Server(std::vector<ServerConfig> configs) : _configs(configs), _sessions(SESSION_TIMEOUT) {
 	srand(static_cast<unsigned int>(time(NULL)));
-	if (!startServer())
-		Logger::log(Logger::ERROR, "Failed to start server.");
+	startServer();
+	// if (!startServer())
+	// 	Logger::log(Logger::ERROR, "Failed to start server.");
 }
 
 Server::~Server(void) {
@@ -28,24 +29,26 @@ Server::~Server(void) {
 };
 
 bool	Server::startServer(void) {
+	bool at_least_one_success = false;
+	
 	for (size_t i = 0; i < _configs.size(); i++) {
 		int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 		if (server_fd < 0){
 			Logger::log(Logger::ERROR, "Socket failed.");
-			return false;
+			continue;
 		}
 		
 		int opt = 1;
 		if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
 			Logger::log(Logger::ERROR, "Failed to set SO_REUSEADDR.");
 			close(server_fd);
-			return false;
+			continue;
 		}
 
 		if (fcntl(server_fd, F_SETFL, O_NONBLOCK) < 0) {
 			Logger::log(Logger::ERROR, "Failed to set O_NONBLOCK.");
 			close(server_fd);
-			return false;
+			continue;
 		}
 		
 		std::string host = _configs[i].getHost();
@@ -60,16 +63,18 @@ bool	Server::startServer(void) {
 	
 		if (!(bindServer(server_fd, address, port) && startListen(server_fd, host, port) && addToFDs(server_fd))) {
 			close(server_fd);
-			return false;
+			continue;
 		}
 		_fd_to_config[server_fd] = &_configs[i];
+		at_least_one_success = true;
 	}
-	return true;
+	return at_least_one_success;
 };
 
 bool	Server::bindServer(int server_fd, struct sockaddr_in address, int port) {
 	if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
 		Logger::log(Logger::ERROR, "Failed to bind server port: " + ParseUtils::itoa(port));
+		Logger::log(Logger::ERROR, "Port: " + ParseUtils::itoa(port) + " already in use. Server block ignored.");
 		return false;
 	}
 	return true;
@@ -448,7 +453,12 @@ void Server::_finalizeCgiResponse(size_t i, int cgi_fd) {
 
 	if (cgi && cli) {
 		Response res;
-		res.parseCgiOutput(cgi->getOutput());
+
+		if (cgi->getState() == CGI_ERROR) {
+			res.processError(SERVER_ERR, *_client_to_config[cli->getFd()], NULL);
+		} else {
+			res.parseCgiOutput(cgi->getOutput());
+		}
 
 		Request* req = cli->getCurrentRequest();
 		if (req && req->getSession()) {
