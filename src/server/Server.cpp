@@ -3,8 +3,6 @@
 Server::Server(std::vector<ServerConfig> configs) : _configs(configs), _sessions(SESSION_TIMEOUT) {
 	srand(static_cast<unsigned int>(time(NULL)));
 	startServer();
-	// if (!startServer())
-	// 	Logger::log(Logger::ERROR, "Failed to start server.");
 }
 
 Server::~Server(void) {

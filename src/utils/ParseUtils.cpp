@@ -1,20 +1,5 @@
 #include "utils/ParseUtils.hpp"
 
-// ParseUtils::ParseUtils(void) {};
-
-// ParseUtils::ParseUtils(const ParseUtils &other) 
-// {
-//     (void)other;
-// };
-
-// ParseUtils::~ParseUtils(void) {};
-
-// ParseUtils& ParseUtils::operator=(const ParseUtils &other)
-// {
-//     (void)other;
-//     return *this;
-// };
-
 bool		ParseUtils::isNumber(const std::string &s) {
 	if (s.empty())
 		return false;

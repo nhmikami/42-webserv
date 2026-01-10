@@ -167,7 +167,6 @@ int main(int ac, char **av) {
 
 		ParseConfig parser(av[1]);
 		std::vector<ServerConfig> configs = parser.parse();
-		printConfig(configs);
 
 		Server server(configs);
 		server.run();
