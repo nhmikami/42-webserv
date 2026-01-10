@@ -160,14 +160,14 @@ void CgiHandler::handleEvent(short events) {
 		return ;
 
 	time_t currentTime = time(NULL);
-    if (difftime(currentTime, _startTime) > CGI_TIMEOUT) {
-        if (_pid > 0) {
-            kill(_pid, SIGKILL);
-            waitpid(_pid, NULL, 0);
-        }
-        _state = CGI_ERROR;
-        return ;
-    }
+	if (difftime(currentTime, _startTime) > CGI_TIMEOUT) {
+		if (_pid > 0) {
+			kill(_pid, SIGKILL);
+			waitpid(_pid, NULL, 0);
+		}
+		_state = CGI_ERROR;
+		return ;
+	}
 
 	if (_state == CGI_WRITING && (events & POLLOUT))
 		_handleCgiWrite();

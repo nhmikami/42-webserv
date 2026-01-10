@@ -9,7 +9,7 @@
 
 #include "utils/ParseUtils.hpp"
 
-static const size_t DEFAULT_CLIENT_MAX_BODY_SIZE = 1024 * 1024; // 1MB
+static const size_t DEFAULT_CLIENT_MAX_BODY_SIZE = 1024 * 1024;
 
 class BaseConfig {
 	protected:
