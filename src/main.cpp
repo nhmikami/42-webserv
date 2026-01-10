@@ -70,9 +70,8 @@ void printConfig(const std::vector<ServerConfig> &servers_config)
 				if (++next != cgiMap.end())
 					std::cout << ", ";
 			}
-        }
-        std::cout << std::endl;
-		// Print locations
+		}
+		std::cout << std::endl;
 		std::map<std::string, LocationConfig> locations = servers_config[i].getLocations();
 		std::cout << "\n  Locations (" << locations.size() << "):" << std::endl;
 		for (std::map<std::string, LocationConfig>::const_iterator it = locations.begin(); it != locations.end(); ++it)

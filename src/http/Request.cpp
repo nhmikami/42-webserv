@@ -196,7 +196,6 @@ std::map<std::string, std::string> Request::getContentTypeParametersMap() const 
 	return params;
 }
 
-// Busca um parâmetro específico na query string
 std::string Request::getQueryParameter(const std::string &key) const {
 	std::map<std::string, std::string> params = getQueryParametersMap();
 	std::map<std::string, std::string>::const_iterator it = params.find(key);
@@ -205,7 +204,6 @@ std::string Request::getQueryParameter(const std::string &key) const {
 	return "";
 }
 
-// Retorna todos os parâmetros da query string em um map
 std::map<std::string, std::string> Request::getQueryParametersMap() const {
 	std::map<std::string, std::string> params;
 	if (_query.empty())
@@ -214,19 +212,15 @@ std::map<std::string, std::string> Request::getQueryParametersMap() const {
 	size_t start = 0;
 	size_t end = 0;
 	
-	// Percorre query separando por '&'
 	while (start < _query.length()) {
-		// Encontra próximo '&' ou fim da string
 		end = _query.find('&', start);
 		if (end == std::string::npos)
 			end = _query.length();
 		
-		// Extrai parâmetro completo
 		std::string param = _query.substr(start, end - start);
 		size_t equals = param.find('=');
 		
 		if (equals != std::string::npos) {
-			// Formato: key=value
 			std::string key = param.substr(0, equals);
 			std::string value = param.substr(equals + 1);
 			
@@ -260,7 +254,6 @@ std::map<std::string, std::string> Request::getQueryParametersMap() const {
 	return params;
 }
 
-// Verifica se um parâmetro específico existe na query
 bool Request::hasQueryParameter(const std::string &key) const {
 	if (_query.empty() || key.empty())
 		return false;

@@ -288,7 +288,7 @@ HttpStatus	ParseHttp::parseBody(std::string &body) {
 }
 
 bool ParseHttp::isHeaderComplete() const {
-    return _header_parsed;
+	return _header_parsed;
 }
 
 void ParseHttp::reset() {
