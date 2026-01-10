@@ -25,7 +25,7 @@ HttpStatus MethodPOST::handleMethod(void) {
 		return _runCGI(full_path);
 
 	if (FileUtils::isDirectory(full_path)) {
-		return BAD_REQUEST;
+		return FORBIDDEN;
 	}
 
 	bool fileExisted = FileUtils::exists(full_path);
