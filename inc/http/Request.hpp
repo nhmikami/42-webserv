@@ -52,7 +52,6 @@ class Request {
 		void setHttpVersion(const std::string &v);
 		void setHeaders(const std::map<std::string, std::string> &h);
 		void setBody(const std::string &b);
-		// void addHeader(const std::string &key, const std::string &value);
 
 		RequestMethod getMethod() const;
 		const std::string getMethodStr() const;

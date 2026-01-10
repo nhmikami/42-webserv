@@ -1,17 +1,8 @@
 #include "config/ParseConfig.hpp"
 
-// ParseConfig::ParseConfig(void) : _filename(""), _context(GLOBAL), _open_brackets(0), _count_line(0) {};
-
-// ParseConfig::ParseConfig(const ParseConfig &other) : _filename(other._filename), _context(GLOBAL), _open_brackets(0), _count_line(0) {};
-
 ParseConfig::ParseConfig(const std::string &filename) : _filename(filename), _context(GLOBAL), _open_brackets(0), _count_line(0) {};
 
 ParseConfig::~ParseConfig(void) {};
-
-// ParseConfig &ParseConfig::operator=(const ParseConfig &other) {
-// 	(void)other;
-// 	return *this;
-// };
 
 std::vector<ServerConfig> ParseConfig::parse(void) {
 

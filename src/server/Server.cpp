@@ -286,6 +286,11 @@ bool Server::_processRedirect(int code, Client* cli, const LocationConfig* loc) 
 	std::string path = loc->getReturnPath();
 	if (code >= 300 && code < 400)
 		res.addHeader("location", path);
+	else if (code >= 400) {
+        ServerConfig* cfg = findServerConfig(cli->getFd());
+        if (cfg)
+            res.processError(static_cast<HttpStatus>(code), *cfg, loc);
+    }
 	else
 		res.setBody(path);
 

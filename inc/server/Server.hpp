@@ -84,6 +84,4 @@ class Server {
 		void run(void);
 };
 
-void printRequest(ParseHttp parser);
-
 #endif
