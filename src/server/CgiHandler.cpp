@@ -1,22 +1,23 @@
 #include "server/CgiHandler.hpp"
 #include "utils/ParseUtils.hpp"
 
-CgiHandler::CgiHandler(const Request& req, const std::string& scriptPath, const std::string& executor)
+CgiHandler::CgiHandler(const Request& req, const std::string& scriptPath, const std::vector<std::string>& executor)
 	: _scriptPath(scriptPath), _executorPath(executor), _pid(-1), _socketFd(-1), _state(CGI_NOT_STARTED), _bytesSent(0), _requestBody(req.getBody()) {
 	_initEnv(req);
+	_startTime = time(NULL);
 }
 
 CgiHandler::~CgiHandler(void) {
 	if (_pid > 0) {
-        kill(_pid, SIGKILL);
-        waitpid(_pid, NULL, 0);
-        _pid = -1;
-    }
-    
-    if (_socketFd >= 0) {
-        close(_socketFd);
-        _socketFd = -1;
-    }
+		kill(_pid, SIGKILL);
+		waitpid(_pid, NULL, 0);
+		_pid = -1;
+	}
+	
+	if (_socketFd >= 0) {
+		close(_socketFd);
+		_socketFd = -1;
+	}
 }
 
 void CgiHandler::_initEnv(const Request& req) {
@@ -25,10 +26,13 @@ void CgiHandler::_initEnv(const Request& req) {
 	_envMap["SERVER_SOFTWARE"] = "WebServ/1.0";
 	_envMap["REDIRECT_STATUS"] = "200";
 	_envMap["REQUEST_METHOD"] = req.getMethodStr();
+	_envMap["REQUEST_URI"] = req.getUri();
 	_envMap["QUERY_STRING"] = req.getQuery();
 	_envMap["PATH_INFO"] = req.getPathInfo();
 	_envMap["SCRIPT_NAME"] = req.getPath();
 	_envMap["SCRIPT_FILENAME"] = _scriptPath;
+	_envMap["GOCACHE"] = "/tmp/go-build-cache";
+	_envMap["HOME"] = "/tmp";
 	std::string host = req.getHost();
 	if (!host.empty()) {
 		size_t pos = host.find(':');
@@ -119,11 +123,13 @@ void CgiHandler::start(void) {
 
 		char** envp = _createEnvArray();
 		std::vector<char*> argv;
-		argv.push_back(const_cast<char*>(_executorPath.c_str()));
+		for (size_t i = 0; i < _executorPath.size(); ++i)
+			argv.push_back(const_cast<char*>(_executorPath[i].c_str()));
 		argv.push_back(const_cast<char*>(_scriptPath.c_str()));
 		argv.push_back(NULL);
+
 		execve(argv[0], &argv[0], envp);
-		
+	
 		_freeEnvArray(envp);
 		exit(1);
 	}
@@ -153,13 +159,26 @@ void CgiHandler::handleEvent(short events) {
 	if (_state == CGI_FINISHED || _state == CGI_ERROR) 
 		return ;
 
+	time_t currentTime = time(NULL);
+    if (difftime(currentTime, _startTime) > CGI_TIMEOUT) {
+        if (_pid > 0) {
+            kill(_pid, SIGKILL);
+            waitpid(_pid, NULL, 0);
+        }
+        _state = CGI_ERROR;
+        return ;
+    }
+
 	if (_state == CGI_WRITING && (events & POLLOUT))
 		_handleCgiWrite();
 	else if (_state == CGI_READING && (events & POLLIN))
 		_handleCgiRead();
 
+	if (_state == CGI_FINISHED || _state == CGI_ERROR)
+		return ;
+
 	if (events & (POLLHUP | POLLERR)) {
-		int status;
+		int status = 0;
 		waitpid(_pid, &status, 0);
 		if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
 			_state = CGI_FINISHED;
@@ -190,13 +209,13 @@ void CgiHandler::_handleCgiWrite(void) {
 		return ;
 	}
 
-	_state = CGI_ERROR; // sent <= 0
+	_state = CGI_ERROR;
 }
 
 void CgiHandler::_handleCgiRead(void) {
 	char	buffer[CGI_BUF_SIZE];
 	ssize_t	bytesRead;
-	int		status;
+	int		status = 0;
 
 	bytesRead = read(_socketFd, buffer, sizeof(buffer));
 	if (bytesRead > 0) {
@@ -217,6 +236,5 @@ void CgiHandler::_handleCgiRead(void) {
 			_state = CGI_ERROR;
 		return ;
 	}
-
-	_state = CGI_ERROR; // bytesRead < 0
+	_state = CGI_ERROR;
 }

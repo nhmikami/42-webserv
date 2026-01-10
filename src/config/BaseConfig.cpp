@@ -103,10 +103,14 @@ void BaseConfig::setErrorPages(const std::vector<std::string>& values)
 
 void BaseConfig::setCgi(const std::vector<std::string>& values)
 {
-	if (values.size() != 2)
-		throw std::invalid_argument("cgi must have two values: extension and root.");
+	if (values.size() < 2)
+		throw std::invalid_argument("cgi must have at least two values: extension and root.");
 	_is_cgi = true;
-	_cgi[values[0]] = values[1];
+	std::vector<std::string> cgi_values;
+	for (size_t i = 1; i < values.size(); i++) {
+		cgi_values.push_back(values[i]);
+	}
+	_cgi[values[0]] = cgi_values;
 };
 
 void BaseConfig::setUpload(const std::vector<std::string>& values)
@@ -131,6 +135,6 @@ const std::vector<std::string>&				BaseConfig::getIndexFiles(void) const { retur
 
 const std::map<int, std::string>&			BaseConfig::getErrorPages(void) const { return _error_pages; };
 
-const std::map<std::string, std::string>&	BaseConfig::getCgi(void) const { return _cgi; };
+const std::map<std::string, std::vector<std::string> >&	BaseConfig::getCgi(void) const { return _cgi; };
 
 const std::string&							BaseConfig::getUpload(void) const { return _upload; };

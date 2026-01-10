@@ -21,6 +21,8 @@
 
 static const size_t CGI_BUF_SIZE = 4096;
 
+#define CGI_TIMEOUT 5
+
 enum CgiState {
 	CGI_NOT_STARTED,
 	CGI_WRITING,
@@ -32,8 +34,9 @@ enum CgiState {
 class CgiHandler {
 	private:
 		std::string							_scriptPath;
-		std::string							_executorPath;
+		std::vector<std::string>			_executorPath;
 		std::map<std::string, std::string>  _envMap;
+		time_t _startTime;
 
 		pid_t		_pid;
 		int			_socketFd;
@@ -44,7 +47,7 @@ class CgiHandler {
 		std::string			_responseBuffer;
 
 	public:
-		CgiHandler(const Request& req, const std::string& scriptPath, const std::string& executor);
+		CgiHandler(const Request& req, const std::string& scriptPath, const std::vector<std::string>& executor);
 		~CgiHandler(void);
 
 		pid_t		getPid(void) const;

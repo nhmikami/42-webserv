@@ -54,7 +54,7 @@ html = f"""
     <link rel="stylesheet" href="/style.css">
 </head>
 
-<body class="bg-silent">
+<body class="bg-silent center-container">
     <p class="title">Silent Mode</p>
     <p class="subtitle">Current state: <b>{current_state}</b></p>
 
