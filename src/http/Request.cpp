@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   Request.cpp                                        :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: cabo-ram <cabo-ram@student.42.fr>          +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/06 15:02:30 by cabo-ram          #+#    #+#             */
-/*   Updated: 2025/11/06 15:02:30 by cabo-ram         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "http/Request.hpp"
 
 Request::Request() : _method(UNKNOWN), _uri(""), _path(""),
@@ -67,22 +55,6 @@ void Request::setHeaders(const std::map<std::string, std::string> &h) {
 void Request::setBody(const std::string &b) {
 	_body = b;
 }
-
-// void Request::addHeader(const std::string &key, const std::string &value) {
-// 	if (key.empty() || value.empty())
-// 		return ;
-// 	for (size_t i = 0; i < key.size(); ++i) {
-// 		unsigned char c = key[i];
-// 		if (c < 32 || c == 127 || c == ' ' || c == ':' || c == '\r' || c == '\n')
-// 			return ;
-// 	}
-// 	for (size_t i = 0; i < value.size(); ++i) {
-// 		unsigned char c = value[i];
-// 		if (c == '\r' || c == '\n')
-// 			return ;
-// 	}
-// 	_headers[key] = value;
-// }
 
 RequestMethod Request::getMethod() const {
 	return _method;

@@ -1,31 +1,28 @@
+#Set variavel de ambiente
+URL="http://localhost:8090"
+
 # Requisições sequenciais:
 for i in {1..1000}; do
-  curl -s $URL > /dev/null
+  curl -s $URL >> /tmp/sequential_requests
 done
 
 # Requisições Simultâneas
 for i in {1..100}; do
-  curl -s $URL > /dev/null &
+  curl -s $URL >> /tmp/simultaneous_requests &
 done
 wait
 
 # Explodir número de conexões
 for i in {1..500}; do
-  curl -s $URL > /dev/null &
+  curl -s $URL >> /tmp/connection_burst &
 done
 wait
 
-# Cliente lento
-curl --limit-rate 1B $URL
+# Connection Keep Alive
+curl $URL $URL
 
-# Conexão que demora para enviar dados
-curl --limit-rate 10B -X POST -d "aaaaaaaaaaaaaaaaaaaaaaaaaaaa" $URL
-
-# Timeout agressivo
-curl --connect-timeout 1 --max-time 2 $URL
-
-# Keep Alive
-curl --keepalive-time 60 --http1.1 -v $URL
+# Connection close
+curl -H "Connection: close"  $URL $URL
 
 # Headers enormes (stress de parsing)
 curl -H "X-Test: $(printf 'A%.0s' {1..8000})" $URL
@@ -34,3 +31,9 @@ curl -H "X-Test: $(printf 'A%.0s' {1..8000})" $URL
 # Métodos não implementados
 curl -X PUT $URL
 curl -X PATCH $URL
+
+# Uploads grandes
+dd if=/dev/zero bs=1M count=50 | curl -X POST --data-binary @- $URL
+
+# Loop infinito
+while true; do curl -s $URL >> /tmp/infinite_loop; done
