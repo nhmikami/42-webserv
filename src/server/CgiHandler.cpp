@@ -57,7 +57,7 @@ void CgiHandler::_initEnv(const Request& req) {
 		else
 			_envMap["HTTP_" + transformedKey] = value;
 	}
-	if (req.getMethodStr() == "POST" && !_requestBody.empty())
+	if (req.getMethodStr() == "POST")
 		_envMap["CONTENT_LENGTH"] = ParseUtils::itoa(_requestBody.size());
 }
 
@@ -118,8 +118,6 @@ void CgiHandler::start(void) {
 			exit(1);
 		if (dup2(socks[1], STDOUT_FILENO) < 0)
 			exit(1);
-		if (dup2(socks[1], STDERR_FILENO) < 0)
-			exit(1);
 		close(socks[0]);
 		close(socks[1]);
 
@@ -130,20 +128,8 @@ void CgiHandler::start(void) {
 		argv.push_back(const_cast<char*>(_scriptPath.c_str()));
 		argv.push_back(NULL);
 
-		int errFd = open("/tmp/cgi_errors.log", O_WRONLY | O_CREAT | O_APPEND, 0644);
-		if (errFd >= 0) {
-			dprintf(errFd, "Executor: %s\n", argv[0]);
-			dprintf(errFd, "Script: %s\n", _scriptPath.c_str());
-			dprintf(errFd, "Arguments:\n");
-			for (size_t i = 0; i < argv.size(); ++i)
-				dprintf(errFd, "  argv[%zu]: %s\n", i, argv[i]);
-		}
-
 		execve(argv[0], &argv[0], envp);
-
-		if (errFd >= 0)
-			dprintf(errFd, "execve failed: %s\n", strerror(errno));
-		
+	
 		_freeEnvArray(envp);
 		exit(1);
 	}
@@ -194,9 +180,8 @@ void CgiHandler::handleEvent(short events) {
 	if (events & (POLLHUP | POLLERR)) {
 		int status = 0;
 		waitpid(_pid, &status, 0);
-		if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+		if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
 			_state = CGI_FINISHED;
-		}
 		else
 			_state = CGI_ERROR;
 		return ;
@@ -247,10 +232,8 @@ void CgiHandler::_handleCgiRead(void) {
 
 		if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
 			_state = CGI_FINISHED;
-		else {
-
+		else
 			_state = CGI_ERROR;
-		}
 		return ;
 	}
 	_state = CGI_ERROR;

@@ -68,7 +68,7 @@ void printConfig(const std::vector<ServerConfig> &servers_config)
 				std::cout << "]";
 				std::map<std::string, std::vector<std::string> >::const_iterator next = cgi_it;
 				if (++next != cgiMap.end())
-						std::cout << ", ";
+					std::cout << ", ";
 			}
         }
         std::cout << std::endl;
@@ -134,7 +134,7 @@ void printConfig(const std::vector<ServerConfig> &servers_config)
 					std::cout << "]";
 					std::map<std::string, std::vector<std::string> >::const_iterator next = cgi_it;
 					if (++next != cgiMap.end())
-							std::cout << ", ";
+						std::cout << ", ";
 				}
 			}
 			std::cout << std::endl;

@@ -21,7 +21,7 @@
 
 static const size_t CGI_BUF_SIZE = 4096;
 
-#define CGI_TIMEOUT 5          // Timeout em segundos
+#define CGI_TIMEOUT 5
 
 enum CgiState {
 	CGI_NOT_STARTED,

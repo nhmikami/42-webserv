@@ -73,8 +73,7 @@ bool	Server::startServer(void) {
 
 bool	Server::bindServer(int server_fd, struct sockaddr_in address, int port) {
 	if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
-		Logger::log(Logger::ERROR, "Failed to bind server port: " + ParseUtils::itoa(port));
-		Logger::log(Logger::ERROR, "Port: " + ParseUtils::itoa(port) + " already in use. Server block ignored.");
+		Logger::log(Logger::ERROR, "Failed to bind server port " + ParseUtils::itoa(port) + " (already in use). Server block ignored.");
 		return false;
 	}
 	return true;

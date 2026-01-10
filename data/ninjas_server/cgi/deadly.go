@@ -10,11 +10,10 @@ import (
 
 
 func main() {
-	enemies_killed := 0;
+	enemies_killed := 0
 
 	cookie := os.Getenv("HTTP_COOKIE")
 	if cookie != "" {
-        // Procurar pelo cookie enemies_killed
         pairs := strings.Split(cookie, "; ")
         for _, pair := range pairs {
             parts := strings.SplitN(pair, "=", 2)

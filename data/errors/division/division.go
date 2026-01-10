@@ -7,7 +7,6 @@ func main() {
     fmt.Print("\r\n")
     fmt.Print("<h1>This will panic</h1>")
     
-    // Panic por divisão por zero em runtime
     var divisor int = 0
     result := 42 / divisor
     fmt.Print(result)

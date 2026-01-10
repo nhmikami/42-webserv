@@ -31,7 +31,6 @@ class ParseUtils {
 		static std::pair<std::string, std::string> splitHeadersAndBody(const std::string &raw);
 		static std::pair<std::string, std::string> splitPair(const std::string &s, const std::string &delimiter);
 		static std::string	extractAttribute(const std::string &header, const std::string &key);
-		static std::string removeQuotes(const std::string& str);
 };
 
 #endif
