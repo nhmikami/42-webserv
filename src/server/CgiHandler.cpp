@@ -5,6 +5,7 @@ CgiHandler::CgiHandler(const Request& req, const std::string& scriptPath, const 
 	: _scriptPath(scriptPath), _executorPath(executor), _pid(-1), _socketFd(-1), _state(CGI_NOT_STARTED), _bytesSent(0), _requestBody(req.getBody()) {
 	_initEnv(req);
 	_startTime = time(NULL);
+	_lastTimeoutCheck = _startTime;
 }
 
 CgiHandler::~CgiHandler(void) {
@@ -173,15 +174,19 @@ void CgiHandler::handleEvent(short events) {
 	if (_state == CGI_FINISHED || _state == CGI_ERROR) 
 		return ;
 
+	// Only check timeout once per second to reduce system calls
 	time_t currentTime = time(NULL);
-    if (difftime(currentTime, _startTime) > CGI_TIMEOUT) {
-        if (_pid > 0) {
-            kill(_pid, SIGKILL);
-            waitpid(_pid, NULL, 0);
-        }
-        _state = CGI_ERROR;
-        return ;
-    }
+	if (difftime(currentTime, _lastTimeoutCheck) >= 1.0) {
+		_lastTimeoutCheck = currentTime;
+		if (difftime(currentTime, _startTime) > CGI_TIMEOUT) {
+			if (_pid > 0) {
+				kill(_pid, SIGKILL);
+				waitpid(_pid, NULL, 0);
+			}
+			_state = CGI_ERROR;
+			return ;
+		}
+	}
 
 	if (_state == CGI_WRITING && (events & POLLOUT))
 		_handleCgiWrite();
