@@ -2,7 +2,9 @@
 
 # 42-webserv
 
-**Webserv** is a custom **HTTP/1.1** server implemented in C++98. The main objective of this project is to understand the internal mechanics of a web server by implementing everything from scratch: socket handling, I/O multiplexing, HTTP parsing, routing, and CGI execution.
+**Webserv** is a custom **HTTP/1.1** server implemented in C++98.
+
+The main objective of this project is to understand the internal mechanics of a web server by implementing everything from scratch: socket handling, I/O multiplexing, HTTP parsing, routing, and CGI execution.
 
 Inspired by Nginx, our server is capable of hosting static websites, handling file uploads, executing CGI scripts, and supporting multiple virtual servers through a flexible configuration system.
 
@@ -30,7 +32,7 @@ Through this project, we learned how to:
 
 **Bonus Features**
 * **Session & Cookie Management**: state persistence across requests using internal session storage and Set-Cookie headers
-* **Multiple CGI Support**: execute different CGI languages based on configuration
+* **Multiple CGI Support**: execute different CGI languages based on configuration, including Python, Go, etc.
 
 <br>
 
@@ -53,13 +55,13 @@ Through this project, we learned how to:
 * Manages headers, status codes, and body
 
 **CGI Handler**
-* Executes external scripts via fork() and execve()
-* Passes environment variables
+* Executes external scripts via `fork()` and `execve()`
+* Sets environment variables
 * Captures stdout and converts it into an HTTP response
 
 All components are orchestrated by a central poll-based event loop.
 
-We chose `poll()` for its better scalability and cleaner interface. It allows us to monitor a large number of file descriptors for events (POLLIN, POLLOUT), while still maintaining high portability across Unix-like systems.
+We chose `poll()` for its better scalability and cleaner interface. It allows us to monitor a large number of file descriptors for events (`POLLIN`, `POLLOUT`), while still maintaining high portability across Unix-like systems.
 
 All sockets operate in non-blocking mode. Data is read and written in chunks, and each connection progresses through well-defined states. This ensures that:
 * A slow client cannot block the server
@@ -106,37 +108,41 @@ Below is an example of a real configuration used in our Webserv implementation, 
 ```
 server {
 	host 127.0.0.1;
-	listen 8084;
-	server_name ninjas_server;
+	listen 8085;
+	server_name 42sp;
 
-	root ./data/ninjas_server;
+	root ./data/42sp;
 	index index.html;
 
-	client_max_body_size 5000000;
+	client_max_body_size 20000000;
 
+	error_page 400 /errors/400.html;
 	error_page 403 /errors/403.html;
 	error_page 404 /errors/404.html;
-	error_page 405 /errors/405.html;
 	error_page 500 /errors/500.html;
 
 	location / {
 		methods GET;
 	}
 
-	location /fast {
-		return 302 /silent;
-	}
-
-	location /silent {
-		cgi .py /usr/bin/python3;
-		root ./data/ninjas_server/cgi;
-		index silent.py;
+	location /cadet {
+		root ./data/42sp/cadet;
 		methods GET POST;
+		upload ./data/42sp/cadets/uploads;
+		cgi .py /usr/bin/python3;
 	}
 
-	location /deadly {
+	location /cadets_uploads {
+		root ./data/42sp/cadets/uploads;
+		autoindex on;
 		methods GET;
-		root ./data/ninjas_server/deadly;
+	}
+
+	location /cadets_list {
+		cgi .py /usr/bin/python3;
+		root ./data/42sp/cgi;
+		index cadet_list.py;
+		methods GET DELETE;
 	}
 
 	location /forbidden {
@@ -148,7 +154,7 @@ server {
 * Support for:
     - Multiple `server` blocks
     - Multiple `location` blocks per server
-    - Per-route method restrictions
+    - Per-route HTTP method restrictions
     - Root, index, error pages and upload paths
     - HTTP redirections using `return`
     - CGI executor path
