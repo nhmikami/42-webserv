@@ -90,11 +90,8 @@ bool	ParseHttp::parseRequestLine(const std::string &line,
 	size_t method_end = line.find(" ");
 	if (method_end == std::string::npos)
 		return false;
-	std::string method = line.substr(0, method_end);
-	if (method == "GET" || method == "POST" || method == "DELETE")
-		out_method = method;
-	else
-		return false;
+	out_method = line.substr(0, method_end);
+
 	size_t path_start = method_end + 1;
 	size_t path_end = line.find(" ", path_start);
 	if (path_end == std::string::npos)
