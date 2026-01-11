@@ -32,7 +32,7 @@ Through this project, we learned how to:
 
 **Bonus Features**
 * **Session & Cookie Management**: state persistence across requests using internal session storage and Set-Cookie headers
-* **Multiple CGI Support**: execute different CGI languages based on configuration, including Python, Go, etc.
+* **Multiple CGI Support**: execute different CGI languages based on configuration (Python, Go, etc.)
 
 <br>
 
