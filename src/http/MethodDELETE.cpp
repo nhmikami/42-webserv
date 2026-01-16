@@ -9,11 +9,11 @@ MethodDELETE::~MethodDELETE(void) {}
 HttpStatus MethodDELETE::handleMethod(void) {
 	std::string full_path = FileUtils::resolvePath(_getRootPath(), _stripLocationPrefix(_req.getPath()));
 
+	if (_isCGI(full_path))
+		return _runCGI(full_path);
+
 	if (!FileUtils::exists(full_path))
 		return NOT_FOUND;
-
-	if (_isCGI(full_path) && FileUtils::isFile(full_path))
-		return _runCGI(full_path);
 
 	if (!_canDelete(full_path))
 		return FORBIDDEN;

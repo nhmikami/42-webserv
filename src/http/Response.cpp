@@ -128,7 +128,7 @@ HttpStatus Response::processError(HttpStatus status, const ServerConfig& server,
 	std::stringstream html;
 	html << "<html><head><title>" << static_cast<int>(status) << " " << getStatusMessage() 
 		 << "</title></head><body><h1>" << static_cast<int>(status) << " " << getStatusMessage()
-		 << "</h1></body></html>";
+		 << "</h1></body></html>\n";
 
 	std::string body = html.str();
 	setBody(body);
@@ -163,43 +163,62 @@ std::string Response::_generateDate(void) const {
 	return std::string(date);
 }
 
-void Response::parseCgiOutput(const std::string& raw) {
-	if (raw.empty()) {
-		_body.clear();
-		return ;
+bool Response::parseCgiOutput(const std::string& raw) {
+	size_t pos = raw.find("\r\n\r\n");
+	size_t offset = 4;
+	if (pos == std::string::npos) {
+		pos = raw.find("\n\n");
+		offset = 2;
 	}
 
-	std::pair<std::string, std::string> parts = ParseUtils::splitHeadersAndBody(raw);
-	setBody(parts.second);
+	if (pos == std::string::npos)
+		return false;
 
-	std::vector<std::string> lines = ParseUtils::split(parts.first, '\n');
+	std::string headersPart = raw.substr(0, pos);
+	_body = raw.substr(pos + offset);
+
+	bool has_content_type = false;
+	bool has_status = false;
+
+	std::vector<std::string> lines = ParseUtils::split(headersPart, '\n');
 	for (size_t i = 0; i < lines.size(); ++i) {
 		std::string line = ParseUtils::trim(lines[i]);
 		if (line.empty())
-			continue ;
+			continue;
 
 		if (i == 0 && line.find("HTTP/") == 0) {
 			std::vector<std::string> tokens = ParseUtils::split(line, ' ');
-			if (tokens.size() >= 2 && ParseUtils::isNumber(tokens[1]))
+			if (tokens.size() >= 2 && ParseUtils::isNumber(tokens[1])) {
 				_status = static_cast<HttpStatus>(std::atoi(tokens[1].c_str()));
+				has_status = true;
+			}
 			continue;
 		}
 
 		std::pair<std::string, std::string> header = ParseUtils::splitPair(line, ":");
 		if (header.second.empty())
-			continue ;
+			continue;
 
 		std::string key = ParseUtils::toLower(ParseUtils::trim(header.first));
 		std::string value = ParseUtils::trim(header.second);
 		if (key == "status") {
 			std::vector<std::string> statusParts = ParseUtils::split(value, ' ');
-			if (!statusParts.empty() && ParseUtils::isNumber(statusParts[0]))
+			if (!statusParts.empty() && ParseUtils::isNumber(statusParts[0])) {
 				_status = static_cast<HttpStatus>(std::atoi(statusParts[0].c_str()));
+				has_status = true;
+			}
 		} else {
 			addHeader(key, value);
 		}
+		if (key == "content-type")
+			has_content_type = true;
 	}
 
-	if (getHeader("content-type").empty())
-		addHeader("content-type", "text/plain");
+	if (!has_status && !has_content_type)
+		return false;
+
+	if (getHeader("content-length").empty())
+		addHeader("content-length", ParseUtils::itoa(_body.size()));
+
+	return true;
 }

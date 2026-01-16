@@ -162,63 +162,62 @@ bool ParseUri::urlDecodeQuery(const std::string &str, std::string &result) {
 	return true;
 }
 
-bool ParseUri::validateUri(const std::string &uri, std::string &path, std::string &path_info, std::string &query) {
+bool ParseUri::validateUri(const std::string &uri, 
+						   std::string &path, 
+						   std::string &path_info, 
+						   std::string &query) {
 	static const size_t MAX_URI_LEN = 16 * 1024;
 
-	if (uri.empty() || uri[0] != '/')
-		return false;
-	if (uri.size() > MAX_URI_LEN)
-		return false;
-	
-	if (uri.find('\r') != std::string::npos
-		|| uri.find('\n') != std::string::npos
-		|| uri.find('\0') != std::string::npos
-		|| uri.find('\t') != std::string::npos
-		|| uri.find('#') != std::string::npos)
+	if (uri.empty() || uri[0] != '/' || uri.size() > MAX_URI_LEN)
 		return false;
 	
 	for (size_t i = 0; i < uri.size(); ++i) {
 		unsigned char c = static_cast<unsigned char>(uri[i]);
-		if (c < ' ' && c != '\t')
+		if (c < 32 || c == 127 || c == '#')
 			return false;
 	}
+
 	size_t query_pos = uri.find('?');
 	std::string path_full;
-	if (query_pos == std::string::npos) {
-		path_full = uri;
-		query.clear();
-	}
-	else {
+	if (query_pos != std::string::npos) {
 		path_full = uri.substr(0, query_pos);
 		query = uri.substr(query_pos + 1);
+	} else {
+		path_full = uri;
+		query = "";
 	}
-	size_t script = std::string::npos;
 
-	const char* extensions[] = {".php", ".cgi", ".py", ".pl", NULL};
+	const char* extensions[] = {".php", ".cgi", ".py", ".pl", ".go", ".bla", NULL};
+	size_t earliest_ext_pos = path_full.size();
+	size_t ext_length = 0;
+
 	for (int i = 0; extensions[i] != NULL; i++) {
-		size_t pos = path_full.find(extensions[i]);
+		std::string ext = extensions[i];
+		size_t pos = path_full.find(ext);
 		while (pos != std::string::npos) {
-			size_t ext_end = pos + strlen(extensions[i]);
+			size_t ext_end = pos + ext.size();
 			if (ext_end == path_full.size() || path_full[ext_end] == '/') {
-				script = ext_end;
+				if (pos < earliest_ext_pos) {
+					earliest_ext_pos = pos;
+					ext_length = ext.size();
+				}
 				break;
 			}
-			pos = path_full.find(extensions[i], pos + 1);
+			pos = path_full.find(ext, pos + 1);
 		}
-		if (script != std::string::npos)
-			break;
 	}
-	if (script != std::string::npos) {
-		path = path_full.substr(0, script);
-		if (script < path_full.size())
-			path_info = path_full.substr(script);
-		else
-			path_info.clear();
-	}
-	else {
+
+	if (earliest_ext_pos != path_full.size()) {
+		size_t cut_pos = earliest_ext_pos + ext_length;
+		path = path_full.substr(0, cut_pos);
+		path_info = path_full.substr(cut_pos);
+	} else {
 		path = path_full;
-		path_info.clear();
+		path_info = "";
 	}
+	if (path_info.empty())
+		path_info = path;
+
 	return true;
 }
 

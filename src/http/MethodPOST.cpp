@@ -12,21 +12,14 @@ HttpStatus MethodPOST::handleMethod(void) {
 
 	std::string full_path = FileUtils::resolvePath(_getRootPath(), _stripLocationPrefix(_req.getPath()));
 
-	if (_req.getContentType().find("multipart/form-data") != std::string::npos) {
-		HttpStatus uploadStatus = _handleMultipart();
-		if (uploadStatus != CREATED)
-			return uploadStatus;
-		if (_isCGI(full_path))
-			return _runCGI(full_path);
-		return CREATED;
-	}
-
-	if (FileUtils::exists(full_path) && _isCGI(full_path) && FileUtils::isFile(full_path))
+	if (_isCGI(full_path))
 		return _runCGI(full_path);
 
-	if (FileUtils::isDirectory(full_path)) {
-		return FORBIDDEN;
-	}
+	if (_req.getContentType().find("multipart/form-data") != std::string::npos)
+		return _handleMultipart();
+
+	if (FileUtils::isDirectory(full_path))
+		return OK;
 
 	bool fileExisted = FileUtils::exists(full_path);
 	if (!fileExisted) {
@@ -44,11 +37,11 @@ HttpStatus MethodPOST::handleMethod(void) {
 	if (_writeToFile(full_path, _req.getBody())) {
 		if (!fileExisted) {
 			_res.addHeader("Location", _buildAbsoluteUrl(FileUtils::normalizePath(_req.getPath())));
-			_res.setBody("File created successfully");
+			_res.setBody("File created successfully\n");
 			_res.addHeader("Content-Type", "text/plain");
 			return CREATED;
 		}
-		_res.setBody("File updated successfully");
+		_res.setBody("File updated successfully\n");
 		_res.addHeader("Content-Type", "text/plain");
 		return OK;
 	}

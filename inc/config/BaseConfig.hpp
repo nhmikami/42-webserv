@@ -20,9 +20,9 @@ class BaseConfig {
 		bool											_client_max_body_size_set;
 		std::vector<std::string>						_index_files;
 		std::map<int, std::string>						_error_pages;
+		std::string										_upload;
 		bool											_is_cgi;
 		std::map<std::string, std::vector<std::string> > _cgi;
-		std::string										_upload;
 
 		bool	isValidDirectoryPath(const std::string& path);
 
@@ -45,8 +45,8 @@ class BaseConfig {
 		size_t													getClientMaxBodySize(void) const;
 		const std::vector<std::string>&							getIndexFiles(void) const;
 		const std::map<int, std::string>&						getErrorPages(void) const;
-		const std::map<std::string, std::vector<std::string> >&	getCgi(void) const;
 		const std::string&										getUpload(void) const;
+		const std::map<std::string, std::vector<std::string> >&	getCgi(void) const;
 };
 
 #endif

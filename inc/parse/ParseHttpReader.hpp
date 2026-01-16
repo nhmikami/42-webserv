@@ -20,7 +20,7 @@ class ParseHttpReader {
 			size_t max_body_size,
 			std::string &buffer,
 			std::string &out_body);
-		static bool hexToSize(const std::string &hex_str, size_t &out_size);
+		static bool hexToSizeRange(const std::string &str, size_t start, size_t end, size_t &out);
 		static bool isLastTokenChunked(const std::string &transfer_encoding);
 		static HttpStatus validateBodyChunked(
 			size_t max_body_size,
