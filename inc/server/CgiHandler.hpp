@@ -37,6 +37,7 @@ class CgiHandler {
 		std::vector<std::string>			_executorPath;
 		std::map<std::string, std::string>  _envMap;
 		time_t _startTime;
+		time_t _lastTimeoutCheck;
 
 		pid_t		_pid;
 		int			_socketFd;
