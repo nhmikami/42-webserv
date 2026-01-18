@@ -33,18 +33,16 @@ enum CgiState {
 
 class CgiHandler {
 	private:
+		CgiState							_state;
 		std::string							_scriptPath;
 		std::vector<std::string>			_executorPath;
 		std::map<std::string, std::string>  _envMap;
-		time_t _startTime;
-
-		pid_t		_pid;
-		int			_socketFd;
-		CgiState	_state;
-		
-		size_t				_bytesSent;
-		const std::string&	_requestBody;
-		std::string			_responseBuffer;
+		pid_t								_pid;
+		int									_socketFd;
+		size_t								_bytesSent;
+		const std::string&					_requestBody;
+		std::string							_responseBuffer;
+		time_t								_startTime;
 
 	public:
 		CgiHandler(const Request& req, const std::string& scriptPath, const std::vector<std::string>& executor);
@@ -55,9 +53,9 @@ class CgiHandler {
 		CgiState	getState(void) const;
 		std::string	getOutput(void) const;
 
-		void	start(void);
-		void	handleEvent(short events);
-		bool	isFinished(void) const;
+		void		start(void);
+		void		handleEvent(short events);
+		bool		isFinished(void) const;
 
 	private:
 		void	_initEnv(const Request& req);

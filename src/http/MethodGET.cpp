@@ -10,14 +10,16 @@ MethodGET::~MethodGET(void) {}
 HttpStatus MethodGET::handleMethod(void) {
 	std::string full_path = FileUtils::resolvePath(_getRootPath(), _stripLocationPrefix(_req.getPath()));
 
+	if (_isCGI(full_path))
+		return _runCGI(full_path);
+
 	if (!FileUtils::exists(full_path))
 		return NOT_FOUND;
 
-	if (_isCGI(full_path) && FileUtils::isFile(full_path))
-		return _runCGI(full_path);
-	else if (FileUtils::isFile(full_path))
+	if (FileUtils::isFile(full_path))
 		return _serveFile(full_path);
-	else if (FileUtils::isDirectory(full_path))
+	
+	if (FileUtils::isDirectory(full_path))
 		return _serveDirectory(full_path);
 
 	return FORBIDDEN;
@@ -59,8 +61,8 @@ HttpStatus MethodGET::_serveDirectory(const std::string& path) {
 	}
 	if (_getAutoindex())
 		return _generateAutoindex(path);
-		
-	return FORBIDDEN;
+
+	return NOT_FOUND;
 }
 
 HttpStatus MethodGET::_generateAutoindex(const std::string& path) {

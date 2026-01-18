@@ -111,9 +111,6 @@ const std::map<std::string, std::vector<std::string> >& AMethod::_getCgiExecutor
 }
 
 HttpStatus AMethod::_runCGI(const std::string &path) {
-	if (!FileUtils::isReadable(path) || !FileUtils::isExecutable(path))
-		return FORBIDDEN;
-
 	std::string ext = path.substr(path.find_last_of('.'));
 	const std::map<std::string, std::vector<std::string> >& executors = _getCgiExecutors();
 	if (!executors.count(ext))
@@ -130,7 +127,6 @@ std::string AMethod::_stripLocationPrefix(const std::string& path) const {
 		return path;
 	
 	const std::string& prefix = _location->getPath();
-
 	if (path.find(prefix) == 0)
 		return path.substr(prefix.size());
 	

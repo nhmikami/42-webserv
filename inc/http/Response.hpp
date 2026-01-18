@@ -64,7 +64,7 @@ class Response {
 
 		std::string			buildResponse(const std::string& server_name, const std::string& http_version) const;
 		HttpStatus			processError(HttpStatus status, const ServerConfig& server, const LocationConfig* location);
-		void				parseCgiOutput(const std::string& raw);
+		bool				parseCgiOutput(const std::string& raw);
 };
 
 #endif

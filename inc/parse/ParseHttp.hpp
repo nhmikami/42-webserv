@@ -21,6 +21,7 @@
 # include "utils/ParseUtils.hpp"
 
 # define MAX_HEADER_SIZE 8192
+# define MAX_BODY_SIZE 100000000
 
 class ParseHttp {
 	private:
