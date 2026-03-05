@@ -12,11 +12,17 @@ HttpStatus MethodPOST::handleMethod(void) {
 
 	std::string full_path = FileUtils::resolvePath(_getRootPath(), _stripLocationPrefix(_req.getPath()));
 
+	if (_req.getContentType().find("multipart/form-data") != std::string::npos) {
+		HttpStatus uploadStatus = _handleMultipart();
+		if (uploadStatus != CREATED)
+			return uploadStatus;
+		if (_isCGI(full_path))
+			return _runCGI(full_path);
+		return CREATED;
+	}
+
 	if (_isCGI(full_path))
 		return _runCGI(full_path);
-
-	if (_req.getContentType().find("multipart/form-data") != std::string::npos)
-		return _handleMultipart();
 
 	if (FileUtils::isDirectory(full_path))
 		return OK;
@@ -26,9 +32,8 @@ HttpStatus MethodPOST::handleMethod(void) {
 		std::string parent = full_path.substr(0, full_path.find_last_of('/'));
 		if (!FileUtils::exists(parent) || !FileUtils::isDirectory(parent))
 			return NOT_FOUND;
-		if (!FileUtils::isWritable(parent)) {
+		if (!FileUtils::isWritable(parent))
 			return FORBIDDEN;
-		}
 	}
 	else if (!FileUtils::isWritable(full_path)) {
 		return FORBIDDEN;
