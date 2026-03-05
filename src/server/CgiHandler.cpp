@@ -2,7 +2,7 @@
 #include "utils/ParseUtils.hpp"
 
 CgiHandler::CgiHandler(const Request& req, const std::string& scriptPath, const std::vector<std::string>& executor)
-	: _scriptPath(scriptPath), _executorPath(executor), _pid(-1), _socketFd(-1), _state(CGI_NOT_STARTED), _bytesSent(0), _requestBody(req.getBody()) {
+	: _state(CGI_NOT_STARTED), _scriptPath(scriptPath), _executorPath(executor), _pid(-1), _socketFd(-1), _bytesSent(0), _requestBody(req.getBody()) {
 	_initEnv(req);
 	_startTime = time(NULL);
 }
@@ -169,10 +169,11 @@ void CgiHandler::handleEvent(short events) {
 		return ;
 	}
 
+	if ((events & POLLIN))
+		_handleCgiRead();
+	
 	if (_state == CGI_WRITING && (events & POLLOUT))
 		_handleCgiWrite();
-	else if (_state == CGI_READING && (events & POLLIN))
-		_handleCgiRead();
 
 	if (_state == CGI_FINISHED || _state == CGI_ERROR)
 		return ;
@@ -189,47 +190,42 @@ void CgiHandler::handleEvent(short events) {
 }
 
 void CgiHandler::_handleCgiWrite(void) {
-	size_t	remaining = _requestBody.size() - _bytesSent;
-	size_t	toWrite = (remaining < CGI_BUF_SIZE) ? remaining : CGI_BUF_SIZE;
-	ssize_t	sent;
-
 	if (_bytesSent >= _requestBody.size()) {
-		shutdown(_socketFd, SHUT_WR);
+		shutdown(_socketFd, SHUT_WR); 
 		_state = CGI_READING;
 		return ;
 	}
 
-	sent = write(_socketFd, _requestBody.c_str() + _bytesSent, toWrite);
+	size_t remaining = _requestBody.size() - _bytesSent;
+	size_t toWrite = (remaining < CGI_BUF_SIZE) ? remaining : CGI_BUF_SIZE;
+	ssize_t sent = write(_socketFd, _requestBody.c_str() + _bytesSent, toWrite);
 	if (sent > 0) {
 		_bytesSent += sent;
 		if (_bytesSent >= _requestBody.size()) {
-			shutdown(_socketFd, SHUT_WR);
+			shutdown(_socketFd, SHUT_WR); 
 			_state = CGI_READING;
 		}
 		return ;
 	}
-
 	_state = CGI_ERROR;
 }
 
 void CgiHandler::_handleCgiRead(void) {
-	char	buffer[CGI_BUF_SIZE];
-	ssize_t	bytesRead;
-	int		status = 0;
-
-	bytesRead = read(_socketFd, buffer, sizeof(buffer));
+	char	buffer[CGI_BUF_SIZE];	
+	ssize_t bytesRead = read(_socketFd, buffer, sizeof(buffer));
+	
 	if (bytesRead > 0) {
 		_responseBuffer.append(buffer, bytesRead);
 		return ;
 	}
-
+	
 	if (bytesRead == 0) {
+		int	status = 0;
 		pid_t r = waitpid(_pid, &status, WNOHANG);
 		if (r == 0) {
 			kill(_pid, SIGKILL);
 			waitpid(_pid, &status, 0);
 		}
-
 		if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
 			_state = CGI_FINISHED;
 		else

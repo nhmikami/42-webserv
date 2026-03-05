@@ -24,9 +24,9 @@ BaseConfig::BaseConfig(const BaseConfig &other) :
 	_client_max_body_size_set(other._client_max_body_size_set),
 	_index_files(other._index_files),
 	_error_pages(other._error_pages),
+	_upload(other._upload),
 	_is_cgi(other._is_cgi),
-	_cgi(other._cgi),
-	_upload(other._upload)
+	_cgi(other._cgi)
 {};
 
 BaseConfig::~BaseConfig(void) {};
@@ -124,7 +124,6 @@ void BaseConfig::setUpload(const std::vector<std::string>& values)
 	_upload = values[0];
 };
 
-
 const std::string& 							BaseConfig::getRoot(void) const { return _root; };
 
 bool										BaseConfig::getAutoIndex(void) const { return _autoindex; };
@@ -135,6 +134,6 @@ const std::vector<std::string>&				BaseConfig::getIndexFiles(void) const { retur
 
 const std::map<int, std::string>&			BaseConfig::getErrorPages(void) const { return _error_pages; };
 
-const std::map<std::string, std::vector<std::string> >&	BaseConfig::getCgi(void) const { return _cgi; };
-
 const std::string&							BaseConfig::getUpload(void) const { return _upload; };
+
+const std::map<std::string, std::vector<std::string> >&	BaseConfig::getCgi(void) const { return _cgi; };

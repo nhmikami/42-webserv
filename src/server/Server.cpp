@@ -443,7 +443,7 @@ bool Server::_handleCgiEvent(size_t i, short revents) {
 	}
 
 	if (cgi->getState() == CGI_WRITING)
-		_fds[i].events = POLLOUT | POLLERR | POLLHUP;
+		_fds[i].events = POLLIN | POLLOUT | POLLERR | POLLHUP;
 	else if (cgi->getState() == CGI_READING)
 		_fds[i].events = POLLIN | POLLERR | POLLHUP;
 	return false;
@@ -459,7 +459,8 @@ void Server::_finalizeCgiResponse(size_t i, int cgi_fd) {
 		if (cgi->getState() == CGI_ERROR) {
 			res.processError(SERVER_ERR, *_client_to_config[cli->getFd()], NULL);
 		} else {
-			res.parseCgiOutput(cgi->getOutput());
+			if (!res.parseCgiOutput(cgi->getOutput()))
+				res.processError(SERVER_ERR, *_client_to_config[cli->getFd()], NULL);
 		}
 
 		Request* req = cli->getCurrentRequest();

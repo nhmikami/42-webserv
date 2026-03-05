@@ -114,21 +114,6 @@ std::string ParseUtils::htmlEscape(const std::string &s) {
 	return escaped;
 }
 
-std::pair<std::string, std::string> ParseUtils::splitHeadersAndBody(const std::string& raw) {
-	size_t headerEnd = raw.find("\r\n\r\n");
-	size_t sepLen = 4;
-
-	if (headerEnd == std::string::npos) {
-		headerEnd = raw.find("\n\n");
-		sepLen = 2;
-	}
-
-	if (headerEnd == std::string::npos)
-		return std::make_pair("", raw);
-
-	return std::make_pair(raw.substr(0, headerEnd), raw.substr(headerEnd + sepLen));
-}
-
 std::pair<std::string, std::string> ParseUtils::splitPair(const std::string& s, const std::string& delimiter) {
 	size_t pos = s.find(delimiter);
 	if (pos == std::string::npos)

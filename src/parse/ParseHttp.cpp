@@ -1,6 +1,6 @@
 #include "parse/ParseHttp.hpp"
 
-ParseHttp::ParseHttp() : _max_body_size(DEFAULT_CLIENT_MAX_BODY_SIZE), _header_parsed(false) {};
+ParseHttp::ParseHttp() : _max_body_size(MAX_BODY_SIZE), _header_parsed(false) {};
 
 ParseHttp::ParseHttp(const ParseHttp &other) {
 	*this = other;
@@ -251,8 +251,10 @@ HttpStatus	ParseHttp::parseBody(std::string &body) {
 		bool has_content_length = (cl_it != this->_all_headers.end());
 		bool has_transfer_encoding = (te_it != this->_all_headers.end());
 		
-		if (!has_content_length && !has_transfer_encoding)
-			return LENGTH_REQUIRED;
+		if (!has_content_length && !has_transfer_encoding) {
+			body.clear();
+			return OK;
+		}
 
 		if (has_transfer_encoding) {
 			const std::string &te_value = te_it->second;
@@ -261,8 +263,6 @@ HttpStatus	ParseHttp::parseBody(std::string &body) {
 				HttpStatus status = ParseHttpReader::validateBodyChunked(
 					_max_body_size, body, this->_request_body
 				);
-				if (status == OK)
-					body.clear();
 				return status;
 			}
 			else if (has_content_length)
@@ -276,8 +276,6 @@ HttpStatus	ParseHttp::parseBody(std::string &body) {
 			HttpStatus status = ParseHttpReader::validateBodyContentLength(
 				cl_value, _max_body_size, body, this->_request_body
 			);
-			if (status == OK)
-				body.clear();
 			return status;
 		}
 	}

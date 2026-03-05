@@ -28,7 +28,6 @@ class ParseUtils {
 		static std::string  htmlEscape(const std::string &s);
 
 		static std::vector<std::string> split(const std::string &str, char delimiter);
-		static std::pair<std::string, std::string> splitHeadersAndBody(const std::string &raw);
 		static std::pair<std::string, std::string> splitPair(const std::string &s, const std::string &delimiter);
 		static std::string	extractAttribute(const std::string &header, const std::string &key);
 };
